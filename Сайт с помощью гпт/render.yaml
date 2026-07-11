@@ -3,8 +3,10 @@ services:
     name: yaroslav-tutor-school
     env: node
     plan: free
+    rootDir: "Сайт с помощью гпт"
     buildCommand: npm install
     startCommand: npm start
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production

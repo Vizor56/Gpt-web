@@ -13,13 +13,28 @@
 2. Скопируйте строку подключения Neon в формате `postgresql://...?...sslmode=require`.
 3. Загрузите проект в GitHub.
 4. В Render создайте Web Service из GitHub-репозитория.
-5. Укажите:
+5. Так как проект лежит в подпапке репозитория, укажите Root Directory:
+
+```text
+Сайт с помощью гпт
+```
+
+6. Укажите команды:
    - Build Command: `npm install`
    - Start Command: `npm start`
-6. В Environment Variables на Render добавьте:
+7. В Environment Variables на Render добавьте:
    - `DATABASE_URL` - строка подключения Neon.
    - `NODE_ENV` - `production`.
    - `AUTO_MIGRATE` - `true`.
+
+Если Root Directory не задавать, команды должны быть такими:
+
+```bash
+cd "Сайт с помощью гпт" && npm install
+cd "Сайт с помощью гпт" && npm start
+```
+
+Используйте `npm`, не `yarn`: в проекте есть `package.json` под npm-команды.
 
 При первом старте сервер сам применит `database/neon-schema.sql` и добавит стартовые курсы, уроки, ДЗ, трансляции, магазин, ученика, преподавателей и кураторов.
 

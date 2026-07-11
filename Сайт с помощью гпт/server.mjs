@@ -22,6 +22,7 @@ const pool = databaseUrl
       ssl: shouldUseSsl ? { rejectUnauthorized: false } : undefined,
     })
   : null;
+let databaseBootstrapError = null;
 
 const app = express();
 
@@ -965,7 +966,12 @@ app.get(
     }
 
     await dbQuery("SELECT 1");
-    response.json({ ok: true, source: "node", database: "postgres" });
+    response.json({
+      ok: !databaseBootstrapError,
+      source: "node",
+      database: "postgres",
+      bootstrapError: databaseBootstrapError,
+    });
   }),
 );
 
@@ -2538,6 +2544,14 @@ app.use((error, _request, response, _next) => {
 });
 
 runSchemaAndSeed()
+  .catch((error) => {
+    databaseBootstrapError = error.message || "Database bootstrap failed.";
+    console.error("Database bootstrap failed. The web service will still start; check /api/health and Render environment variables.", error);
+
+    if (String(process.env.STRICT_DB_STARTUP || "false").toLowerCase() === "true") {
+      throw error;
+    }
+  })
   .then(() => {
     app.listen(port, "0.0.0.0", () => {
       console.log(`Yaroslav Tutor School is running on port ${port}`);
