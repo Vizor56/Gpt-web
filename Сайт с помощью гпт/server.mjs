@@ -520,7 +520,7 @@ async function seedDatabase() {
       await client.query(
         `
           INSERT INTO live_streams (id, course_id, lesson_id, title, starts_at, ends_at, stream_link, status, created_at)
-          VALUES ($1, $2, $3, $4, NOW() + ($5::text || ' hours')::interval, NOW() + (($5 + 2)::text || ' hours')::interval, $6, 'Planned', NOW())
+          VALUES ($1, $2, $3, $4, NOW() + ($5::integer::text || ' hours')::interval, NOW() + (($5::integer + 2)::text || ' hours')::interval, $6, 'Planned', NOW())
           ON CONFLICT (id) DO UPDATE SET
             course_id = EXCLUDED.course_id,
             lesson_id = EXCLUDED.lesson_id,
