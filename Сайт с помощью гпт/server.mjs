@@ -46,6 +46,7 @@ app.use((request, response, next) => {
 
 const teacherPassword = hashPassword("teacher123");
 const curatorPassword = hashPassword("curator123");
+const adminPassword = hashPassword("admin123");
 const studentPassword = hashPassword("student123");
 
 function asyncRoute(handler) {
@@ -151,6 +152,7 @@ function staffPublic(row) {
     staffId: row.staffId,
     teacherId: row.teacherId,
     curatorId: row.curatorId,
+    adminId: row.adminId,
     login: row.login,
     name: row.name,
     authToken: row.authToken || "",
@@ -207,6 +209,34 @@ async function getStaffByToken(request, { required = true } = {}) {
     return null;
   }
 
+  if (role === "Admin") {
+    const admin = await dbOne(
+      `
+        SELECT
+          id AS "staffAccountId",
+          'Admin' AS role,
+          id AS "staffId",
+          id AS "adminId",
+          NULL::integer AS "teacherId",
+          NULL::integer AS "curatorId",
+          login,
+          auth_token AS "authToken",
+          CONCAT(first_name, ' ', last_name) AS name
+        FROM admin_accounts
+        WHERE id = $1
+          AND auth_token = $2
+          AND auth_expires_at > NOW()
+      `,
+      [staffId, authToken],
+    );
+
+    if (!admin && required) {
+      throw createHttpError(401, "Сессия администратора истекла. Войдите заново.");
+    }
+
+    return admin ? staffPublic(admin) : null;
+  }
+
   const row = await dbOne(
     `
       SELECT
@@ -246,6 +276,16 @@ function courseScopeWhere(staff, alias = "c", firstParamIndex = 1) {
 
 function staffScopeId(staff) {
   return staff.role === "Teacher" ? staff.teacherId : staff.curatorId;
+}
+
+async function requireAdmin(request) {
+  const staff = await getStaffByToken(request);
+
+  if (staff.role !== "Admin" || !staff.adminId) {
+    throw createHttpError(403, "Only administrators can perform this action.");
+  }
+
+  return staff;
 }
 
 async function runSchemaAndSeed() {
@@ -342,6 +382,26 @@ async function seedDatabase() {
             password_hash = EXCLUDED.password_hash
         `,
         account,
+      );
+    }
+
+    const adminAccounts = [
+      [1, "Алексей", "Админов", "admin", adminPassword],
+      [2, "Ольга", "Управляющая", "admin_olga", adminPassword],
+      [3, "Никита", "Координатор", "admin_nikita", adminPassword],
+    ];
+
+    for (const admin of adminAccounts) {
+      await client.query(
+        `
+          INSERT INTO admin_accounts (id, first_name, last_name, login, password_hash)
+          VALUES ($1, $2, $3, $4, $5)
+          ON CONFLICT (login) DO UPDATE SET
+            first_name = EXCLUDED.first_name,
+            last_name = EXCLUDED.last_name,
+            password_hash = EXCLUDED.password_hash
+        `,
+        admin,
       );
     }
 
@@ -511,6 +571,40 @@ async function seedDatabase() {
       `,
     );
 
+    const parents = [
+      [1, "Светлана", "Петрова", "+7 900 300-30-10", "parent@example.com", "https://t.me/parent_petrov", "https://vk.com/parent_petrov", "Заявка с сайта", "Мама демо-ученика"],
+      [2, "Андрей", "Смирнов", "+7 900 300-30-11", "andrey.parent@example.com", "https://t.me/andrey_parent", "", "Рекомендация", "Родитель для проверки админки"],
+      [3, "Екатерина", "Иванова", "+7 900 300-30-12", "ekaterina.parent@example.com", "", "https://vk.com/ekaterina_parent", "Telegram", "Пока без закрепленного ученика"],
+    ];
+
+    for (const parent of parents) {
+      await client.query(
+        `
+          INSERT INTO parents (id, first_name, last_name, phone, email, telegram_link, vk_link, source_platform, comment_text)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          ON CONFLICT (id) DO UPDATE SET
+            first_name = EXCLUDED.first_name,
+            last_name = EXCLUDED.last_name,
+            phone = EXCLUDED.phone,
+            email = EXCLUDED.email,
+            telegram_link = EXCLUDED.telegram_link,
+            vk_link = EXCLUDED.vk_link,
+            source_platform = EXCLUDED.source_platform,
+            comment_text = EXCLUDED.comment_text,
+            updated_at = NOW()
+        `,
+        parent,
+      );
+    }
+
+    await client.query(
+      `
+        INSERT INTO student_parents (student_id, parent_id, relation_type)
+        VALUES (1, 1, 'Мама')
+        ON CONFLICT (student_id, parent_id) DO UPDATE SET relation_type = EXCLUDED.relation_type
+      `,
+    );
+
     await client.query(
       `
         INSERT INTO student_accounts (student_id, login, password_hash)
@@ -580,11 +674,14 @@ function createSeedLessons() {
 async function enrollStudentInActiveCourses(client, studentId) {
   await client.query(
     `
-      INSERT INTO course_enrollments (course_id, student_id, status)
-      SELECT id, $1, 'Active'
+      INSERT INTO course_enrollments (course_id, student_id, status, teacher_id, curator_id)
+      SELECT id, $1, 'Active', teacher_id, curator_id
       FROM courses
       WHERE status = 'Active'
-      ON CONFLICT (course_id, student_id) DO UPDATE SET status = 'Active'
+      ON CONFLICT (course_id, student_id) DO UPDATE SET
+        status = 'Active',
+        teacher_id = COALESCE(course_enrollments.teacher_id, EXCLUDED.teacher_id),
+        curator_id = COALESCE(course_enrollments.curator_id, EXCLUDED.curator_id)
     `,
     [studentId],
   );
@@ -594,7 +691,7 @@ async function assignHomeworksForStudent(client, studentId) {
   await client.query(
     `
       INSERT INTO homework_assignments (template_id, student_id, enrollment_id, teacher_id, due_at, status)
-      SELECT ht.id, ce.student_id, ce.id, ht.teacher_id, NOW() + INTERVAL '7 days', 'Assigned'
+      SELECT ht.id, ce.student_id, ce.id, COALESCE(ce.teacher_id, ht.teacher_id), NOW() + INTERVAL '7 days', 'Assigned'
       FROM course_enrollments ce
       JOIN homework_templates ht ON ht.course_id = ce.course_id AND ht.active = TRUE
       WHERE ce.student_id = $1
@@ -602,6 +699,24 @@ async function assignHomeworksForStudent(client, studentId) {
       ON CONFLICT (template_id, student_id) DO NOTHING
     `,
     [studentId],
+  );
+}
+
+async function assignHomeworksForEnrollment(client, enrollmentId) {
+  await client.query(
+    `
+      INSERT INTO homework_assignments (template_id, student_id, enrollment_id, teacher_id, due_at, status)
+      SELECT ht.id, ce.student_id, ce.id, COALESCE(ce.teacher_id, ht.teacher_id), NOW() + INTERVAL '7 days', 'Assigned'
+      FROM course_enrollments ce
+      JOIN homework_templates ht ON ht.course_id = ce.course_id AND ht.active = TRUE
+      WHERE ce.id = $1
+        AND ce.status = 'Active'
+      ON CONFLICT (template_id, student_id) DO UPDATE SET
+        enrollment_id = EXCLUDED.enrollment_id,
+        teacher_id = COALESCE(EXCLUDED.teacher_id, homework_assignments.teacher_id),
+        status = CASE WHEN homework_assignments.status = 'Cancelled' THEN 'Assigned' ELSE homework_assignments.status END
+    `,
+    [enrollmentId],
   );
 }
 
@@ -620,6 +735,27 @@ async function ensureChatsForStudent(client, studentId) {
           WHERE ch.student_id = ce.student_id
             AND ch.teacher_id IS NOT DISTINCT FROM c.teacher_id
             AND ch.curator_id IS NOT DISTINCT FROM c.curator_id
+        )
+    `,
+    [studentId],
+  );
+
+  await client.query(
+    `
+      INSERT INTO chats (student_id, teacher_id, curator_id, title)
+      SELECT DISTINCT ce.student_id, COALESCE(ce.teacher_id, c.teacher_id), COALESCE(ce.curator_id, c.curator_id), CONCAT('Chat: ', c.title)
+      FROM course_enrollments ce
+      JOIN courses c ON c.id = ce.course_id
+      WHERE ce.student_id = $1
+        AND ce.status = 'Active'
+        AND c.status = 'Active'
+        AND (COALESCE(ce.teacher_id, c.teacher_id) IS NOT NULL OR COALESCE(ce.curator_id, c.curator_id) IS NOT NULL)
+        AND NOT EXISTS (
+          SELECT 1
+          FROM chats ch
+          WHERE ch.student_id = ce.student_id
+            AND ch.teacher_id IS NOT DISTINCT FROM COALESCE(ce.teacher_id, c.teacher_id)
+            AND ch.curator_id IS NOT DISTINCT FROM COALESCE(ce.curator_id, c.curator_id)
         )
     `,
     [studentId],
@@ -1585,6 +1721,55 @@ app.post(
     const login = normalizeLogin(request.body.login);
     const passwordHash = hashPassword(request.body.password);
     const token = createToken();
+
+    if (role === "Admin") {
+      const admin = await dbOne(
+        `
+          SELECT id
+          FROM admin_accounts
+          WHERE login = $1
+            AND password_hash = $2
+        `,
+        [login, passwordHash],
+      );
+
+      if (!admin) {
+        throw createHttpError(401, "Неверный логин, пароль или роль.");
+      }
+
+      await dbQuery(
+        `
+          UPDATE admin_accounts
+          SET auth_token = $1,
+              auth_expires_at = NOW() + INTERVAL '30 days',
+              last_login_at = NOW()
+          WHERE id = $2
+        `,
+        [token, admin.id],
+      );
+
+      const profile = await dbOne(
+        `
+          SELECT
+            id AS "staffAccountId",
+            'Admin' AS role,
+            id AS "staffId",
+            id AS "adminId",
+            NULL::integer AS "teacherId",
+            NULL::integer AS "curatorId",
+            login,
+            auth_token AS "authToken",
+            CONCAT(first_name, ' ', last_name) AS name
+          FROM admin_accounts
+          WHERE id = $1
+        `,
+        [admin.id],
+      );
+
+      response.json({ source: "database", staff: staffPublic(profile) });
+      return;
+    }
+
     const row = await dbOne(
       `
         SELECT id
@@ -1653,9 +1838,595 @@ app.get(
   }),
 );
 
+const applicationStatuses = new Set(["New", "Contacted", "Enrolled", "Rejected"]);
+const enrollmentStatuses = new Set(["Active", "Paused", "Finished", "Cancelled"]);
+const studentStatuses = new Set(["Student", "Graduate"]);
+
+function optionalInt(value) {
+  const parsed = toInt(value, null);
+  return parsed && parsed > 0 ? parsed : null;
+}
+
+function cleanNullableText(value, maxLength = 1000) {
+  const text = cleanText(value, maxLength);
+  return text || null;
+}
+
+app.post(
+  "/api/admin/applications/:id",
+  asyncRoute(async (request, response) => {
+    await requireAdmin(request);
+    const applicationId = toInt(request.params.id, 0);
+    const studentName = cleanText(request.body.studentName || request.body.student_name, 150);
+    const phone = cleanText(request.body.phone, 80);
+    const email = cleanNullableText(request.body.email, 160);
+    const preferredSubject = cleanText(request.body.preferredSubject || request.body.preferred_subject, 160);
+    const grade = optionalInt(request.body.grade);
+    const commentText = cleanNullableText(request.body.commentText || request.body.comment_text, 2000);
+    const sourcePage = cleanNullableText(request.body.sourcePage || request.body.source_page, 200);
+    const adminNote = cleanNullableText(request.body.adminNote || request.body.admin_note, 2000);
+    const requestedStatus = cleanText(request.body.status, 30) || "New";
+    const status = applicationStatuses.has(requestedStatus) ? requestedStatus : "New";
+
+    if (!applicationId || !studentName || !phone || !preferredSubject) {
+      throw createHttpError(400, "Application, student name, phone and subject are required.");
+    }
+
+    const result = await dbQuery(
+      `
+        UPDATE course_applications
+        SET student_name = $2,
+            phone = $3,
+            email = $4,
+            preferred_subject = $5,
+            grade = $6,
+            comment_text = $7,
+            source_page = $8,
+            status = $9,
+            admin_note = $10,
+            processed_at = CASE WHEN $9 = 'New' THEN NULL ELSE COALESCE(processed_at, NOW()) END,
+            updated_at = NOW()
+        WHERE id = $1
+        RETURNING id AS "applicationId", status, processed_at AS "processedAt", updated_at AS "updatedAt"
+      `,
+      [applicationId, studentName, phone, email, preferredSubject, grade, commentText, sourcePage, status, adminNote],
+    );
+
+    if (result.rowCount === 0) {
+      throw createHttpError(404, "Application not found.");
+    }
+
+    response.json({
+      ok: true,
+      source: "database",
+      ...result.rows[0],
+      processedAt: toDateText(result.rows[0].processedAt),
+      updatedAt: toDateText(result.rows[0].updatedAt),
+    });
+  }),
+);
+
+app.post(
+  "/api/admin/parents",
+  asyncRoute(async (request, response) => {
+    await requireAdmin(request);
+    const parentId = toInt(request.body.parentId, 0);
+    const firstName = cleanText(request.body.firstName || request.body.first_name, 100);
+    const lastName = cleanText(request.body.lastName || request.body.last_name, 100);
+    const phone = cleanNullableText(request.body.phone, 80);
+    const email = cleanNullableText(request.body.email, 160);
+    const telegramLink = cleanNullableText(request.body.telegramLink || request.body.telegram_link, 300);
+    const vkLink = cleanNullableText(request.body.vkLink || request.body.vk_link, 300);
+    const sourcePlatform = cleanNullableText(request.body.sourcePlatform || request.body.source_platform, 200);
+    const commentText = cleanNullableText(request.body.commentText || request.body.comment_text, 2000);
+
+    if (!firstName || !lastName) {
+      throw createHttpError(400, "Parent first and last name are required.");
+    }
+
+    const result = parentId
+      ? await dbQuery(
+          `
+            UPDATE parents
+            SET first_name = $2,
+                last_name = $3,
+                phone = $4,
+                email = $5,
+                telegram_link = $6,
+                vk_link = $7,
+                source_platform = $8,
+                comment_text = $9,
+                updated_at = NOW()
+            WHERE id = $1
+            RETURNING id AS "parentId"
+          `,
+          [parentId, firstName, lastName, phone, email, telegramLink, vkLink, sourcePlatform, commentText],
+        )
+      : await dbQuery(
+          `
+            INSERT INTO parents (first_name, last_name, phone, email, telegram_link, vk_link, source_platform, comment_text)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            RETURNING id AS "parentId"
+          `,
+          [firstName, lastName, phone, email, telegramLink, vkLink, sourcePlatform, commentText],
+        );
+
+    if (result.rowCount === 0) {
+      throw createHttpError(404, "Parent not found.");
+    }
+
+    response.status(parentId ? 200 : 201).json({ ok: true, source: "database", parentId: result.rows[0].parentId });
+  }),
+);
+
+app.post(
+  "/api/admin/students",
+  asyncRoute(async (request, response) => {
+    await requireAdmin(request);
+    const studentId = toInt(request.body.studentId, 0);
+    const firstName = cleanText(request.body.firstName || request.body.first_name, 100);
+    const lastName = cleanText(request.body.lastName || request.body.last_name, 100);
+    const phone = cleanNullableText(request.body.phone, 80);
+    const email = cleanNullableText(request.body.email, 160);
+    const grade = optionalInt(request.body.grade);
+    const telegramLink = cleanNullableText(request.body.telegramLink || request.body.telegram_link, 300);
+    const vkLink = cleanNullableText(request.body.vkLink || request.body.vk_link, 300);
+    const sourcePlatform = cleanNullableText(request.body.sourcePlatform || request.body.source_platform, 200);
+    const requestedStatus = cleanText(request.body.studentStatus || request.body.student_status, 30) || "Student";
+    const studentStatus = studentStatuses.has(requestedStatus) ? requestedStatus : "Student";
+    const parentFieldPresent = Object.prototype.hasOwnProperty.call(request.body, "parentId");
+    const parentId = optionalInt(request.body.parentId);
+    const relationType = cleanText(request.body.relationType || request.body.relation_type, 80) || "Parent";
+
+    if (!firstName || !lastName) {
+      throw createHttpError(400, "Student first and last name are required.");
+    }
+
+    const client = await requireDatabase().connect();
+
+    try {
+      await client.query("BEGIN");
+      const result = studentId
+        ? await client.query(
+            `
+              UPDATE students
+              SET first_name = $2,
+                  last_name = $3,
+                  phone = $4,
+                  email = $5,
+                  grade = $6,
+                  telegram_link = $7,
+                  vk_link = $8,
+                  source_platform = $9,
+                  student_status = $10
+              WHERE id = $1
+              RETURNING id AS "studentId"
+            `,
+            [studentId, firstName, lastName, phone, email, grade, telegramLink, vkLink, sourcePlatform, studentStatus],
+          )
+        : await client.query(
+            `
+              INSERT INTO students (first_name, last_name, phone, email, grade, telegram_link, vk_link, source_platform, student_status)
+              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+              RETURNING id AS "studentId"
+            `,
+            [firstName, lastName, phone, email, grade, telegramLink, vkLink, sourcePlatform, studentStatus],
+          );
+
+      if (result.rowCount === 0) {
+        throw createHttpError(404, "Student not found.");
+      }
+
+      const savedStudentId = result.rows[0].studentId;
+
+      if (parentFieldPresent) {
+        await client.query("DELETE FROM student_parents WHERE student_id = $1", [savedStudentId]);
+
+        if (parentId) {
+          await client.query(
+            `
+              INSERT INTO student_parents (student_id, parent_id, relation_type)
+              VALUES ($1, $2, $3)
+              ON CONFLICT (student_id, parent_id) DO UPDATE SET relation_type = EXCLUDED.relation_type
+            `,
+            [savedStudentId, parentId, relationType],
+          );
+        }
+      }
+
+      await client.query("COMMIT");
+      response.status(studentId ? 200 : 201).json({ ok: true, source: "database", studentId: savedStudentId });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }),
+);
+
+app.post(
+  "/api/admin/students/:id/enrollment",
+  asyncRoute(async (request, response) => {
+    await requireAdmin(request);
+    const studentId = toInt(request.params.id, 0);
+    const courseId = toInt(request.body.courseId, 0);
+    const teacherId = optionalInt(request.body.teacherId);
+    const curatorId = optionalInt(request.body.curatorId);
+    const action = cleanText(request.body.action, 30);
+    const requestedStatus = action === "remove" ? "Cancelled" : cleanText(request.body.enrollmentStatus || request.body.status, 30) || "Active";
+    const status = enrollmentStatuses.has(requestedStatus) ? requestedStatus : "Active";
+
+    if (!studentId || !courseId) {
+      throw createHttpError(400, "Student and course are required.");
+    }
+
+    const client = await requireDatabase().connect();
+
+    try {
+      await client.query("BEGIN");
+      const student = await client.query("SELECT id FROM students WHERE id = $1 FOR UPDATE", [studentId]);
+      const course = await client.query("SELECT id FROM courses WHERE id = $1 AND status = 'Active'", [courseId]);
+
+      if (student.rowCount === 0 || course.rowCount === 0) {
+        throw createHttpError(404, "Student or active course not found.");
+      }
+
+      let enrollmentId = null;
+
+      if (status === "Cancelled") {
+        const cancelled = await client.query(
+          `
+            UPDATE course_enrollments
+            SET status = 'Cancelled',
+                teacher_id = $3,
+                curator_id = $4
+            WHERE student_id = $1
+              AND course_id = $2
+            RETURNING id
+          `,
+          [studentId, courseId, teacherId, curatorId],
+        );
+        enrollmentId = cancelled.rows[0]?.id || null;
+        await client.query(
+          `
+            UPDATE homework_assignments ha
+            SET status = 'Cancelled'
+            FROM homework_templates ht
+            WHERE ht.id = ha.template_id
+              AND ha.student_id = $1
+              AND ht.course_id = $2
+              AND ha.status <> 'Checked'
+          `,
+          [studentId, courseId],
+        );
+      } else {
+        const upsert = await client.query(
+          `
+            INSERT INTO course_enrollments (course_id, student_id, status, teacher_id, curator_id)
+            VALUES ($1, $2, $3, $4, $5)
+            ON CONFLICT (course_id, student_id) DO UPDATE SET
+              status = EXCLUDED.status,
+              teacher_id = EXCLUDED.teacher_id,
+              curator_id = EXCLUDED.curator_id
+            RETURNING id
+          `,
+          [courseId, studentId, status, teacherId, curatorId],
+        );
+        enrollmentId = upsert.rows[0].id;
+
+        if (status === "Active") {
+          await assignHomeworksForEnrollment(client, enrollmentId);
+          await client.query(
+            `
+              UPDATE homework_assignments ha
+              SET teacher_id = COALESCE(ce.teacher_id, ht.teacher_id),
+                  status = CASE WHEN ha.status = 'Cancelled' THEN 'Assigned' ELSE ha.status END
+              FROM course_enrollments ce
+              JOIN homework_templates ht ON ht.course_id = ce.course_id
+              WHERE ha.enrollment_id = ce.id
+                AND ha.template_id = ht.id
+                AND ce.id = $1
+            `,
+            [enrollmentId],
+          );
+          await ensureChatsForStudent(client, studentId);
+        }
+      }
+
+      if (enrollmentId) {
+        await refreshEnrollmentProgress(client, enrollmentId);
+      }
+
+      await client.query("COMMIT");
+      response.json({ ok: true, source: "database", studentId, courseId, enrollmentId, enrollmentStatus: status });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }),
+);
+
+async function buildAdminWorkspace(staff) {
+  const applications = await dbQuery(
+    `
+      SELECT
+        id AS "applicationId",
+        student_name AS "studentName",
+        phone,
+        email,
+        preferred_subject AS "preferredSubject",
+        grade,
+        comment_text AS "commentText",
+        source_page AS "sourcePage",
+        status,
+        created_at AS "createdAt",
+        processed_at AS "processedAt",
+        updated_at AS "updatedAt",
+        admin_note AS "adminNote"
+      FROM course_applications
+      ORDER BY created_at DESC, id DESC
+    `,
+  );
+
+  const courses = await dbQuery(
+    `
+      SELECT
+        c.id AS "courseId",
+        c.slug AS "courseSlug",
+        c.title AS "courseTitle",
+        c.subject,
+        c.teacher_id AS "teacherId",
+        c.curator_id AS "curatorId",
+        CONCAT(t.first_name, ' ', t.last_name) AS "teacherName",
+        CONCAT(cu.first_name, ' ', cu.last_name) AS "curatorName",
+        COUNT(DISTINCT CASE WHEN ce.status = 'Active' THEN ce.student_id END)::integer AS "studentsCount"
+      FROM courses c
+      LEFT JOIN teachers t ON t.id = c.teacher_id
+      LEFT JOIN curators cu ON cu.id = c.curator_id
+      LEFT JOIN course_enrollments ce ON ce.course_id = c.id
+      WHERE c.status = 'Active'
+      GROUP BY c.id, t.id, cu.id
+      ORDER BY c.id
+    `,
+  );
+
+  const teachers = await dbQuery(
+    `
+      SELECT
+        t.id AS "teacherId",
+        CONCAT(t.first_name, ' ', t.last_name) AS "teacherName",
+        t.phone,
+        t.email,
+        t.telegram_link AS telegram,
+        COUNT(DISTINCT CASE WHEN ce.status = 'Active' THEN ce.student_id END)::integer AS "studentsCount"
+      FROM teachers t
+      LEFT JOIN courses c ON c.teacher_id = t.id
+      LEFT JOIN course_enrollments ce ON COALESCE(ce.teacher_id, c.teacher_id) = t.id
+      WHERE t.active = TRUE
+      GROUP BY t.id
+      ORDER BY t.id
+    `,
+  );
+
+  const curators = await dbQuery(
+    `
+      SELECT
+        cu.id AS "curatorId",
+        CONCAT(cu.first_name, ' ', cu.last_name) AS "curatorName",
+        cu.phone,
+        cu.email,
+        cu.telegram_link AS telegram,
+        COUNT(DISTINCT CASE WHEN ce.status = 'Active' THEN ce.student_id END)::integer AS "studentsCount"
+      FROM curators cu
+      LEFT JOIN courses c ON c.curator_id = cu.id
+      LEFT JOIN course_enrollments ce ON COALESCE(ce.curator_id, c.curator_id) = cu.id
+      WHERE cu.active = TRUE
+      GROUP BY cu.id
+      ORDER BY cu.id
+    `,
+  );
+
+  const students = await dbQuery(
+    `
+      SELECT
+        s.id AS "studentId",
+        s.first_name AS "firstName",
+        s.last_name AS "lastName",
+        CONCAT(s.first_name, ' ', s.last_name) AS "studentName",
+        s.phone,
+        s.email,
+        s.grade,
+        s.telegram_link AS "telegramLink",
+        s.vk_link AS "vkLink",
+        s.source_platform AS "sourcePlatform",
+        s.student_status AS "studentStatus",
+        s.created_at AS "createdAt",
+        COALESCE(AVG(hs.score) FILTER (WHERE hs.status = 'Checked' AND hs.score IS NOT NULL), 0) AS "averageScore",
+        COUNT(DISTINCT ha.id)::integer AS "homeworkTotal",
+        COUNT(DISTINCT CASE WHEN ha.status IN ('Submitted', 'Checked') THEN ha.id END)::integer AS "homeworkSubmitted",
+        COUNT(DISTINCT CASE WHEN ha.status = 'Checked' THEN ha.id END)::integer AS "homeworkChecked"
+      FROM students s
+      LEFT JOIN course_enrollments ce ON ce.student_id = s.id AND ce.status <> 'Cancelled'
+      LEFT JOIN homework_assignments ha ON ha.student_id = s.id AND ha.status <> 'Cancelled'
+      LEFT JOIN homework_submissions hs ON hs.assignment_id = ha.id
+      GROUP BY s.id
+      ORDER BY s.last_name, s.first_name, s.id
+    `,
+  );
+
+  const enrollments = await dbQuery(
+    `
+      SELECT
+        ce.id AS "enrollmentId",
+        ce.student_id AS "studentId",
+        ce.course_id AS "courseId",
+        c.slug AS "courseSlug",
+        c.title AS "courseTitle",
+        ce.status AS "enrollmentStatus",
+        COALESCE(ce.teacher_id, c.teacher_id) AS "teacherId",
+        COALESCE(ce.curator_id, c.curator_id) AS "curatorId",
+        CONCAT(t.first_name, ' ', t.last_name) AS "teacherName",
+        CONCAT(cu.first_name, ' ', cu.last_name) AS "curatorName",
+        ce.progress_percent AS "progressPercent",
+        COUNT(DISTINCT ha.id)::integer AS "homeworkTotal",
+        COUNT(DISTINCT CASE WHEN ha.status IN ('Submitted', 'Checked') THEN ha.id END)::integer AS "homeworkSubmitted",
+        COUNT(DISTINCT CASE WHEN ha.status = 'Checked' THEN ha.id END)::integer AS "homeworkChecked",
+        COALESCE(AVG(hs.score) FILTER (WHERE hs.status = 'Checked' AND hs.score IS NOT NULL), 0) AS "averageScore"
+      FROM course_enrollments ce
+      JOIN courses c ON c.id = ce.course_id
+      LEFT JOIN teachers t ON t.id = COALESCE(ce.teacher_id, c.teacher_id)
+      LEFT JOIN curators cu ON cu.id = COALESCE(ce.curator_id, c.curator_id)
+      LEFT JOIN homework_assignments ha ON ha.enrollment_id = ce.id AND ha.status <> 'Cancelled'
+      LEFT JOIN homework_submissions hs ON hs.assignment_id = ha.id
+      WHERE ce.status <> 'Cancelled'
+      GROUP BY ce.id, c.id, t.id, cu.id
+      ORDER BY c.id
+    `,
+  );
+
+  const studentParents = await dbQuery(
+    `
+      SELECT
+        sp.student_id AS "studentId",
+        p.id AS "parentId",
+        CONCAT(p.first_name, ' ', p.last_name) AS "parentName",
+        p.phone,
+        p.email,
+        p.telegram_link AS "telegramLink",
+        p.vk_link AS "vkLink",
+        p.source_platform AS "sourcePlatform",
+        sp.relation_type AS "relationType"
+      FROM student_parents sp
+      JOIN parents p ON p.id = sp.parent_id
+      ORDER BY p.last_name, p.first_name
+    `,
+  );
+
+  const comments = await dbQuery(
+    `
+      SELECT
+        sc.student_id AS "studentId",
+        sc.id AS "commentId",
+        sc.staff_role AS "staffRole",
+        sc.staff_id AS "staffId",
+        sc.comment_text AS "commentText",
+        sc.created_at AS "createdAt",
+        COALESCE(CONCAT(t.first_name, ' ', t.last_name), CONCAT(cu.first_name, ' ', cu.last_name), 'Команда') AS "authorName"
+      FROM student_staff_comments sc
+      LEFT JOIN teachers t ON sc.staff_role = 'Teacher' AND t.id = sc.staff_id
+      LEFT JOIN curators cu ON sc.staff_role = 'Curator' AND cu.id = sc.staff_id
+      ORDER BY sc.created_at DESC
+    `,
+  );
+
+  const parents = await dbQuery(
+    `
+      SELECT
+        p.id AS "parentId",
+        p.first_name AS "firstName",
+        p.last_name AS "lastName",
+        CONCAT(p.first_name, ' ', p.last_name) AS "parentName",
+        p.phone,
+        p.email,
+        p.telegram_link AS "telegramLink",
+        p.vk_link AS "vkLink",
+        p.source_platform AS "sourcePlatform",
+        p.comment_text AS "commentText",
+        p.created_at AS "createdAt",
+        p.updated_at AS "updatedAt"
+      FROM parents p
+      ORDER BY p.last_name, p.first_name, p.id
+    `,
+  );
+
+  const parentChildren = await dbQuery(
+    `
+      SELECT
+        sp.parent_id AS "parentId",
+        s.id AS "studentId",
+        CONCAT(s.first_name, ' ', s.last_name) AS "studentName",
+        s.student_status AS "studentStatus",
+        sp.relation_type AS "relationType"
+      FROM student_parents sp
+      JOIN students s ON s.id = sp.student_id
+      ORDER BY s.last_name, s.first_name
+    `,
+  );
+
+  const groupedEnrollments = groupRowsBy(enrollments.rows, "studentId");
+  const groupedParents = groupRowsBy(studentParents.rows, "studentId");
+  const groupedComments = groupRowsBy(comments.rows.map((row) => ({ ...row, createdAt: toDateText(row.createdAt) })), "studentId");
+  const groupedChildren = groupRowsBy(parentChildren.rows, "parentId");
+
+  return {
+    source: "database",
+    staff,
+    applications: applications.rows.map((row) => ({
+      ...row,
+      createdAt: toDateText(row.createdAt),
+      processedAt: toDateText(row.processedAt),
+      updatedAt: toDateText(row.updatedAt),
+    })),
+    students: students.rows.map((student) => ({
+      ...student,
+      createdAt: toDateText(student.createdAt),
+      averageScore: Number(student.averageScore || 0),
+      courses: groupedEnrollments.get(Number(student.studentId)) || [],
+      parents: groupedParents.get(Number(student.studentId)) || [],
+      comments: groupedComments.get(Number(student.studentId)) || [],
+    })),
+    parents: parents.rows.map((parent) => {
+      const children = groupedChildren.get(Number(parent.parentId)) || [];
+      const hasActiveStudent = children.some((child) => child.studentStatus !== "Graduate");
+      return {
+        ...parent,
+        createdAt: toDateText(parent.createdAt),
+        updatedAt: toDateText(parent.updatedAt),
+        children,
+        parentStatus: hasActiveStudent ? "Parent_Student" : "Parent_Graduate",
+      };
+    }),
+    courses: courses.rows,
+    teachers: teachers.rows,
+    curators: curators.rows,
+    homeworks: [],
+    streams: [],
+    homeworkStats: [],
+    notifications: [],
+  };
+}
+
+function groupRowsBy(rows, key) {
+  const result = new Map();
+
+  for (const row of rows || []) {
+    const value = Number(row[key]);
+    if (!result.has(value)) {
+      result.set(value, []);
+    }
+    result.get(value).push(row);
+  }
+
+  return result;
+}
+
 async function buildStaffWorkspace(staff) {
+  if (staff.role === "Admin") {
+    return buildAdminWorkspace(staff);
+  }
+
   const scopeId = staffScopeId(staff);
   const scope = courseScopeWhere(staff, "c", 1);
+  const courseVisibleScope =
+    staff.role === "Teacher"
+      ? "(c.teacher_id = $1 OR EXISTS (SELECT 1 FROM course_enrollments ce_scope WHERE ce_scope.course_id = c.id AND ce_scope.status = 'Active' AND ce_scope.teacher_id = $1))"
+      : "(c.curator_id = $1 OR EXISTS (SELECT 1 FROM course_enrollments ce_scope WHERE ce_scope.course_id = c.id AND ce_scope.status = 'Active' AND ce_scope.curator_id = $1))";
+  const enrollmentScope = staff.role === "Teacher" ? "COALESCE(ce.teacher_id, c.teacher_id) = $1" : "COALESCE(ce.curator_id, c.curator_id) = $1";
+  const homeworkScope =
+    staff.role === "Teacher" ? "COALESCE(ha.teacher_id, ce.teacher_id, c.teacher_id) = $1" : "COALESCE(ce.curator_id, c.curator_id) = $1";
   const reviewParams = [scopeId, staff.role, staff.staffId];
 
   const courses = await dbQuery(
@@ -1679,7 +2450,7 @@ async function buildStaffWorkspace(staff) {
       LEFT JOIN lessons l ON l.course_id = c.id
       LEFT JOIN homework_assignments ha ON ha.enrollment_id = ce.id AND ha.status <> 'Cancelled'
       LEFT JOIN live_streams ls ON ls.course_id = c.id AND ls.status IN ('Planned', 'Live')
-      WHERE c.status = 'Active' AND ${scope}
+      WHERE c.status = 'Active' AND ${courseVisibleScope}
       GROUP BY c.id, t.first_name, t.last_name, cu.first_name, cu.last_name
       ORDER BY c.id
     `,
@@ -1705,7 +2476,7 @@ async function buildStaffWorkspace(staff) {
       FROM course_enrollments ce
       JOIN students s ON s.id = ce.student_id
       JOIN courses c ON c.id = ce.course_id
-      WHERE ce.status = 'Active' AND c.status = 'Active' AND ${scope}
+      WHERE ce.status = 'Active' AND c.status = 'Active' AND ${enrollmentScope}
       ORDER BY c.id, s.last_name, s.first_name
     `,
     [scopeId],
@@ -1725,7 +2496,7 @@ async function buildStaffWorkspace(staff) {
       FROM courses c
       JOIN teachers t ON t.id = c.teacher_id
       LEFT JOIN course_enrollments ce ON ce.course_id = c.id AND ce.status = 'Active'
-      WHERE c.status = 'Active' AND ${scope}
+      WHERE c.status = 'Active' AND ${courseVisibleScope}
       GROUP BY t.id
       ORDER BY t.id
     `,
@@ -1761,7 +2532,7 @@ async function buildStaffWorkspace(staff) {
        AND r.resource_id = l.id
        AND r.staff_role = $2
        AND r.staff_id = $3
-      WHERE c.status = 'Active' AND ${scope}
+      WHERE c.status = 'Active' AND ${courseVisibleScope}
       ORDER BY c.id, l.lesson_number
     `,
     reviewParams,
@@ -1795,7 +2566,7 @@ async function buildStaffWorkspace(staff) {
        AND r.resource_id = n.id
        AND r.staff_role = $2
        AND r.staff_id = $3
-      WHERE n.active = TRUE AND c.status = 'Active' AND ${scope}
+      WHERE n.active = TRUE AND c.status = 'Active' AND ${courseVisibleScope}
       ORDER BY c.id, l.lesson_number, n.id
     `,
     reviewParams,
@@ -1848,7 +2619,7 @@ async function buildStaffWorkspace(staff) {
        AND r.resource_id = ha.id
        AND r.staff_role = $2
        AND r.staff_id = $3
-      WHERE c.status = 'Active' AND ha.status <> 'Cancelled' AND ${scope}
+      WHERE c.status = 'Active' AND ha.status <> 'Cancelled' AND ${homeworkScope}
       ORDER BY c.id, s.last_name, s.first_name, l.lesson_number, ha.id
     `,
     reviewParams,
@@ -1883,7 +2654,7 @@ async function buildStaffWorkspace(staff) {
        AND r.resource_id = ls.id
        AND r.staff_role = $2
        AND r.staff_id = $3
-      WHERE c.status = 'Active' AND ${scope}
+      WHERE c.status = 'Active' AND ${courseVisibleScope}
       ORDER BY ls.starts_at DESC, ls.id DESC
     `,
     reviewParams,
@@ -1914,13 +2685,14 @@ async function buildStaffWorkspace(staff) {
       LEFT JOIN teachers t ON t.id = c.teacher_id
       LEFT JOIN lessons l ON l.id = ht.lesson_id
       LEFT JOIN homework_assignments ha ON ha.template_id = ht.id AND ha.status <> 'Cancelled'
+      LEFT JOIN course_enrollments ce ON ce.id = ha.enrollment_id
       LEFT JOIN homework_submissions hs ON hs.assignment_id = ha.id
       LEFT JOIN staff_resource_reviews r
         ON r.resource_type = 'Homework'
        AND r.resource_id = ha.id
        AND r.staff_role = $2
        AND r.staff_id = $3
-      WHERE ht.active = TRUE AND c.status = 'Active' AND ${scope}
+      WHERE ht.active = TRUE AND c.status = 'Active' AND ${homeworkScope}
       GROUP BY c.id, t.first_name, t.last_name, l.id, ht.id
       ORDER BY c.id, l.lesson_number, ht.id
     `,
@@ -2041,8 +2813,10 @@ function buildStaffNotifications(staff, homeworks, stats) {
         homeworkTotal: stat.homeworkTotal || 0,
         submittedTotal: stat.submittedTotal || 0,
         checkedTotal: stat.checkedTotal || 0,
+        curatorReviewedTotal: stat.curatorReviewedTotal || 0,
         submittedPercent: stat.submittedPercent || 0,
         checkedPercent: stat.checkedPercent || 0,
+        curatorReviewedPercent: stat.curatorReviewedPercent || 0,
       };
     });
 }
@@ -2073,9 +2847,10 @@ app.post(
           FROM homework_assignments ha
           JOIN homework_templates ht ON ht.id = ha.template_id
           JOIN courses c ON c.id = ht.course_id
+          LEFT JOIN course_enrollments ce ON ce.id = ha.enrollment_id
           LEFT JOIN homework_submissions hs ON hs.assignment_id = ha.id
           WHERE ha.id = $1
-            AND c.teacher_id = $2
+            AND COALESCE(ha.teacher_id, ce.teacher_id, c.teacher_id) = $2
           FOR UPDATE OF ha
         `,
         [assignmentId, staff.teacherId],
@@ -2323,23 +3098,30 @@ app.post(
 async function assertReviewResourceVisible(staff, resourceType, resourceId) {
   const scopeId = staffScopeId(staff);
   const scope = courseScopeWhere(staff, "c", 2);
+  const courseVisibleScope =
+    staff.role === "Teacher"
+      ? "(c.teacher_id = $2 OR EXISTS (SELECT 1 FROM course_enrollments ce_scope WHERE ce_scope.course_id = c.id AND ce_scope.status = 'Active' AND ce_scope.teacher_id = $2))"
+      : "(c.curator_id = $2 OR EXISTS (SELECT 1 FROM course_enrollments ce_scope WHERE ce_scope.course_id = c.id AND ce_scope.status = 'Active' AND ce_scope.curator_id = $2))";
+  const homeworkReviewScope =
+    staff.role === "Teacher" ? "COALESCE(ha.teacher_id, ce.teacher_id, c.teacher_id) = $2" : "COALESCE(ce.curator_id, c.curator_id) = $2";
   let query = "";
 
   if (resourceType === "Lesson") {
-    query = `SELECT 1 FROM lessons l JOIN courses c ON c.id = l.course_id WHERE l.id = $1 AND ${scope}`;
+    query = `SELECT 1 FROM lessons l JOIN courses c ON c.id = l.course_id WHERE l.id = $1 AND ${courseVisibleScope}`;
   } else if (resourceType === "Note") {
-    query = `SELECT 1 FROM notes n JOIN courses c ON c.id = n.course_id WHERE n.id = $1 AND ${scope}`;
+    query = `SELECT 1 FROM notes n JOIN courses c ON c.id = n.course_id WHERE n.id = $1 AND ${courseVisibleScope}`;
   } else if (resourceType === "Stream") {
-    query = `SELECT 1 FROM live_streams ls JOIN courses c ON c.id = ls.course_id WHERE ls.id = $1 AND ${scope}`;
+    query = `SELECT 1 FROM live_streams ls JOIN courses c ON c.id = ls.course_id WHERE ls.id = $1 AND ${courseVisibleScope}`;
   } else {
     query = `
       SELECT 1
       FROM homework_assignments ha
       JOIN homework_templates ht ON ht.id = ha.template_id
+      LEFT JOIN course_enrollments ce ON ce.id = ha.enrollment_id
       JOIN courses c ON c.id = ht.course_id
       JOIN homework_submissions hs ON hs.assignment_id = ha.id
       WHERE ha.id = $1
-        AND ${scope}
+        AND ${homeworkReviewScope}
         AND ha.status = 'Checked'
         AND hs.status = 'Checked'
     `;
@@ -2363,13 +3145,15 @@ app.post(
     }
 
     const scopeId = staffScopeId(staff);
+    const commentScope = staff.role === "Teacher" ? "COALESCE(ce.teacher_id, c.teacher_id) = $2" : "COALESCE(ce.curator_id, c.curator_id) = $2";
     const visible = await dbOne(
       `
         SELECT 1
         FROM course_enrollments ce
         JOIN courses c ON c.id = ce.course_id
         WHERE ce.student_id = $1
-          AND ${courseScopeWhere(staff, "c", 2)}
+          AND ce.status = 'Active'
+          AND ${commentScope}
         LIMIT 1
       `,
       [studentId, scopeId],

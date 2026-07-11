@@ -360,10 +360,10 @@ svg {
 }
 
 .notification-popover {
-  position: absolute;
+  position: fixed;
   top: 80px;
   right: 116px;
-  z-index: 24;
+  z-index: 9999;
   display: grid;
   width: min(440px, calc(100vw - 32px));
   max-height: min(620px, calc(100vh - 110px));
@@ -3270,6 +3270,45 @@ svg {
 .staff-lesson-form .staff-form-status,
 .staff-stream-form .staff-form-status {
   grid-column: 1 / -1;
+}
+
+.admin-edit-form {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.admin-edit-form label:nth-of-type(2),
+.admin-edit-form label:nth-of-type(3),
+.admin-edit-form label:nth-of-type(4),
+.admin-edit-form label:nth-of-type(5),
+.admin-edit-form label:nth-of-type(6) {
+  grid-column: auto;
+}
+
+.admin-edit-form textarea,
+.staff-lesson-form textarea {
+  width: 100%;
+  min-height: 78px;
+  padding: 10px 12px;
+  color: var(--ink);
+  border: 1px solid #c9dedc;
+  border-radius: 7px;
+  background: #fff;
+  font: inherit;
+  font-weight: 750;
+  resize: vertical;
+}
+
+.admin-edit-form label:has(textarea) {
+  grid-column: span 3;
+}
+
+.admin-enrollment-form {
+  grid-template-columns: minmax(130px, 1fr) minmax(130px, 1fr) minmax(130px, 1fr) minmax(120px, 0.8fr) auto;
+}
+
+.admin-course-list {
+  display: grid;
+  gap: 10px;
 }
 
 .staff-form-status {

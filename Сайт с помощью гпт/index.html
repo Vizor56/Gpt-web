@@ -840,7 +840,7 @@
               <section class="panel account-auth-panel staff-auth-panel">
                 <h2>Вход для команды</h2>
                 <div class="account-session" id="staff-session-status">
-                  <span>Куратор или преподаватель пока не вошёл</span>
+                  <span>Куратор, преподаватель или администратор пока не вошёл</span>
                 </div>
                 <form class="account-form" id="staff-login-form">
                   <label>
@@ -848,15 +848,16 @@
                     <select name="role" required>
                       <option value="Curator">Куратор</option>
                       <option value="Teacher">Преподаватель</option>
+                      <option value="Admin">Администратор</option>
                     </select>
                   </label>
                   <label>
                     Логин
-                    <input type="text" name="login" autocomplete="username" placeholder="curator или teacher" required />
+                    <input type="text" name="login" autocomplete="username" placeholder="curator, teacher или admin" required />
                   </label>
                   <label>
                     Пароль
-                    <input type="password" name="password" autocomplete="current-password" minlength="6" placeholder="curator123 или teacher123" required />
+                    <input type="password" name="password" autocomplete="current-password" minlength="6" placeholder="curator123, teacher123 или admin123" required />
                   </label>
                   <button class="submit-button" type="submit">
                     <svg><use href="#icon-user" /></svg>

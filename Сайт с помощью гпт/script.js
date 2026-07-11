@@ -1460,6 +1460,10 @@ async function submitAuthForm(event, endpoint, pendingText, successText) {
 }
 
 function getStaffRoleLabel(role) {
+  if (role === "Admin") {
+    return "Администратор";
+  }
+
   return role === "Teacher" ? "Преподаватель" : role === "Curator" ? "Куратор" : "Команда";
 }
 
@@ -1536,6 +1540,15 @@ function ensureStaffShell() {
 function getStaffNavItems() {
   const role = getStaffProfile().role;
 
+  if (role === "Admin") {
+    return [
+      { page: "applications", label: "Заявки", icon: "#icon-clipboard" },
+      { page: "students", label: "Ученики", icon: "#icon-book" },
+      { page: "parents", label: "Родители", icon: "#icon-user" },
+      { page: "account", label: "Аккаунт", icon: "#icon-user" },
+    ];
+  }
+
   if (role === "Curator") {
     return [
       { page: "messages", label: "Сообщения", icon: "#icon-message" },
@@ -1592,6 +1605,8 @@ function setActiveStaffNav(pageName) {
 function getStaffPageTitle(pageName) {
   const role = getStaffProfile().role;
   const titles = {
+    applications: "Заявки",
+    parents: "Родители",
     messages: "Сообщения",
     points: "Баллы",
     students: role === "Teacher" ? "Мои ученики" : "Ученики преподавателей",
@@ -1651,7 +1666,9 @@ function enterStaffMode(staff = currentStaff, pageName = "") {
 
   renderGlobalNotifications();
   const hashPage = location.hash.startsWith("#staff-") ? location.hash.replace("#staff-", "") : "";
-  openStaffPage(pageName || hashPage || currentStaffPage || "messages");
+  const fallbackPage = staffProfile.role === "Admin" ? "applications" : "messages";
+  const requestedPage = pageName || hashPage || currentStaffPage || fallbackPage;
+  openStaffPage(staffProfile.role === "Admin" && requestedPage === "messages" ? "applications" : requestedPage);
   loadStaffWorkspace({ silent: true });
 }
 
@@ -1673,6 +1690,10 @@ function openStaffPage(pageName = "messages") {
   if (!hasAuthenticatedStaff()) {
     openAccount();
     return;
+  }
+
+  if (getStaffProfile().role === "Admin" && pageName === "messages") {
+    pageName = "applications";
   }
 
   ensureStaffShell();
@@ -2225,6 +2246,7 @@ function renderNotificationEventBars(item) {
 
   const submitted = Number(item.submittedTotal || 0);
   const checked = Number(item.checkedTotal || 0);
+  const curatorReviewed = Number(item.curatorReviewedTotal || 0);
 
   return `
     <div class="notification-bars">
@@ -2244,6 +2266,19 @@ function renderNotificationEventBars(item) {
           `,
         )
         .join("")}
+      ${
+        Object.prototype.hasOwnProperty.call(item, "curatorReviewedTotal")
+          ? `
+            <div class="staff-bar is-curator">
+              <div>
+                <strong>Фидбек куратора</strong>
+                <span>${formatNumber(curatorReviewed)} из ${formatNumber(total)}</span>
+              </div>
+              <i style="width: ${clampPercent(percentOf(curatorReviewed, total))}%"></i>
+            </div>
+          `
+          : ""
+      }
     </div>
   `;
 }
@@ -2990,6 +3025,368 @@ function renderCuratorResourcePage(pageName) {
   `;
 }
 
+function renderAdminMetrics() {
+  const newApplications = getStaffItems("applications").filter((item) => item.status === "New").length;
+  const students = getStaffItems("students");
+  const parents = getStaffItems("parents");
+
+  return `
+    <section class="staff-metrics" aria-label="Сводка администратора">
+      <article><span>Новые заявки</span><strong>${formatNumber(newApplications)}</strong></article>
+      <article><span>Ученики</span><strong>${formatNumber(students.length)}</strong></article>
+      <article><span>Родители</span><strong>${formatNumber(parents.length)}</strong></article>
+      <article><span>Курсы</span><strong>${formatNumber(getStaffItems("courses").length)}</strong></article>
+    </section>
+  `;
+}
+
+function renderAdminStatusOptions(selectedStatus = "New") {
+  const statuses = [
+    ["New", "Не обработана"],
+    ["Contacted", "Связались"],
+    ["Enrolled", "Записан"],
+    ["Rejected", "Отказ"],
+  ];
+
+  return statuses.map(([value, label]) => `<option value="${value}" ${value === selectedStatus ? "selected" : ""}>${label}</option>`).join("");
+}
+
+function renderAdminEnrollmentStatusOptions(selectedStatus = "Active") {
+  const statuses = [
+    ["Active", "Ученик"],
+    ["Paused", "Пауза"],
+    ["Finished", "Выпускник"],
+    ["Cancelled", "Исключён"],
+  ];
+
+  return statuses.map(([value, label]) => `<option value="${value}" ${value === selectedStatus ? "selected" : ""}>${label}</option>`).join("");
+}
+
+function renderAdminStudentStatusOptions(selectedStatus = "Student") {
+  return [
+    ["Student", "Ученик"],
+    ["Graduate", "Выпускник"],
+  ]
+    .map(([value, label]) => `<option value="${value}" ${value === selectedStatus ? "selected" : ""}>${label}</option>`)
+    .join("");
+}
+
+function renderAdminCourseOptions(selectedCourseId = "", includeEmpty = false) {
+  const empty = includeEmpty ? `<option value="">Пока не указано</option>` : "";
+  return `${empty}${getStaffItems("courses")
+    .map((course) => `<option value="${escapeHtml(course.courseId)}" ${String(course.courseId) === String(selectedCourseId) ? "selected" : ""}>${escapeHtml(course.courseTitle)}</option>`)
+    .join("")}`;
+}
+
+function renderAdminTeacherOptions(selectedTeacherId = "") {
+  return `<option value="">Пока не указано</option>${getStaffItems("teachers")
+    .map(
+      (teacher) =>
+        `<option value="${escapeHtml(teacher.teacherId)}" ${String(teacher.teacherId) === String(selectedTeacherId) ? "selected" : ""}>${escapeHtml(teacher.teacherName)} · ${formatNumber(teacher.studentsCount)} учен.</option>`,
+    )
+    .join("")}`;
+}
+
+function renderAdminCuratorOptions(selectedCuratorId = "") {
+  return `<option value="">Пока не указано</option>${getStaffItems("curators")
+    .map(
+      (curator) =>
+        `<option value="${escapeHtml(curator.curatorId)}" ${String(curator.curatorId) === String(selectedCuratorId) ? "selected" : ""}>${escapeHtml(curator.curatorName)} · ${formatNumber(curator.studentsCount)} учен.</option>`,
+    )
+    .join("")}`;
+}
+
+function renderAdminParentOptions(selectedParentId = "") {
+  return `<option value="">Пока не указано</option>${getStaffItems("parents")
+    .map((parent) => `<option value="${escapeHtml(parent.parentId)}" ${String(parent.parentId) === String(selectedParentId) ? "selected" : ""}>${escapeHtml(parent.parentName)}</option>`)
+    .join("")}`;
+}
+
+function renderAdminApplicationForm(application = {}) {
+  const isNew = application.status === "New";
+
+  return `
+    <form class="staff-lesson-form admin-edit-form" data-admin-application-form data-application-id="${escapeHtml(application.applicationId)}">
+      <label>Имя ученика<input name="studentName" type="text" value="${escapeHtml(application.studentName || "")}" required /></label>
+      <label>Телефон<input name="phone" type="text" value="${escapeHtml(application.phone || "")}" required /></label>
+      <label>Email<input name="email" type="email" value="${escapeHtml(application.email || "")}" /></label>
+      <label>Предмет<input name="preferredSubject" type="text" value="${escapeHtml(application.preferredSubject || "")}" required /></label>
+      <label>Класс<input name="grade" type="number" min="1" max="11" value="${escapeHtml(application.grade || "")}" /></label>
+      <label>Статус<select name="status">${renderAdminStatusOptions(application.status || "New")}</select></label>
+      <label>Источник<input name="sourcePage" type="text" value="${escapeHtml(application.sourcePage || "")}" /></label>
+      <label>Комментарий заявки<textarea name="commentText" rows="2">${escapeHtml(application.commentText || "")}</textarea></label>
+      <label>Заметка администратора<textarea name="adminNote" rows="2" placeholder="Что уже сделали по заявке">${escapeHtml(application.adminNote || "")}</textarea></label>
+      <button type="submit"><svg><use href="#icon-upload" /></svg>${isNew ? "Сохранить / обработать" : "Сохранить заявку"}</button>
+      <p class="staff-form-status" aria-live="polite"></p>
+    </form>
+  `;
+}
+
+function renderAdminApplications() {
+  const applications = getStaffItems("applications");
+  const active = applications.filter((item) => item.status === "New");
+  const archived = applications.filter((item) => item.status !== "New");
+
+  return `
+    ${renderAdminMetrics()}
+    <section class="staff-group">
+      <header class="staff-group-heading">
+        <div>
+          <span>Новые обращения</span>
+          <h2>Не обработанные заявки</h2>
+        </div>
+        <span class="resource-chip is-yellow">${formatNumber(active.length)} шт.</span>
+      </header>
+      <div class="staff-card-grid">
+        ${
+          active.length
+            ? active
+                .map(
+                  (application) => `
+                    <article class="staff-card">
+                      <div class="staff-card__meta">
+                        <span class="resource-chip is-yellow">Не обработана</span>
+                        ${application.createdAt ? `<span class="resource-chip">${escapeHtml(formatStreamDate(application.createdAt))}</span>` : ""}
+                      </div>
+                      <h3>${escapeHtml(application.studentName)}</h3>
+                      <p>${escapeHtml([application.phone, application.email, application.preferredSubject].filter(Boolean).join(" · "))}</p>
+                      ${renderAdminApplicationForm(application)}
+                    </article>
+                  `,
+                )
+                .join("")
+            : renderStaffEmpty("Новых заявок пока нет.")
+        }
+      </div>
+    </section>
+    <section class="staff-group">
+      <header class="staff-group-heading">
+        <div>
+          <span>Архив</span>
+          <h2>Обработанные заявки</h2>
+        </div>
+        <span class="resource-chip is-green">${formatNumber(archived.length)} шт.</span>
+      </header>
+      <div class="staff-card-grid">
+        ${
+          archived.length
+            ? archived
+                .map(
+                  (application) => `
+                    <article class="staff-card staff-card--archived">
+                      <div class="staff-card__meta">
+                        <span class="resource-chip is-green">${escapeHtml(application.status)}</span>
+                        ${application.processedAt ? `<span class="resource-chip">${escapeHtml(formatStreamDate(application.processedAt))}</span>` : ""}
+                      </div>
+                      <h3>${escapeHtml(application.studentName)}</h3>
+                      <p>${escapeHtml([application.phone, application.email, application.preferredSubject].filter(Boolean).join(" · "))}</p>
+                      ${renderAdminApplicationForm(application)}
+                    </article>
+                  `,
+                )
+                .join("")
+            : renderStaffEmpty("Архив заявок пока пуст.")
+        }
+      </div>
+    </section>
+  `;
+}
+
+function renderAdminFilters(pageName, items) {
+  const selectedCourse = getFilterValue(pageName, "course");
+  const selectedTeacher = getFilterValue(pageName, "teacher");
+  const selectedCurator = getFilterValue(pageName, "curator");
+
+  return `
+    <div class="staff-filterbar" data-staff-filter-scope="${escapeHtml(pageName)}">
+      <label>Курс<select data-staff-filter="course"><option value="">Все</option>${getStaffItems("courses")
+        .map((course) => `<option value="${escapeHtml(course.courseId)}" ${String(course.courseId) === String(selectedCourse) ? "selected" : ""}>${escapeHtml(course.courseTitle)}</option>`)
+        .join("")}</select></label>
+      <label>Преподаватель<select data-staff-filter="teacher"><option value="">Все</option>${getStaffItems("teachers")
+        .map((teacher) => `<option value="${escapeHtml(teacher.teacherId)}" ${String(teacher.teacherId) === String(selectedTeacher) ? "selected" : ""}>${escapeHtml(teacher.teacherName)}</option>`)
+        .join("")}</select></label>
+      <label>Куратор<select data-staff-filter="curator"><option value="">Все</option>${getStaffItems("curators")
+        .map((curator) => `<option value="${escapeHtml(curator.curatorId)}" ${String(curator.curatorId) === String(selectedCurator) ? "selected" : ""}>${escapeHtml(curator.curatorName)}</option>`)
+        .join("")}</select></label>
+    </div>
+  `;
+}
+
+function applyAdminStudentFilters(students) {
+  const selectedCourse = getFilterValue("students", "course");
+  const selectedTeacher = getFilterValue("students", "teacher");
+  const selectedCurator = getFilterValue("students", "curator");
+
+  return students.filter((student) => {
+    const courses = student.courses || [];
+    const courseMatches = !selectedCourse || courses.some((course) => String(course.courseId) === String(selectedCourse));
+    const teacherMatches = !selectedTeacher || courses.some((course) => String(course.teacherId) === String(selectedTeacher));
+    const curatorMatches = !selectedCurator || courses.some((course) => String(course.curatorId) === String(selectedCurator));
+    return courseMatches && teacherMatches && curatorMatches;
+  });
+}
+
+function renderAdminStudentForm(student = {}) {
+  const parent = (student.parents || [])[0] || {};
+
+  return `
+    <form class="staff-lesson-form admin-edit-form" data-admin-student-form>
+      <input type="hidden" name="studentId" value="${escapeHtml(student.studentId || "")}" />
+      <label>Имя<input name="firstName" type="text" value="${escapeHtml(student.firstName || "")}" required /></label>
+      <label>Фамилия<input name="lastName" type="text" value="${escapeHtml(student.lastName || "")}" required /></label>
+      <label>Телефон<input name="phone" type="text" value="${escapeHtml(student.phone || "")}" /></label>
+      <label>Email<input name="email" type="email" value="${escapeHtml(student.email || "")}" /></label>
+      <label>Класс<input name="grade" type="number" min="1" max="11" value="${escapeHtml(student.grade || "")}" /></label>
+      <label>Статус<select name="studentStatus">${renderAdminStudentStatusOptions(student.studentStatus || "Student")}</select></label>
+      <label>Telegram<input name="telegramLink" type="url" value="${escapeHtml(student.telegramLink || "")}" placeholder="https://t.me/..." /></label>
+      <label>VK<input name="vkLink" type="url" value="${escapeHtml(student.vkLink || "")}" placeholder="https://vk.com/..." /></label>
+      <label>Платформа<input name="sourcePlatform" type="text" value="${escapeHtml(student.sourcePlatform || "")}" /></label>
+      <label>Родитель<select name="parentId">${renderAdminParentOptions(parent.parentId || "")}</select></label>
+      <label>Связь<input name="relationType" type="text" value="${escapeHtml(parent.relationType || "Родитель")}" /></label>
+      <button type="submit"><svg><use href="#icon-upload" /></svg>${student.studentId ? "Сохранить ученика" : "Добавить ученика"}</button>
+      <p class="staff-form-status" aria-live="polite"></p>
+    </form>
+  `;
+}
+
+function renderAdminEnrollmentForm(student, enrollment = {}) {
+  return `
+    <form class="staff-inline-form admin-enrollment-form" data-admin-enrollment-form data-student-id="${escapeHtml(student.studentId)}">
+      <select name="courseId" required>${renderAdminCourseOptions(enrollment.courseId || "", !enrollment.courseId)}</select>
+      <select name="teacherId">${renderAdminTeacherOptions(enrollment.teacherId || "")}</select>
+      <select name="curatorId">${renderAdminCuratorOptions(enrollment.curatorId || "")}</select>
+      <select name="enrollmentStatus">${renderAdminEnrollmentStatusOptions(enrollment.enrollmentStatus || "Active")}</select>
+      <button type="submit"><svg><use href="#icon-upload" /></svg>Сохранить курс</button>
+      <p class="staff-form-status" aria-live="polite"></p>
+    </form>
+  `;
+}
+
+function renderAdminStudentCard(student) {
+  const courses = student.courses || [];
+  const comments = student.comments || [];
+
+  return `
+    <article class="staff-card admin-student-card">
+      <div class="staff-card__meta">
+        <span class="resource-chip ${student.studentStatus === "Graduate" ? "is-green" : "is-blue"}">${student.studentStatus === "Graduate" ? "Выпускник" : "Ученик"}</span>
+        <span class="resource-chip">${escapeHtml(student.grade ? `${student.grade} класс` : "класс не указан")}</span>
+        <span class="resource-chip is-green">${Number(student.averageScore || 0).toFixed(1)} ср. балл</span>
+      </div>
+      <h3>${escapeHtml(student.studentName || `${student.firstName || ""} ${student.lastName || ""}`.trim())}</h3>
+      <p>${escapeHtml([student.phone, student.email].filter(Boolean).join(" · ") || "Контакты не указаны")}</p>
+      <p>ДЗ: <strong>${formatNumber(student.homeworkSubmitted || 0)} / ${formatNumber(student.homeworkTotal || 0)}</strong>, проверено ${formatNumber(student.homeworkChecked || 0)}</p>
+      <div class="staff-card__meta">
+        ${(student.parents || []).map((parent) => `<span class="resource-chip">${escapeHtml(parent.parentName)}</span>`).join("") || `<span class="resource-chip">Родитель не указан</span>`}
+      </div>
+      ${renderAdminStudentForm(student)}
+      <details class="staff-details" open>
+        <summary>Курсы и закрепления</summary>
+        <div class="admin-course-list">
+          ${
+            courses.length
+              ? courses
+                  .map(
+                    (course) => `
+                      <div class="staff-reviewed-note">
+                        <strong>${escapeHtml(course.courseTitle)} · ${formatPercent(course.progressPercent)}</strong>
+                        <span>${escapeHtml(course.teacherName || "Преподаватель не указан")} · ${escapeHtml(course.curatorName || "Куратор не указан")} · ДЗ ${formatNumber(course.homeworkSubmitted || 0)} / ${formatNumber(course.homeworkTotal || 0)}</span>
+                        ${renderAdminEnrollmentForm(student, course)}
+                      </div>
+                    `,
+                  )
+                  .join("")
+              : `<div class="staff-reviewed-note is-muted"><strong>Курсы не подключены</strong><span>Добавьте ученика на курс ниже.</span></div>`
+          }
+          <div class="staff-reviewed-note is-pending">
+            <strong>Добавить курс</strong>
+            ${renderAdminEnrollmentForm(student)}
+          </div>
+        </div>
+      </details>
+      <details class="staff-details">
+        <summary>Комментарии команды</summary>
+        ${
+          comments.length
+            ? comments.map((comment) => `<blockquote>${escapeHtml(comment.authorName || comment.staffRole)}: ${escapeHtml(comment.commentText || "")}</blockquote>`).join("")
+            : `<p>Комментариев пока нет.</p>`
+        }
+      </details>
+    </article>
+  `;
+}
+
+function renderAdminStudents() {
+  const students = getStaffItems("students");
+  const filteredStudents = applyAdminStudentFilters(students);
+
+  return `
+    ${renderAdminMetrics()}
+    <section class="staff-panel">
+      <h2>Добавить ученика</h2>
+      ${renderAdminStudentForm()}
+    </section>
+    ${renderAdminFilters("students", students)}
+    <div class="staff-card-grid">
+      ${filteredStudents.length ? filteredStudents.map(renderAdminStudentCard).join("") : renderStaffEmpty("Ученики по выбранным фильтрам не найдены.")}
+    </div>
+  `;
+}
+
+function renderAdminParentForm(parent = {}) {
+  return `
+    <form class="staff-lesson-form admin-edit-form" data-admin-parent-form>
+      <input type="hidden" name="parentId" value="${escapeHtml(parent.parentId || "")}" />
+      <label>Имя<input name="firstName" type="text" value="${escapeHtml(parent.firstName || "")}" required /></label>
+      <label>Фамилия<input name="lastName" type="text" value="${escapeHtml(parent.lastName || "")}" required /></label>
+      <label>Телефон<input name="phone" type="text" value="${escapeHtml(parent.phone || "")}" /></label>
+      <label>Email<input name="email" type="email" value="${escapeHtml(parent.email || "")}" /></label>
+      <label>Telegram<input name="telegramLink" type="url" value="${escapeHtml(parent.telegramLink || "")}" /></label>
+      <label>VK<input name="vkLink" type="url" value="${escapeHtml(parent.vkLink || "")}" /></label>
+      <label>Платформа<input name="sourcePlatform" type="text" value="${escapeHtml(parent.sourcePlatform || "")}" /></label>
+      <label>Комментарий<textarea name="commentText" rows="2">${escapeHtml(parent.commentText || "")}</textarea></label>
+      <button type="submit"><svg><use href="#icon-upload" /></svg>${parent.parentId ? "Сохранить родителя" : "Добавить родителя"}</button>
+      <p class="staff-form-status" aria-live="polite"></p>
+    </form>
+  `;
+}
+
+function renderAdminParents() {
+  const parents = getStaffItems("parents");
+
+  return `
+    ${renderAdminMetrics()}
+    <section class="staff-panel">
+      <h2>Добавить родителя</h2>
+      ${renderAdminParentForm()}
+    </section>
+    <div class="staff-card-grid">
+      ${
+        parents.length
+          ? parents
+              .map(
+                (parent) => `
+                  <article class="staff-card">
+                    <div class="staff-card__meta">
+                      <span class="resource-chip ${parent.parentStatus === "Parent_Student" ? "is-blue" : "is-green"}">${parent.parentStatus === "Parent_Student" ? "Родитель ученика" : "Родитель выпускника"}</span>
+                      <span class="resource-chip">${formatNumber((parent.children || []).length)} детей</span>
+                    </div>
+                    <h3>${escapeHtml(parent.parentName)}</h3>
+                    <p>${escapeHtml([parent.phone, parent.email, parent.sourcePlatform].filter(Boolean).join(" · ") || "Контакты не указаны")}</p>
+                    <div class="staff-card__meta">
+                      ${(parent.children || []).map((child) => `<span class="resource-chip">${escapeHtml(child.studentName)} · ${child.studentStatus === "Graduate" ? "выпускник" : "ученик"}</span>`).join("") || `<span class="resource-chip">Дети не указаны</span>`}
+                    </div>
+                    ${renderAdminParentForm(parent)}
+                  </article>
+                `,
+              )
+              .join("")
+          : renderStaffEmpty("Родители пока не добавлены.")
+      }
+    </div>
+  `;
+}
+
 function renderStaffPage(pageName = currentStaffPage) {
   if (pageName === "messages") {
     return;
@@ -3014,6 +3411,23 @@ function renderStaffPage(pageName = currentStaffPage) {
   }
 
   const role = getStaffProfile().role;
+
+  if (role === "Admin") {
+    if (pageName === "applications") {
+      content.innerHTML = renderAdminApplications();
+      return;
+    }
+
+    if (pageName === "students") {
+      content.innerHTML = renderAdminStudents();
+      return;
+    }
+
+    if (pageName === "parents") {
+      content.innerHTML = renderAdminParents();
+      return;
+    }
+  }
 
   if (pageName === "points") {
     content.innerHTML = renderStaffPoints();
@@ -4706,6 +5120,40 @@ document.addEventListener("change", (event) => {
 });
 
 document.addEventListener("submit", (event) => {
+  const adminApplicationForm = event.target.closest("[data-admin-application-form]");
+
+  if (adminApplicationForm) {
+    event.preventDefault();
+    const applicationId = adminApplicationForm.dataset.applicationId;
+    submitStaffJsonForm(adminApplicationForm, `/api/admin/applications/${encodeURIComponent(applicationId)}`, "Заявка сохранена.");
+    return;
+  }
+
+  const adminStudentForm = event.target.closest("[data-admin-student-form]");
+
+  if (adminStudentForm) {
+    event.preventDefault();
+    submitStaffJsonForm(adminStudentForm, "/api/admin/students", "Ученик сохранён.");
+    return;
+  }
+
+  const adminEnrollmentForm = event.target.closest("[data-admin-enrollment-form]");
+
+  if (adminEnrollmentForm) {
+    event.preventDefault();
+    const studentId = adminEnrollmentForm.dataset.studentId;
+    submitStaffJsonForm(adminEnrollmentForm, `/api/admin/students/${encodeURIComponent(studentId)}/enrollment`, "Курс ученика обновлён.");
+    return;
+  }
+
+  const adminParentForm = event.target.closest("[data-admin-parent-form]");
+
+  if (adminParentForm) {
+    event.preventDefault();
+    submitStaffJsonForm(adminParentForm, "/api/admin/parents", "Родитель сохранён.");
+    return;
+  }
+
   const homeworkForm = event.target.closest("[data-staff-homework-review-form]");
 
   if (homeworkForm) {
