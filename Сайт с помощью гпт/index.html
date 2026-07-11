@@ -1,0 +1,1064 @@
+﻿<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Онлайн-школа ЕГЭ на максимум</title>
+    <meta
+      name="description"
+      content="Личный кабинет онлайн-школы: курсы, уроки, домашние задания, конспекты и трансляции."
+    />
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <svg class="icon-sprite" aria-hidden="true" focusable="false">
+      <symbol id="icon-home" viewBox="0 0 24 24">
+        <path d="M4 11.2 12 4l8 7.2v8.1a1.7 1.7 0 0 1-1.7 1.7h-4.1v-6.3H9.8V21H5.7A1.7 1.7 0 0 1 4 19.3z" />
+      </symbol>
+      <symbol id="icon-book" viewBox="0 0 24 24">
+        <path d="M4.4 5.3A2.3 2.3 0 0 1 6.7 3H10a3 3 0 0 1 3 3v15a3 3 0 0 0-3-3H6.7a2.3 2.3 0 0 0-2.3 2.3z" />
+        <path d="M19.6 5.3A2.3 2.3 0 0 0 17.3 3H14a3 3 0 0 0-3 3v15a3 3 0 0 1 3-3h3.3a2.3 2.3 0 0 1 2.3 2.3z" />
+      </symbol>
+      <symbol id="icon-message" viewBox="0 0 24 24">
+        <path d="M21 11.7a8.5 8.5 0 0 1-9 8.5 9.3 9.3 0 0 1-3.7-.8L3 21l1.6-4.8A8.3 8.3 0 0 1 3 11.7a8.5 8.5 0 0 1 9-8.5 8.5 8.5 0 0 1 9 8.5z" />
+        <path d="M8 12h.1M12 12h.1M16 12h.1" />
+      </symbol>
+      <symbol id="icon-star" viewBox="0 0 24 24">
+        <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9L7.5 14 3 9.6l6.2-.9z" />
+      </symbol>
+      <symbol id="icon-clipboard" viewBox="0 0 24 24">
+        <path d="M9 4h6l.8 2H19a1.7 1.7 0 0 1 1.7 1.7v11.6A1.7 1.7 0 0 1 19 21H5a1.7 1.7 0 0 1-1.7-1.7V7.7A1.7 1.7 0 0 1 5 6h3.2z" />
+        <path d="M8 6h8M8 11h8M8 15h6" />
+      </symbol>
+      <symbol id="icon-headset" viewBox="0 0 24 24">
+        <path d="M4 13v-1a8 8 0 0 1 16 0v1" />
+        <path d="M5.5 12.5h1.2A1.3 1.3 0 0 1 8 13.8v3.7a1.3 1.3 0 0 1-1.3 1.3H5.5A2.5 2.5 0 0 1 3 16.3v-1.4a2.5 2.5 0 0 1 2.5-2.4zM18.5 12.5h-1.2a1.3 1.3 0 0 0-1.3 1.3v3.7a1.3 1.3 0 0 0 1.3 1.3h1.2a2.5 2.5 0 0 0 2.5-2.5v-1.4a2.5 2.5 0 0 0-2.5-2.4z" />
+      </symbol>
+      <symbol id="icon-bell" viewBox="0 0 24 24">
+        <path d="M18 8.8a6 6 0 0 0-12 0c0 7-2.2 7.2-2.2 8.7h16.4C20.2 16 18 15.8 18 8.8z" />
+        <path d="M9.5 20a2.7 2.7 0 0 0 5 0" />
+      </symbol>
+      <symbol id="icon-chevron" viewBox="0 0 24 24">
+        <path d="m9 18 6-6-6-6" />
+      </symbol>
+      <symbol id="icon-chevron-down" viewBox="0 0 24 24">
+        <path d="m7 10 5 5 5-5" />
+      </symbol>
+      <symbol id="icon-play" viewBox="0 0 24 24">
+        <path d="m8 5 11 7-11 7z" />
+      </symbol>
+      <symbol id="icon-file" viewBox="0 0 24 24">
+        <path d="M7 3h7l4 4v14H7z" />
+        <path d="M14 3v5h4M10 13h5M10 17h5" />
+      </symbol>
+      <symbol id="icon-broadcast" viewBox="0 0 24 24">
+        <path d="M12 12h.1" />
+        <path d="M8.7 8.7a4.7 4.7 0 0 0 0 6.6M15.3 15.3a4.7 4.7 0 0 0 0-6.6M5.5 5.5a9.2 9.2 0 0 0 0 13M18.5 18.5a9.2 9.2 0 0 0 0-13" />
+      </symbol>
+      <symbol id="icon-calendar" viewBox="0 0 24 24">
+        <path d="M5 5h14a1.8 1.8 0 0 1 1.8 1.8V19A1.8 1.8 0 0 1 19 20.8H5A1.8 1.8 0 0 1 3.2 19V6.8A1.8 1.8 0 0 1 5 5z" />
+        <path d="M8 3v4M16 3v4M3.2 10h17.6" />
+      </symbol>
+      <symbol id="icon-chart" viewBox="0 0 24 24">
+        <path d="M4 20V4M4 20h16" />
+        <path d="m6 15 4-4 3 3 6-8" />
+        <path d="M17 6h2v2M8 20v-3M13 20v-4M18 20v-7" />
+      </symbol>
+      <symbol id="icon-clock" viewBox="0 0 24 24">
+        <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z" />
+        <path d="M12 7v5l3 2" />
+      </symbol>
+      <symbol id="icon-telegram" viewBox="0 0 24 24">
+        <path d="m21 4-4.2 16-5.4-5.3L7.2 18l1.7-5.1L3 10.8z" />
+        <path d="m8.9 12.9 7.5-4.7-5 6.5" />
+      </symbol>
+      <symbol id="icon-megaphone" viewBox="0 0 24 24">
+        <path d="M4 13h3l9 5V6l-9 5H4z" />
+        <path d="M7 13v4a2 2 0 0 0 2 2h1" />
+      </symbol>
+      <symbol id="icon-folder" viewBox="0 0 24 24">
+        <path d="M3.5 7.5h6l2 2H20a1.5 1.5 0 0 1 1.5 1.5v7.5A1.5 1.5 0 0 1 20 20H4a1.5 1.5 0 0 1-1.5-1.5V9A1.5 1.5 0 0 1 4 7.5z" />
+      </symbol>
+      <symbol id="icon-upload" viewBox="0 0 24 24">
+        <path d="M12 17V4" />
+        <path d="m7 9 5-5 5 5" />
+        <path d="M5 17v2a1.8 1.8 0 0 0 1.8 1.8h10.4A1.8 1.8 0 0 0 19 19v-2" />
+      </symbol>
+      <symbol id="icon-sort" viewBox="0 0 24 24">
+        <path d="M7 5v14M4 16l3 3 3-3M14 6h6M14 12h4M14 18h2" />
+      </symbol>
+      <symbol id="icon-trophy" viewBox="0 0 24 24">
+        <path d="M8 4h8v4a4 4 0 0 1-8 0zM12 12v5M8 20h8M10 17h4" />
+        <path d="M8 6H5a2 2 0 0 0 2 4h1M16 6h3a2 2 0 0 1-2 4h-1" />
+      </symbol>
+      <symbol id="icon-medal" viewBox="0 0 24 24">
+        <path d="M9 3h6l-2 6h-2zM12 21a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11z" />
+        <path d="m12 13 1 2 2.2.2-1.6 1.5.4 2.1-2-1.1-2 1.1.4-2.1-1.6-1.5 2.2-.2z" />
+      </symbol>
+      <symbol id="icon-user" viewBox="0 0 24 24">
+        <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" />
+        <path d="M4 21a8 8 0 0 1 16 0" />
+      </symbol>
+      <symbol id="course-math" viewBox="0 0 120 120">
+        <path d="M60 17v18" />
+        <circle cx="60" cy="43" r="12" />
+        <path d="M45 54 29 103M75 54l16 49M39 79c14 10 28 10 42 0" />
+        <path d="M51 101h18" />
+      </symbol>
+      <symbol id="course-russian" viewBox="0 0 120 120">
+        <path d="M22 30h31c7 0 12 5 12 12v54c0-7-5-12-12-12H22z" />
+        <path d="M98 30H67c-7 0-12 5-12 12v54c0-7 5-12 12-12h31z" />
+        <path d="M38 70 48 47l10 23M42 61h12M73 48h17M73 61h17M73 74h13" />
+      </symbol>
+      <symbol id="course-code" viewBox="0 0 120 120">
+        <path d="M22 27h76a7 7 0 0 1 7 7v45a7 7 0 0 1-7 7H22a7 7 0 0 1-7-7V34a7 7 0 0 1 7-7z" />
+        <path d="M48 47 35 60l13 13M72 47l13 13-13 13M64 43 56 77M50 99h20M60 86v13" />
+      </symbol>
+      <symbol id="course-physics" viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r="8" />
+        <ellipse cx="60" cy="60" rx="42" ry="16" />
+        <ellipse cx="60" cy="60" rx="42" ry="16" transform="rotate(60 60 60)" />
+        <ellipse cx="60" cy="60" rx="42" ry="16" transform="rotate(-60 60 60)" />
+      </symbol>
+    </svg>
+
+    <div class="app">
+      <aside class="sidebar" aria-label="Основная навигация">
+        <a class="brand" href="#home" data-open-home>
+          <span class="brand__mark">
+            <svg viewBox="0 0 64 48" aria-hidden="true">
+              <path d="M4 17 32 4l28 13-28 13z" />
+              <path d="M15 25v11c8 7 26 7 34 0V25L32 33z" />
+            </svg>
+          </span>
+          <span class="brand__text">Онлайн-школа<br />ЕГЭ на максимум</span>
+        </a>
+
+        <nav class="side-nav">
+          <button class="side-link is-active" type="button" data-open-home>
+            <svg><use href="#icon-home" /></svg>
+            <span>Главная</span>
+          </button>
+          <button class="side-link" type="button" data-open-study>
+            <svg><use href="#icon-book" /></svg>
+            <span>Учёба</span>
+          </button>
+          <button class="side-link" type="button" data-open-messages>
+            <svg><use href="#icon-message" /></svg>
+            <span>Сообщения</span>
+          </button>
+          <button class="side-link" type="button" data-open-account>
+            <svg><use href="#icon-star" /></svg>
+            <span>Баллы</span>
+          </button>
+          <button class="side-link" type="button" data-open-library>
+            <svg><use href="#icon-clipboard" /></svg>
+            <span>Библиотека конспектов</span>
+          </button>
+          <button class="side-link" type="button" data-open-support>
+            <svg><use href="#icon-headset" /></svg>
+            <span>Поддержка</span>
+          </button>
+        </nav>
+
+        <section class="goal-card" aria-label="Цель обучения">
+          <svg><use href="#icon-trophy" /></svg>
+          <div>
+            <strong>Цель — результат!</strong>
+            <span>Ты на верном пути<br />к высоким баллам на ЕГЭ.</span>
+          </div>
+        </section>
+      </aside>
+
+      <div class="workspace">
+        <header class="topbar">
+          <button class="notification-button" type="button" aria-label="Уведомления">
+            <svg><use href="#icon-bell" /></svg>
+            <span>3</span>
+          </button>
+          <button class="profile-button" type="button" aria-label="Профиль пользователя" data-open-account>
+            <span class="avatar avatar--student" aria-hidden="true"></span>
+            <span id="profile-name">Гость</span>
+            <svg><use href="#icon-chevron-down" /></svg>
+          </button>
+        </header>
+
+        <main class="content" id="app-content">
+          <section class="page-grid home-page" data-page="home">
+            <div class="primary-column">
+              <header class="page-heading home-heading">
+                <h1>Главная</h1>
+                <p>Подготовка к ЕГЭ по записанным урокам, конспектам и домашним заданиям</p>
+              </header>
+
+              <section class="home-summary panel">
+                <div>
+                  <span class="home-summary__label">Онлайн-школа</span>
+                  <h2>ЕГЭ на максимум</h2>
+                  <p>
+                    Учебный кабинет собирает курсы, записи, материалы и домашки в одном месте.
+                    Новые заявки сразу сохраняются в базу школы.
+                  </p>
+                </div>
+                <button class="home-summary__button" type="button" data-open-study>
+                  <svg><use href="#icon-book" /></svg>
+                  Перейти к учёбе
+                </button>
+              </section>
+
+              <div class="home-stats">
+                <article class="panel">
+                  <svg><use href="#icon-play" /></svg>
+                  <strong>96</strong>
+                  <span>уроков в курсах</span>
+                </article>
+                <article class="panel">
+                  <svg><use href="#icon-file" /></svg>
+                  <strong>PDF</strong>
+                  <span>конспекты и материалы</span>
+                </article>
+                <article class="panel">
+                  <svg><use href="#icon-clipboard" /></svg>
+                  <strong>ДЗ</strong>
+                  <span>готовые домашние задания</span>
+                </article>
+              </div>
+
+              <section class="home-courses panel">
+                <div class="home-section-title">
+                  <h2>Курсы подготовки</h2>
+                  <button type="button" data-open-study data-study-tab="all">Все курсы</button>
+                </div>
+                <div class="home-course-list">
+                  <button type="button" data-course="math">
+                    <span class="mini-course-icon illustration-math"><svg><use href="#course-math" /></svg></span>
+                    <strong>ЕГЭ Математика</strong>
+                    <small>4 урока</small>
+                  </button>
+                  <button type="button" data-course="russian">
+                    <span class="mini-course-icon illustration-russian"><svg><use href="#course-russian" /></svg></span>
+                    <strong>ЕГЭ Русский язык</strong>
+                    <small>Тестовая часть и сочинение</small>
+                  </button>
+                  <button type="button" data-course="informatics">
+                    <span class="mini-course-icon illustration-code"><svg><use href="#course-code" /></svg></span>
+                    <strong>ЕГЭ Информатика</strong>
+                    <small>Алгоритмы и Python</small>
+                  </button>
+                  <button type="button" data-course="physics">
+                    <span class="mini-course-icon illustration-physics"><svg><use href="#course-physics" /></svg></span>
+                    <strong>ЕГЭ Физика</strong>
+                    <small>Теория и задачи второй части</small>
+                  </button>
+                </div>
+              </section>
+
+              <section class="panel home-streams-panel">
+                <div class="home-section-title">
+                  <h2>Ближайшие трансляции</h2>
+                  <button type="button" data-open-study>Все курсы</button>
+                </div>
+                <div class="stream-list stream-list--compact" id="home-stream-list" aria-live="polite">
+                  <div class="resource-empty">Загружаю расписание...</div>
+                </div>
+              </section>
+            </div>
+
+            <aside class="right-column">
+              <section class="panel application-panel">
+                <h2>Заявка на обучение</h2>
+                <form class="application-form" id="application-form">
+                  <label>
+                    Имя ученика
+                    <input type="text" name="studentName" autocomplete="name" placeholder="Иван Петров" required />
+                  </label>
+                  <label>
+                    Телефон
+                    <input type="tel" name="phone" autocomplete="tel" placeholder="+7 900 000-00-00" required />
+                  </label>
+                  <label>
+                    Email
+                    <input type="email" name="email" autocomplete="email" placeholder="student@example.com" />
+                  </label>
+                  <div class="form-row">
+                    <label>
+                      Курс
+                      <select name="preferredSubject" required>
+                        <option value="ЕГЭ Математика">ЕГЭ Математика</option>
+                        <option value="ЕГЭ Русский язык">ЕГЭ Русский язык</option>
+                        <option value="ЕГЭ Информатика">ЕГЭ Информатика</option>
+                        <option value="ЕГЭ Физика">ЕГЭ Физика</option>
+                        <option value="Пока выбираю">Пока выбираю</option>
+                      </select>
+                    </label>
+                    <label>
+                      Класс
+                      <input type="number" name="grade" min="1" max="11" value="11" />
+                    </label>
+                  </div>
+                  <label>
+                    Комментарий
+                    <textarea name="comment" rows="4" placeholder="Цель, текущий балл или удобное время для связи"></textarea>
+                  </label>
+                  <button class="submit-button" type="submit">
+                    <svg><use href="#icon-telegram" /></svg>
+                    Отправить заявку
+                  </button>
+                  <p class="application-status" id="application-status" aria-live="polite"></p>
+                </form>
+              </section>
+
+              <section class="panel compact-events home-next-panel">
+                <h2>После заявки</h2>
+                <div class="compact-event">
+                  <span><svg class="blue"><use href="#icon-message" /></svg>Связь</span>
+                  <strong>в тот же день</strong>
+                </div>
+                <div class="compact-event">
+                  <span><svg class="green"><use href="#icon-book" /></svg>Доступ</span>
+                  <strong>к курсу и PDF</strong>
+                </div>
+              </section>
+            </aside>
+          </section>
+
+          <section class="page-grid study-page is-hidden" data-page="study" aria-hidden="true">
+            <div class="primary-column">
+              <header class="page-heading">
+                <h1>Учёба</h1>
+                <p>Курсы, уроки, домашки, конспекты и трансляции</p>
+              </header>
+
+              <div class="tabs" role="tablist" aria-label="Курсы">
+                <button class="tab is-active" type="button" role="tab" aria-selected="true" data-tab="owned">
+                  Купленные курсы
+                </button>
+                <button class="tab" type="button" role="tab" aria-selected="false" data-tab="all">
+                  Все курсы
+                </button>
+              </div>
+
+              <div class="course-grid" id="course-grid" aria-live="polite">
+                <article class="course-card" tabindex="0" role="button" data-course="math" data-owned="true" aria-label="Открыть курс ЕГЭ Математика">
+                  <span class="course-badge course-badge--preview">1 урок открыт</span>
+                  <button class="card-chevron" type="button" aria-label="Открыть ЕГЭ Математика">
+                    <svg><use href="#icon-chevron" /></svg>
+                  </button>
+                  <div class="course-card__body">
+                    <div class="course-illustration illustration-math" aria-hidden="true">
+                      <svg class="course-illustration__icon"><use href="#course-math" /></svg>
+                    </div>
+                    <div class="course-info">
+                      <h2>ЕГЭ Математика</h2>
+                      <div class="progress-line">
+                        <span class="progress-text">1 из 4 уроков открыт</span>
+                        <div class="progress-track"><span style="width: 25%"></span></div>
+                        <span class="progress-percent">гость</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="course-actions" aria-label="Материалы курса">
+                    <button type="button" data-course-action="lessons"><svg><use href="#icon-play" /></svg>4 урока</button>
+                    <button type="button" data-course-action="homework"><svg><use href="#icon-clipboard" /></svg>ДЗ</button>
+                    <button type="button" data-course-action="notes"><svg><use href="#icon-file" /></svg>Конспекты</button>
+                    <button type="button" data-course-action="streams"><svg><use href="#icon-broadcast" /></svg>Трансляции</button>
+                  </div>
+                </article>
+
+                <article class="course-card" tabindex="0" role="button" data-course="russian" data-owned="true" aria-label="Открыть курс ЕГЭ Русский язык">
+                  <span class="course-badge course-badge--preview">1 урок открыт</span>
+                  <button class="card-chevron" type="button" aria-label="Открыть ЕГЭ Русский язык">
+                    <svg><use href="#icon-chevron" /></svg>
+                  </button>
+                  <div class="course-card__body">
+                    <div class="course-illustration illustration-russian" aria-hidden="true">
+                      <svg class="course-illustration__icon"><use href="#course-russian" /></svg>
+                    </div>
+                    <div class="course-info">
+                      <h2>ЕГЭ Русский язык</h2>
+                      <div class="progress-line">
+                        <span class="progress-text">1 из 4 уроков открыт</span>
+                        <div class="progress-track"><span style="width: 25%"></span></div>
+                        <span class="progress-percent">гость</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="course-actions" aria-label="Материалы курса">
+                    <button type="button" data-course-action="lessons"><svg><use href="#icon-play" /></svg>4 урока</button>
+                    <button type="button" data-course-action="homework"><svg><use href="#icon-clipboard" /></svg>ДЗ</button>
+                    <button type="button" data-course-action="notes"><svg><use href="#icon-file" /></svg>Конспекты</button>
+                    <button type="button" data-course-action="streams"><svg><use href="#icon-broadcast" /></svg>Трансляции</button>
+                  </div>
+                </article>
+
+                <article class="course-card" tabindex="0" role="button" data-course="informatics" data-owned="true" aria-label="Открыть курс ЕГЭ Информатика">
+                  <span class="course-badge course-badge--preview">1 урок открыт</span>
+                  <button class="card-chevron" type="button" aria-label="Открыть ЕГЭ Информатика">
+                    <svg><use href="#icon-chevron" /></svg>
+                  </button>
+                  <div class="course-card__body">
+                    <div class="course-illustration illustration-code" aria-hidden="true">
+                      <svg class="course-illustration__icon"><use href="#course-code" /></svg>
+                    </div>
+                    <div class="course-info">
+                      <h2>ЕГЭ Информатика</h2>
+                      <div class="progress-line">
+                        <span class="progress-text">1 из 4 уроков открыт</span>
+                        <div class="progress-track"><span style="width: 25%"></span></div>
+                        <span class="progress-percent">гость</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="course-actions" aria-label="Материалы курса">
+                    <button type="button" data-course-action="lessons"><svg><use href="#icon-play" /></svg>4 урока</button>
+                    <button type="button" data-course-action="homework"><svg><use href="#icon-clipboard" /></svg>ДЗ</button>
+                    <button type="button" data-course-action="notes"><svg><use href="#icon-file" /></svg>Конспекты</button>
+                    <button type="button" data-course-action="streams"><svg><use href="#icon-broadcast" /></svg>Трансляции</button>
+                  </div>
+                </article>
+
+                <article class="course-card" tabindex="0" role="button" data-course="physics" data-owned="true" aria-label="Открыть курс ЕГЭ Физика">
+                  <span class="course-badge course-badge--preview">1 урок открыт</span>
+                  <button class="card-chevron" type="button" aria-label="Открыть ЕГЭ Физика">
+                    <svg><use href="#icon-chevron" /></svg>
+                  </button>
+                  <div class="course-card__body">
+                    <div class="course-illustration illustration-physics" aria-hidden="true">
+                      <svg class="course-illustration__icon"><use href="#course-physics" /></svg>
+                    </div>
+                    <div class="course-info">
+                      <h2>ЕГЭ Физика</h2>
+                      <div class="progress-line">
+                        <span class="progress-text">1 из 4 уроков открыт</span>
+                        <div class="progress-track"><span style="width: 25%"></span></div>
+                        <span class="progress-percent">гость</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="course-actions" aria-label="Материалы курса">
+                    <button type="button" data-course-action="lessons"><svg><use href="#icon-play" /></svg>4 урока</button>
+                    <button type="button" data-course-action="homework"><svg><use href="#icon-clipboard" /></svg>ДЗ</button>
+                    <button type="button" data-course-action="notes"><svg><use href="#icon-file" /></svg>Конспекты</button>
+                    <button type="button" data-course-action="streams"><svg><use href="#icon-broadcast" /></svg>Трансляции</button>
+                  </div>
+                </article>
+
+                <article class="course-card is-hidden" tabindex="0" role="button" data-course="english" data-catalog="true" aria-hidden="true" aria-label="Открыть курс ЕГЭ Английский язык">
+                  <button class="card-chevron" type="button" aria-label="Открыть ЕГЭ Английский язык">
+                    <svg><use href="#icon-chevron" /></svg>
+                  </button>
+                  <div class="course-card__body">
+                    <div class="course-illustration illustration-russian" aria-hidden="true">
+                      <svg class="course-illustration__icon"><use href="#course-russian" /></svg>
+                    </div>
+                    <div class="course-info">
+                      <h2>ЕГЭ Английский язык</h2>
+                      <div class="progress-line">
+                        <span class="progress-text">1 из 4 уроков открыт</span>
+                        <div class="progress-track"><span style="width: 25%"></span></div>
+                        <span class="progress-percent">гость</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="course-actions" aria-label="Материалы курса">
+                    <button type="button" data-course-action="lessons"><svg><use href="#icon-play" /></svg>4 урока</button>
+                    <button type="button" data-course-action="homework"><svg><use href="#icon-clipboard" /></svg>ДЗ</button>
+                    <button type="button" data-course-action="notes"><svg><use href="#icon-file" /></svg>Конспекты</button>
+                    <button type="button" data-course-action="streams"><svg><use href="#icon-broadcast" /></svg>Трансляции</button>
+                  </div>
+                </article>
+
+                <article class="course-card is-hidden" tabindex="0" role="button" data-course="ogeMath" data-catalog="true" aria-hidden="true" aria-label="Открыть курс ОГЭ Математика">
+                  <button class="card-chevron" type="button" aria-label="Открыть ОГЭ Математика">
+                    <svg><use href="#icon-chevron" /></svg>
+                  </button>
+                  <div class="course-card__body">
+                    <div class="course-illustration illustration-math" aria-hidden="true">
+                      <svg class="course-illustration__icon"><use href="#course-math" /></svg>
+                    </div>
+                    <div class="course-info">
+                      <h2>ОГЭ Математика</h2>
+                      <div class="progress-line">
+                        <span class="progress-text">1 из 4 уроков открыт</span>
+                        <div class="progress-track"><span style="width: 25%"></span></div>
+                        <span class="progress-percent">гость</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="course-actions" aria-label="Материалы курса">
+                    <button type="button" data-course-action="lessons"><svg><use href="#icon-play" /></svg>4 урока</button>
+                    <button type="button" data-course-action="homework"><svg><use href="#icon-clipboard" /></svg>ДЗ</button>
+                    <button type="button" data-course-action="notes"><svg><use href="#icon-file" /></svg>Конспекты</button>
+                    <button type="button" data-course-action="streams"><svg><use href="#icon-broadcast" /></svg>Трансляции</button>
+                  </div>
+                </article>
+              </div>
+            </div>
+
+            <aside class="right-column study-aside">
+              <section class="panel nearest-panel">
+                <h2>Ближайшее</h2>
+                <div class="stream-list stream-list--aside" id="study-stream-list" aria-live="polite">
+                  <div class="resource-empty">Загружаю трансляции...</div>
+                </div>
+                <button class="event-card" type="button">
+                  <span class="event-top">
+                    <span class="tag tag--green"><svg><use href="#icon-clipboard" /></svg>Домашка</span>
+                    <span>Завтра, 23:59</span>
+                  </span>
+                  <span class="event-title">Вариант 12. Часть 1–2</span>
+                  <span class="event-subtitle">ЕГЭ Русский язык</span>
+                  <svg class="event-chevron"><use href="#icon-chevron" /></svg>
+                </button>
+                <button class="event-card" type="button">
+                  <span class="event-top">
+                    <span class="tag tag--violet"><svg><use href="#icon-user" /></svg>Куратор</span>
+                    <span>Пятница, 16:00</span>
+                  </span>
+                  <span class="event-title">Созвон с куратором</span>
+                  <span class="event-subtitle">Иванова Мария</span>
+                  <svg class="event-chevron"><use href="#icon-chevron" /></svg>
+                </button>
+              </section>
+
+              <section class="panel points-panel">
+                <h2>Баллы</h2>
+                <div class="balance-row">
+                  <div>
+                    <span>Текущий баланс</span>
+                    <strong><span id="study-points-balance">1 250</span> <svg><use href="#icon-star" /></svg></strong>
+                  </div>
+                  <button type="button" data-open-account>История баллов <svg><use href="#icon-chevron" /></svg></button>
+                </div>
+                <div class="level-progress">
+                  <div class="level-labels">
+                    <span>До следующего уровня</span>
+                    <span id="study-points-to-next">750 баллов</span>
+                  </div>
+                  <div class="level-track"><span style="width: 63%"></span></div>
+                  <div class="level-labels level-labels--bottom">
+                    <span>Уровень 3</span>
+                    <span>Уровень 4</span>
+                  </div>
+                </div>
+                <div class="bonus-note">
+                  <svg><use href="#icon-medal" /></svg>
+                  <span>Копи баллы и обменивай их<br />на полезные бонусы и скидки!</span>
+                </div>
+              </section>
+            </aside>
+          </section>
+
+          <section class="page-grid messages-page is-hidden" data-page="messages" aria-hidden="true">
+            <div class="primary-column">
+              <header class="page-heading">
+                <h1>Сообщения</h1>
+                <p>Учебный чат ученика, куратора и преподавателя</p>
+              </header>
+
+              <section class="panel messages-panel">
+                <aside class="conversation-list" id="conversation-list" aria-label="Список чатов">
+                  <div class="resource-empty">Загружаю чаты...</div>
+                </aside>
+                <div class="message-thread">
+                  <div class="message-thread__header">
+                    <div>
+                      <span id="message-thread-role">Чат</span>
+                      <h2 id="message-thread-title">Выберите чат</h2>
+                    </div>
+                    <button type="button" id="messages-refresh-button">
+                      <svg><use href="#icon-clock" /></svg>
+                      Обновить
+                    </button>
+                  </div>
+                  <div class="message-list" id="message-list" aria-live="polite">
+                    <div class="resource-empty">Войдите в аккаунт ученика или сотрудника, чтобы открыть сообщения.</div>
+                  </div>
+                  <form class="message-form" id="message-form">
+                    <label>
+                      Сообщение
+                      <textarea name="messageText" rows="3" placeholder="Напишите вопрос или ответ" required></textarea>
+                    </label>
+                    <button class="submit-button" type="submit">
+                      <svg><use href="#icon-message" /></svg>
+                      Отправить
+                    </button>
+                    <p class="application-status" id="message-status" aria-live="polite"></p>
+                  </form>
+                </div>
+              </section>
+            </div>
+
+            <aside class="right-column">
+              <section class="panel compact-events">
+                <h2>Кто может писать</h2>
+                <div class="compact-event">
+                  <span><svg class="blue"><use href="#icon-user" /></svg>Ученик</span>
+                  <strong>после входа</strong>
+                </div>
+                <div class="compact-event">
+                  <span><svg class="green"><use href="#icon-message" /></svg>Куратор</span>
+                  <strong>отдельный вход</strong>
+                </div>
+                <div class="compact-event">
+                  <span><svg class="violet"><use href="#icon-book" /></svg>Преподаватель</span>
+                  <strong>отдельный вход</strong>
+                </div>
+              </section>
+            </aside>
+          </section>
+
+          <section class="page-grid library-page is-hidden" data-page="library" aria-hidden="true">
+            <div class="primary-column">
+              <header class="page-heading">
+                <h1>Библиотека конспектов</h1>
+                <p>Все конспекты и материалы по курсам в одном списке</p>
+              </header>
+
+              <section class="panel library-toolbar">
+                <div>
+                  <span>Материалы</span>
+                  <strong id="library-count">0 файлов</strong>
+                </div>
+                <button type="button" data-open-study>
+                  <svg><use href="#icon-book" /></svg>
+                  Перейти к курсам
+                </button>
+              </section>
+
+              <section class="resource-list" id="library-notes-list" aria-label="Библиотека конспектов" aria-live="polite"></section>
+            </div>
+
+            <aside class="right-column">
+              <section class="panel compact-events">
+                <h2>Разделы</h2>
+                <div class="compact-event">
+                  <span><svg class="blue"><use href="#icon-file" /></svg>Конспекты</span>
+                  <strong>PDF</strong>
+                </div>
+                <div class="compact-event">
+                  <span><svg class="green"><use href="#icon-book" /></svg>Курсы</span>
+                  <strong>6</strong>
+                </div>
+              </section>
+            </aside>
+          </section>
+
+          <section class="page-grid support-page is-hidden" data-page="support" aria-hidden="true">
+            <div class="primary-column">
+              <header class="page-heading">
+                <h1>Поддержка</h1>
+                <p>Быстрые контакты по урокам, доступам, домашним заданиям и оплате</p>
+              </header>
+
+              <section class="support-actions">
+                <a class="support-action panel" href="https://t.me/" target="_blank" rel="noopener noreferrer">
+                  <svg><use href="#icon-telegram" /></svg>
+                  <span>
+                    <strong>Telegram</strong>
+                    <small>Ответим в течение учебного дня</small>
+                  </span>
+                </a>
+                <a class="support-action panel" href="mailto:support@example.com">
+                  <svg><use href="#icon-message" /></svg>
+                  <span>
+                    <strong>Email</strong>
+                    <small>support@example.com</small>
+                  </span>
+                </a>
+                <a class="support-action panel" href="tel:+79000000000">
+                  <svg><use href="#icon-headset" /></svg>
+                  <span>
+                    <strong>Телефон</strong>
+                    <small>+7 900 000-00-00</small>
+                  </span>
+                </a>
+              </section>
+
+              <section class="panel support-form-panel">
+                <h2>Обращение</h2>
+                <form class="support-form" id="support-form">
+                  <label>
+                    Тема
+                    <select name="topic">
+                      <option value="Домашнее задание">Домашнее задание</option>
+                      <option value="Доступ к уроку">Доступ к уроку</option>
+                      <option value="Конспекты">Конспекты</option>
+                      <option value="Оплата">Оплата</option>
+                    </select>
+                  </label>
+                  <label>
+                    Сообщение
+                    <textarea name="message" rows="5" placeholder="Коротко опишите проблему"></textarea>
+                  </label>
+                  <button class="submit-button" type="submit">
+                    <svg><use href="#icon-message" /></svg>
+                    Отправить
+                  </button>
+                  <p class="application-status" id="support-status" aria-live="polite"></p>
+                </form>
+              </section>
+            </div>
+
+            <aside class="right-column">
+              <section class="panel compact-events">
+                <h2>Частые вопросы</h2>
+                <div class="compact-event">
+                  <span><svg class="green"><use href="#icon-clipboard" /></svg>ДЗ</span>
+                  <strong>Ссылка Drive</strong>
+                </div>
+                <div class="compact-event">
+                  <span><svg class="blue"><use href="#icon-file" /></svg>Конспекты</span>
+                  <strong>Библиотека</strong>
+                </div>
+                <div class="compact-event">
+                  <span><svg class="violet"><use href="#icon-book" /></svg>Курсы</span>
+                  <strong>Доступы</strong>
+                </div>
+              </section>
+            </aside>
+          </section>
+
+          <section class="page-grid account-page is-hidden" data-page="account" aria-hidden="true">
+            <div class="primary-column">
+              <header class="page-heading">
+                <h1>Аккаунт</h1>
+                <p>Регистрация, баллы и прогресс по купленным курсам</p>
+              </header>
+
+              <section class="panel account-summary-panel">
+                <div>
+                  <span class="account-kicker">Ученик</span>
+                  <h2 id="account-student-name">Войдите в аккаунт</h2>
+                  <p id="account-student-meta">После входа здесь появятся имя, класс, курсы и баллы.</p>
+                </div>
+                <div class="account-points">
+                  <svg><use href="#icon-star" /></svg>
+                  <strong id="account-points-total">—</strong>
+                  <span>баллов</span>
+                </div>
+              </section>
+
+              <section class="account-progress-section">
+                <div class="account-section-heading">
+                  <h2>Прогресс курсов</h2>
+                  <span id="account-progress-summary">Личный прогресс доступен после входа.</span>
+                </div>
+                <div class="account-course-list" id="account-course-progress-list" aria-live="polite"></div>
+              </section>
+
+              <section class="panel capybara-shop-panel">
+                <div class="account-section-heading">
+                  <h2>Магазин за баллы</h2>
+                  <span id="shop-balance">Баланс появится после входа</span>
+                </div>
+                <div class="capybara-shop-layout">
+                  <div class="capybara-stage" aria-label="2D капибара ученика">
+                    <div class="capybara capybara--idle" id="capybara-preview">
+                      <span class="capybara__body"></span>
+                      <span class="capybara__head"></span>
+                      <span class="capybara__ear capybara__ear--left"></span>
+                      <span class="capybara__ear capybara__ear--right"></span>
+                      <span class="capybara__eye capybara__eye--left"></span>
+                      <span class="capybara__eye capybara__eye--right"></span>
+                      <span class="capybara__nose"></span>
+                      <span class="capybara__clothes"></span>
+                    </div>
+                  </div>
+                  <div class="shop-items-list" id="shop-items-list" aria-live="polite">
+                    <div class="resource-empty">Войдите в аккаунт, чтобы покупать одежду для капибары.</div>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <aside class="right-column">
+              <section class="panel account-auth-panel">
+                <h2>Вход</h2>
+                <div class="account-session" id="account-session-status">
+                  <span>Вы пока не вошли</span>
+                </div>
+                <form class="account-form" id="login-form">
+                  <label>
+                    Логин
+                    <input type="text" name="login" autocomplete="username" placeholder="email, телефон или логин" required />
+                  </label>
+                  <label>
+                    Пароль
+                    <input type="password" name="password" autocomplete="current-password" minlength="6" placeholder="Не меньше 6 символов" required />
+                  </label>
+                  <button class="submit-button" type="submit">
+                    <svg><use href="#icon-user" /></svg>
+                    Войти
+                  </button>
+                </form>
+
+                <div class="auth-divider">или зарегистрироваться</div>
+
+                <form class="account-form" id="register-form">
+                  <label>
+                    Имя ученика
+                    <input type="text" name="studentName" autocomplete="name" placeholder="Иван Петров" required />
+                  </label>
+                  <label>
+                    Логин
+                    <input type="text" name="login" autocomplete="username" placeholder="ivan11" required />
+                  </label>
+                  <label>
+                    Телефон
+                    <input type="tel" name="phone" autocomplete="tel" placeholder="+7 900 000-00-00" />
+                  </label>
+                  <label>
+                    Email
+                    <input type="email" name="email" autocomplete="email" placeholder="student@example.com" />
+                  </label>
+                  <label>
+                    Класс
+                    <input type="number" name="grade" min="1" max="11" value="11" />
+                  </label>
+                  <label>
+                    Пароль
+                    <input type="password" name="password" autocomplete="new-password" minlength="6" placeholder="Не меньше 6 символов" required />
+                  </label>
+                  <label>
+                    Повтор пароля
+                    <input type="password" name="confirmPassword" autocomplete="new-password" minlength="6" placeholder="Повторите пароль" required />
+                  </label>
+                  <button class="submit-button" type="submit">
+                    <svg><use href="#icon-telegram" /></svg>
+                    Создать аккаунт
+                  </button>
+                </form>
+
+                <button class="account-logout" id="logout-button" type="button">
+                  Выйти из аккаунта
+                </button>
+                <p class="auth-status" id="auth-status" aria-live="polite"></p>
+              </section>
+
+              <section class="panel account-auth-panel staff-auth-panel">
+                <h2>Вход для команды</h2>
+                <div class="account-session" id="staff-session-status">
+                  <span>Куратор или преподаватель пока не вошёл</span>
+                </div>
+                <form class="account-form" id="staff-login-form">
+                  <label>
+                    Роль
+                    <select name="role" required>
+                      <option value="Curator">Куратор</option>
+                      <option value="Teacher">Преподаватель</option>
+                    </select>
+                  </label>
+                  <label>
+                    Логин
+                    <input type="text" name="login" autocomplete="username" placeholder="curator или teacher" required />
+                  </label>
+                  <label>
+                    Пароль
+                    <input type="password" name="password" autocomplete="current-password" minlength="6" placeholder="curator123 или teacher123" required />
+                  </label>
+                  <button class="submit-button" type="submit">
+                    <svg><use href="#icon-user" /></svg>
+                    Войти в команду
+                  </button>
+                </form>
+                <button class="account-logout is-hidden" id="staff-logout-button" type="button">
+                  Выйти из команды
+                </button>
+                <p class="auth-status" id="staff-auth-status" aria-live="polite"></p>
+              </section>
+            </aside>
+          </section>
+
+          <section class="page-grid course-page is-hidden" data-page="course" aria-hidden="true">
+            <div class="primary-column">
+              <nav class="breadcrumbs" aria-label="Хлебные крошки">
+                <button type="button" data-open-study>Учёба</button>
+                <span>/</span>
+                <span id="breadcrumb-course">ЕГЭ Математика</span>
+              </nav>
+
+              <header class="course-hero">
+                <div class="course-illustration illustration-math course-hero__icon" id="detail-icon" aria-hidden="true">
+                  <svg class="course-illustration__icon"><use href="#course-math" /></svg>
+                </div>
+                <div>
+                  <h1 id="detail-title">ЕГЭ Математика</h1>
+                  <p id="detail-description">Уроки, записи, конспекты и домашние задания</p>
+                </div>
+              </header>
+
+              <section class="stats-strip" aria-label="Статистика курса">
+                <article>
+                  <svg class="blue"><use href="#icon-book" /></svg>
+                  <div>
+                    <span>Пройдено</span>
+                    <strong id="detail-lessons">1 из 4 уроков открыт</strong>
+                  </div>
+                </article>
+                <article>
+                  <svg class="green"><use href="#icon-chart" /></svg>
+                  <div>
+                    <span>Средний балл ДЗ:</span>
+                    <strong>82%</strong>
+                  </div>
+                </article>
+                <article>
+                  <svg class="violet"><use href="#icon-calendar" /></svg>
+                  <div>
+                    <span>Следующая трансляция:</span>
+                    <strong>четверг, 18:00</strong>
+                  </div>
+                </article>
+              </section>
+
+              <div class="lessons-heading">
+                <h2>Списки курса</h2>
+                <button type="button">Сначала старые <svg><use href="#icon-sort" /></svg></button>
+              </div>
+
+              <div class="course-section-tabs" role="tablist" aria-label="Разделы курса">
+                <button class="is-active" type="button" data-course-view="lessons" role="tab" aria-selected="true">
+                  <svg><use href="#icon-play" /></svg>
+                  Уроки
+                </button>
+                <button type="button" data-course-view="homework" role="tab" aria-selected="false">
+                  <svg><use href="#icon-clipboard" /></svg>
+                  ДЗ
+                </button>
+                <button type="button" data-course-view="notes" role="tab" aria-selected="false">
+                  <svg><use href="#icon-file" /></svg>
+                  Конспекты
+                </button>
+                <button type="button" data-course-view="streams" role="tab" aria-selected="false">
+                  <svg><use href="#icon-broadcast" /></svg>
+                  Трансляции
+                </button>
+              </div>
+
+              <section class="lesson-list" id="lesson-list" data-course-panel="lessons" aria-label="Уроки курса" aria-live="polite">
+                <article class="lesson-row">
+                  <span class="lesson-number is-done">1</span>
+                  <div class="lesson-copy">
+                    <h3>Урок 1. Производная</h3>
+                    <p>Тема: Понятие производной, правила дифференцирования</p>
+                  </div>
+                  <span class="lesson-status status-done"><svg><use href="#icon-clock" /></svg>Пройден</span>
+                  <div class="lesson-actions">
+                    <button type="button"><svg><use href="#icon-play" /></svg>Запись</button>
+                    <button type="button"><svg><use href="#icon-file" /></svg>Конспект PDF</button>
+                    <button class="button-green" type="button"><svg><use href="#icon-clipboard" /></svg>Домашка</button>
+                  </div>
+                </article>
+
+                <article class="lesson-row">
+                  <span class="lesson-number">2</span>
+                  <div class="lesson-copy">
+                    <h3>Урок 2. Первообразная</h3>
+                    <p>Тема: Неопределенный интеграл, таблица интегралов</p>
+                  </div>
+                  <span class="lesson-status status-check"><svg><use href="#icon-clock" /></svg>ДЗ на проверке</span>
+                  <div class="lesson-actions">
+                    <button type="button"><svg><use href="#icon-play" /></svg>Запись</button>
+                    <button type="button"><svg><use href="#icon-file" /></svg>Конспект PDF</button>
+                    <button class="button-green" type="button"><svg><use href="#icon-clipboard" /></svg>Домашка</button>
+                  </div>
+                </article>
+
+                <article class="lesson-row">
+                  <span class="lesson-number">3</span>
+                  <div class="lesson-copy">
+                    <h3>Урок 3. Задачи с параметром</h3>
+                    <p>Тема: Основные методы решения задач с параметром</p>
+                  </div>
+                  <span class="lesson-status status-open"><svg><use href="#icon-play" /></svg>Открыт</span>
+                  <div class="lesson-actions">
+                    <button type="button"><svg><use href="#icon-broadcast" /></svg>Трансляция</button>
+                    <button type="button"><svg><use href="#icon-file" /></svg>Конспект PDF</button>
+                    <button class="button-green" type="button"><svg><use href="#icon-clipboard" /></svg>Домашка</button>
+                  </div>
+                </article>
+
+                <article class="lesson-row">
+                  <span class="lesson-number is-muted">4</span>
+                  <div class="lesson-copy">
+                    <h3>Урок 4. Планиметрия</h3>
+                    <p>Тема: Треугольники, четырехугольники, окружности</p>
+                  </div>
+                  <span class="lesson-status status-soon"><svg><use href="#icon-clock" /></svg>Скоро</span>
+                  <div class="lesson-actions lesson-actions--short">
+                    <button type="button"><svg><use href="#icon-megaphone" /></svg>Анонс</button>
+                    <button type="button"><svg><use href="#icon-folder" /></svg>Материалы</button>
+                  </div>
+                </article>
+              </section>
+
+              <section class="resource-list is-hidden" id="homework-list" data-course-panel="homework" aria-label="Домашние задания курса" aria-live="polite"></section>
+              <section class="resource-list is-hidden" id="notes-list" data-course-panel="notes" aria-label="Конспекты курса" aria-live="polite"></section>
+              <section class="resource-list is-hidden" id="course-stream-list" data-course-panel="streams" aria-label="Трансляции курса" aria-live="polite"></section>
+            </div>
+
+            <aside class="right-column detail-aside">
+              <section class="panel course-progress-panel">
+                <h2>Курс</h2>
+                <div class="donut-row">
+                  <div class="donut" style="--value: 33">
+                    <span>33%</span>
+                  </div>
+                  <div>
+                    <span>Прогресс курса</span>
+                    <strong id="detail-progress-text">Остальные уроки откроются после регистрации</strong>
+                  </div>
+                </div>
+              </section>
+
+              <section class="panel curator-panel">
+                <h2>Куратор</h2>
+                <div class="curator-person">
+                  <span class="avatar avatar--curator" aria-hidden="true"></span>
+                  <strong>Анна Сергеевна</strong>
+                </div>
+                <button type="button"><svg><use href="#icon-telegram" /></svg>Написать</button>
+              </section>
+
+              <section class="panel compact-events">
+                <h2>Ближайшее</h2>
+                <div class="compact-event">
+                  <span><svg class="violet"><use href="#icon-broadcast" /></svg>Трансляция</span>
+                  <strong id="detail-next-stream">загрузка</strong>
+                </div>
+                <div class="compact-event">
+                  <span><svg class="green"><use href="#icon-clipboard" /></svg>Домашка</span>
+                  <strong>до воскресенья</strong>
+                </div>
+              </section>
+
+              <section class="panel earned-panel">
+                <h2>Баллы</h2>
+                <strong id="detail-points-earned"><svg><use href="#icon-star" /></svg>240</strong>
+                <span>Всего баллов за курс</span>
+              </section>
+            </aside>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <div class="modal-backdrop is-hidden" id="homework-modal" aria-hidden="true">
+      <section class="homework-modal" role="dialog" aria-modal="true" aria-labelledby="homework-modal-title">
+        <button class="modal-close" type="button" data-close-homework aria-label="Закрыть">
+          <svg><use href="#icon-chevron" /></svg>
+        </button>
+        <span class="homework-modal__eyebrow" id="homework-modal-status">Домашка</span>
+        <h2 id="homework-modal-title">Домашнее задание</h2>
+        <p id="homework-modal-description"></p>
+        <div class="homework-modal__meta" id="homework-modal-meta"></div>
+        <div class="homework-modal__actions" id="homework-modal-actions"></div>
+      </section>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
+

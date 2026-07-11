@@ -1,0 +1,252 @@
+{
+  "courses": [
+    {
+      "courseSlug": "math",
+      "courseTitle": "ЕГЭ Математика",
+      "courseDescription": "Профильная математика: теория, записи, конспекты и домашки.",
+      "source": "seed",
+      "lessons": [
+        {
+          "lessonId": 1,
+          "lessonNumber": 1,
+          "lessonTitle": "Производная",
+          "topic": "Понятие производной, правила дифференцирования",
+          "lessonStatus": "Done",
+          "videoUrl": "https://www.youtube.com/watch?v=M6K6SbXO44Q",
+          "notesUrl": "https://drive.google.com/file/d/1LaFegJ29E7PYwXq1QA4R6mCJtyK70mRo",
+          "homeworkUrl": "https://example.com/homework/math-derivative.pdf",
+          "homeworkAssignmentId": 1001,
+          "homeworkStatus": "Checked",
+          "homeworkTitle": "ДЗ: Производная",
+          "submittedHomeworkUrl": "https://drive.google.com/file/d/1t-o_WwgJSQILFXRXWk7w3KZz4uPU1Oew",
+          "submissionStatus": "Checked",
+          "homeworkScore": 86
+        },
+        {
+          "lessonId": 2,
+          "lessonNumber": 2,
+          "lessonTitle": "Первообразная",
+          "topic": "Неопределенный интеграл, таблица интегралов",
+          "lessonStatus": "Homework_Check",
+          "videoUrl": "https://www.youtube.com/watch?v=N98OuNVG5pY",
+          "notesUrl": "https://drive.google.com/file/d/1ADdDBQ22c0DtLXORv-xzJ-yzzqP9R81I",
+          "homeworkUrl": "https://example.com/homework/math-integral.pdf",
+          "homeworkAssignmentId": 1002,
+          "homeworkStatus": "Submitted",
+          "homeworkTitle": "ДЗ: Первообразная",
+          "submittedHomeworkUrl": "https://drive.google.com/file/d/1t-o_WwgJSQILFXRXWk7w3KZz4uPU1Oew",
+          "submissionStatus": "Submitted"
+        },
+        {
+          "lessonId": 3,
+          "lessonNumber": 3,
+          "lessonTitle": "Задачи с параметром",
+          "topic": "Основные методы решения задач с параметром",
+          "lessonStatus": "Open",
+          "videoUrl": "https://www.youtube.com/watch?v=4r_IcBBMmj8",
+          "notesUrl": "https://drive.google.com/file/d/1VXR7RgKc0wSFlkqqpOB4MY2mqzo993Zm",
+          "homeworkUrl": "https://example.com/homework/math-parameters.pdf",
+          "homeworkAssignmentId": 1003,
+          "homeworkStatus": "Assigned",
+          "homeworkTitle": "ДЗ: Задачи с параметром"
+        },
+        {
+          "lessonId": 4,
+          "lessonNumber": 4,
+          "lessonTitle": "Планиметрия",
+          "topic": "Треугольники, четырехугольники, окружности",
+          "lessonStatus": "Open",
+          "videoUrl": "https://www.youtube.com/watch?v=axMFeOWP6x8",
+          "notesUrl": "https://drive.google.com/file/d/1yDKrMTfyM0PbZ3SC2RGo8hVtO-U8i9R1",
+          "homeworkUrl": null
+        }
+      ]
+    },
+    {
+      "courseSlug": "russian",
+      "courseTitle": "ЕГЭ Русский язык",
+      "courseDescription": "Тестовая часть, сочинение, теория и практика.",
+      "source": "seed",
+      "lessons": [
+        {
+          "lessonId": 5,
+          "lessonNumber": 1,
+          "lessonTitle": "Орфоэпия и ударения",
+          "topic": "Словник ФИПИ, типичные ловушки задания 4",
+          "lessonStatus": "Done",
+          "videoUrl": "https://www.youtube.com/results?search_query=ЕГЭ+русский+орфоэпия+урок",
+          "notesUrl": "https://drive.google.com/file/d/1aaFkBsvU-IPPm_Z8mFluYvf9CvTfnAxw",
+          "homeworkUrl": "https://example.com/homework/russian-orthoepy.pdf",
+          "homeworkAssignmentId": 2001,
+          "homeworkStatus": "Checked",
+          "homeworkTitle": "ДЗ: Орфоэпия и ударения",
+          "submittedHomeworkUrl": "https://drive.google.com/file/d/1t-o_WwgJSQILFXRXWk7w3KZz4uPU1Oew",
+          "submissionStatus": "Checked",
+          "homeworkScore": 92
+        },
+        {
+          "lessonId": 6,
+          "lessonNumber": 2,
+          "lessonTitle": "Паронимы",
+          "topic": "Различение значений и работа со словарём паронимов",
+          "lessonStatus": "Homework_Check",
+          "videoUrl": "https://www.youtube.com/results?search_query=ЕГЭ+русский+паронимы+урок",
+          "notesUrl": "https://drive.google.com/file/d/1riOofik3Pg38MfSuvP38UEe-gzxGAZzg",
+          "homeworkUrl": "https://example.com/homework/russian-paronyms.pdf",
+          "homeworkAssignmentId": 2002,
+          "homeworkStatus": "Submitted",
+          "homeworkTitle": "ДЗ: Паронимы",
+          "submittedHomeworkUrl": "https://drive.google.com/file/d/1t-o_WwgJSQILFXRXWk7w3KZz4uPU1Oew",
+          "submissionStatus": "Submitted"
+        },
+        {
+          "lessonId": 7,
+          "lessonNumber": 3,
+          "lessonTitle": "Сочинение ЕГЭ",
+          "topic": "Проблема, комментарий, позиция автора и аргументация",
+          "lessonStatus": "Open",
+          "videoUrl": "https://www.youtube.com/results?search_query=ЕГЭ+русский+сочинение+урок",
+          "notesUrl": "https://drive.google.com/file/d/1xG46l0vexVAfSS2Ora-VIhnkta4W55VB",
+          "homeworkUrl": "https://example.com/homework/russian-essay.pdf",
+          "homeworkAssignmentId": 2003,
+          "homeworkStatus": "Assigned",
+          "homeworkTitle": "ДЗ: Сочинение ЕГЭ"
+        },
+        {
+          "lessonId": 8,
+          "lessonNumber": 4,
+          "lessonTitle": "Пунктуация в сложном предложении",
+          "topic": "СПП, БСП и сложные случаи постановки знаков",
+          "lessonStatus": "Announcement",
+          "videoUrl": null,
+          "notesUrl": "https://drive.google.com/file/d/1GQbihWtR5JhrzyvIN2OXPwJNpgYaZVq-",
+          "homeworkUrl": null
+        }
+      ]
+    },
+    {
+      "courseSlug": "informatics",
+      "courseTitle": "ЕГЭ Информатика",
+      "courseDescription": "Алгоритмы, программирование и разбор задач ЕГЭ.",
+      "source": "seed",
+      "lessons": [
+        {
+          "lessonId": 9,
+          "lessonNumber": 1,
+          "lessonTitle": "Кодирование информации",
+          "topic": "Алфавитный подход, объём сообщения, единицы измерения",
+          "lessonStatus": "Done",
+          "videoUrl": "https://www.youtube.com/results?search_query=ЕГЭ+информатика+кодирование+информации",
+          "notesUrl": "https://drive.google.com/file/d/14DJwCAEpiEqjPNsr6sDTTDMxBVI-X8j2",
+          "homeworkUrl": "https://example.com/homework/it-coding.pdf",
+          "homeworkAssignmentId": 3001,
+          "homeworkStatus": "Checked",
+          "homeworkTitle": "ДЗ: Кодирование информации",
+          "submittedHomeworkUrl": "https://drive.google.com/file/d/1t-o_WwgJSQILFXRXWk7w3KZz4uPU1Oew",
+          "submissionStatus": "Checked",
+          "homeworkScore": 88
+        },
+        {
+          "lessonId": 10,
+          "lessonNumber": 2,
+          "lessonTitle": "Логические выражения",
+          "topic": "Таблицы истинности и преобразование логических выражений",
+          "lessonStatus": "Homework_Check",
+          "videoUrl": "https://www.youtube.com/results?search_query=ЕГЭ+информатика+логика+урок",
+          "notesUrl": "https://drive.google.com/file/d/1OWMHfQNNgjC8z-FbY2s0ProsYWVMhWCD",
+          "homeworkUrl": "https://example.com/homework/it-logic.pdf",
+          "homeworkAssignmentId": 3002,
+          "homeworkStatus": "Submitted",
+          "homeworkTitle": "ДЗ: Логические выражения",
+          "submittedHomeworkUrl": "https://drive.google.com/file/d/1t-o_WwgJSQILFXRXWk7w3KZz4uPU1Oew",
+          "submissionStatus": "Submitted"
+        },
+        {
+          "lessonId": 11,
+          "lessonNumber": 3,
+          "lessonTitle": "Python: циклы и условия",
+          "topic": "Базовые конструкции для задач ЕГЭ",
+          "lessonStatus": "Open",
+          "videoUrl": "https://www.youtube.com/results?search_query=ЕГЭ+информатика+Python+циклы+условия",
+          "notesUrl": "https://drive.google.com/file/d/12VWLzqM_8VF3ak0xGbyNrwmjOWLEJgPy",
+          "homeworkUrl": "https://example.com/homework/it-python.pdf",
+          "homeworkAssignmentId": 3003,
+          "homeworkStatus": "Assigned",
+          "homeworkTitle": "ДЗ: Python"
+        },
+        {
+          "lessonId": 12,
+          "lessonNumber": 4,
+          "lessonTitle": "Динамическое программирование",
+          "topic": "Разбор идеи и первые задачи",
+          "lessonStatus": "Announcement",
+          "videoUrl": null,
+          "notesUrl": "https://drive.google.com/file/d/1eCsAogLgzZS_T39AZQNqXxeSXfBYFS3c",
+          "homeworkUrl": null
+        }
+      ]
+    },
+    {
+      "courseSlug": "physics",
+      "courseTitle": "ЕГЭ Физика",
+      "courseDescription": "Механика, электричество, оптика и задачи второй части.",
+      "source": "seed",
+      "lessons": [
+        {
+          "lessonId": 13,
+          "lessonNumber": 1,
+          "lessonTitle": "Кинематика",
+          "topic": "Равномерное и равноускоренное движение",
+          "lessonStatus": "Done",
+          "videoUrl": "https://www.youtube.com/results?search_query=ЕГЭ+физика+кинематика+урок",
+          "notesUrl": "https://drive.google.com/file/d/1LaFegJ29E7PYwXq1QA4R6mCJtyK70mRo",
+          "homeworkUrl": "https://example.com/homework/physics-kinematics.pdf",
+          "homeworkAssignmentId": 4001,
+          "homeworkStatus": "Checked",
+          "homeworkTitle": "ДЗ: Кинематика",
+          "submittedHomeworkUrl": "https://drive.google.com/file/d/1t-o_WwgJSQILFXRXWk7w3KZz4uPU1Oew",
+          "submissionStatus": "Checked",
+          "homeworkScore": 84
+        },
+        {
+          "lessonId": 14,
+          "lessonNumber": 2,
+          "lessonTitle": "Законы Ньютона",
+          "topic": "Силы, ускорение, движение по окружности",
+          "lessonStatus": "Homework_Check",
+          "videoUrl": "https://www.youtube.com/results?search_query=ЕГЭ+физика+законы+Ньютона+урок",
+          "notesUrl": "https://drive.google.com/file/d/1ADdDBQ22c0DtLXORv-xzJ-yzzqP9R81I",
+          "homeworkUrl": "https://example.com/homework/physics-newton.pdf",
+          "homeworkAssignmentId": 4002,
+          "homeworkStatus": "Submitted",
+          "homeworkTitle": "ДЗ: Законы Ньютона",
+          "submittedHomeworkUrl": "https://drive.google.com/file/d/1t-o_WwgJSQILFXRXWk7w3KZz4uPU1Oew",
+          "submissionStatus": "Submitted"
+        },
+        {
+          "lessonId": 15,
+          "lessonNumber": 3,
+          "lessonTitle": "Электростатика",
+          "topic": "Закон Кулона, напряжённость, потенциал",
+          "lessonStatus": "Open",
+          "videoUrl": "https://www.youtube.com/results?search_query=ЕГЭ+физика+электростатика+урок",
+          "notesUrl": "https://drive.google.com/file/d/1aaFkBsvU-IPPm_Z8mFluYvf9CvTfnAxw",
+          "homeworkUrl": "https://example.com/homework/physics-electrostatics.pdf",
+          "homeworkAssignmentId": 4003,
+          "homeworkStatus": "Assigned",
+          "homeworkTitle": "ДЗ: Электростатика"
+        },
+        {
+          "lessonId": 16,
+          "lessonNumber": 4,
+          "lessonTitle": "Оптика",
+          "topic": "Линзы, зеркала и ход лучей",
+          "lessonStatus": "Announcement",
+          "videoUrl": null,
+          "notesUrl": "https://drive.google.com/file/d/1VXR7RgKc0wSFlkqqpOB4MY2mqzo993Zm",
+          "homeworkUrl": null
+        }
+      ]
+    }
+  ]
+}

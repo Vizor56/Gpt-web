@@ -1,0 +1,19 @@
+{
+  "name": "yaroslav-tutor-school",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Online tutoring school website prepared for Render and Neon PostgreSQL.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node server.mjs"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "pg": "^8.13.1"
+  }
+}
