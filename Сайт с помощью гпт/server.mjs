@@ -2510,16 +2510,16 @@ function formatAgeText(value) {
   const minutes = Math.max(1, Math.floor((Date.now() - date.getTime()) / 60000));
 
   if (minutes < 60) {
-    return `${minutes} мин.`;
+    return `${minutes} мин`;
   }
 
   const hours = Math.floor(minutes / 60);
 
   if (hours < 48) {
-    return `${hours} ч.`;
+    return `${hours} ч`;
   }
 
-  return `${Math.floor(hours / 24)} дн.`;
+  return `${Math.floor(hours / 24)} дн`;
 }
 
 function buildAdminNotifications(applications = []) {
