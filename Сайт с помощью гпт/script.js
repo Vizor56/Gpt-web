@@ -4326,7 +4326,7 @@ function renderMessageStartPanel(recipients = [], actor = getMessageActor()) {
         </select>
       </label>
       <button type="submit" ${recipients.length ? "" : "disabled"}>
-        <svg><use href="#icon-message" /></svg>Начать чат
+        <svg><use href="#icon-message" /></svg>Создать чат
       </button>
       ${recipients.length ? "" : `<p>Нет доступных адресатов.</p>`}
     </form>
