@@ -1545,6 +1545,8 @@ function getStaffNavItems() {
       { page: "applications", label: "Заявки", icon: "#icon-clipboard" },
       { page: "students", label: "Ученики", icon: "#icon-book" },
       { page: "parents", label: "Родители", icon: "#icon-user" },
+      { page: "teachers", label: "Преподаватели", icon: "#icon-play" },
+      { page: "curators", label: "Кураторы", icon: "#icon-star" },
       { page: "account", label: "Аккаунт", icon: "#icon-user" },
     ];
   }
@@ -1607,6 +1609,7 @@ function getStaffPageTitle(pageName) {
   const titles = {
     applications: "Заявки",
     parents: "Родители",
+    curators: "Кураторы",
     messages: "Сообщения",
     points: "Баллы",
     students: role === "Teacher" ? "Мои ученики" : "Ученики преподавателей",
@@ -3387,6 +3390,162 @@ function renderAdminParents() {
   `;
 }
 
+function adminText(value) {
+  return value ? String(value) : "Пока неизвестно";
+}
+
+function renderAdminPersonChips(items = [], getLabel) {
+  if (!items.length) {
+    return `<span class="resource-chip">Пока неизвестно</span>`;
+  }
+
+  return items.map((item) => `<span class="resource-chip">${escapeHtml(getLabel(item))}</span>`).join("");
+}
+
+function renderAdminTeacherForm(teacher = {}) {
+  return `
+    <form class="staff-lesson-form admin-edit-form" data-admin-teacher-form>
+      <input type="hidden" name="teacherId" value="${escapeHtml(teacher.teacherId || "")}" />
+      <label>Имя<input name="firstName" type="text" value="${escapeHtml(teacher.firstName || "")}" placeholder="Пока неизвестно" /></label>
+      <label>Фамилия<input name="lastName" type="text" value="${escapeHtml(teacher.lastName || "")}" placeholder="Пока неизвестно" /></label>
+      <label>Телефон<input name="phone" type="text" value="${escapeHtml(teacher.phone || "")}" placeholder="Пока неизвестно" /></label>
+      <label>Email<input name="email" type="email" value="${escapeHtml(teacher.email || "")}" placeholder="Пока неизвестно" /></label>
+      <label>Telegram<input name="telegramLink" type="url" value="${escapeHtml(teacher.telegram || "")}" placeholder="Пока неизвестно" /></label>
+      <label>Логин<input name="login" type="text" value="${escapeHtml(teacher.login || "")}" placeholder="Пока неизвестно" /></label>
+      <label>Новый пароль<input name="password" type="password" minlength="6" placeholder="${teacher.teacherId ? "Оставьте пустым, чтобы не менять" : "teacher123 по умолчанию"}" /></label>
+      <button type="submit"><svg><use href="#icon-upload" /></svg>${teacher.teacherId ? "Сохранить преподавателя" : "Добавить преподавателя"}</button>
+      <p class="staff-form-status" aria-live="polite"></p>
+    </form>
+  `;
+}
+
+function renderAdminTeacherCard(teacher) {
+  const courses = teacher.courses || [];
+  const students = teacher.students || [];
+  const curators = teacher.curators || [];
+
+  return `
+    <article class="staff-card admin-person-card">
+      <div class="staff-card__meta">
+        <span class="resource-chip is-green">Рейтинг ${Number(teacher.rating || 0).toFixed(1)} / 10</span>
+        <span class="resource-chip is-blue">${formatNumber(teacher.studentsCount || 0)} учен.</span>
+        <span class="resource-chip">${formatNumber(teacher.coursesCount || courses.length)} курс.</span>
+      </div>
+      <h3>${escapeHtml(teacher.teacherName || "Пока неизвестно")}</h3>
+      <p>${escapeHtml([teacher.phone, teacher.email, teacher.telegram].filter(Boolean).join(" · ") || "Контакты пока неизвестны")}</p>
+      <div class="staff-info-grid">
+        <span>ДЗ прислали<strong>${formatNumber(teacher.homeworkSubmitted || 0)}</strong></span>
+        <span>ДЗ проверено<strong>${formatNumber(teacher.homeworkChecked || 0)}</strong></span>
+        <span>Средний балл за ДЗ<strong>${Number(teacher.averageHomeworkScore || 0).toFixed(1)}</strong></span>
+        <span>Логин<strong>${escapeHtml(adminText(teacher.login))}</strong></span>
+      </div>
+      <details class="staff-details">
+        <summary>Вся информация и редактирование</summary>
+        ${renderAdminTeacherForm(teacher)}
+        <section class="admin-detail-block">
+          <h4>Курсы</h4>
+          <div class="staff-card__meta">${renderAdminPersonChips(courses, (course) => `${course.courseTitle} · ${course.curatorNames || "куратор неизвестен"} · ${formatNumber(course.studentsCount || 0)} учен.`)}</div>
+        </section>
+        <section class="admin-detail-block">
+          <h4>Ученики</h4>
+          <div class="staff-card__meta">${renderAdminPersonChips(students, (student) => `${student.studentName} · ${student.courseTitle} · ${student.curatorName || "куратор неизвестен"}`)}</div>
+        </section>
+        <section class="admin-detail-block">
+          <h4>Кураторы</h4>
+          <div class="staff-card__meta">${renderAdminPersonChips(curators, (curator) => `${curator.curatorName} · ${formatNumber(curator.studentsCount || 0)} учен.`)}</div>
+        </section>
+      </details>
+    </article>
+  `;
+}
+
+function renderAdminTeachers() {
+  const teachers = getStaffItems("teachers");
+
+  return `
+    ${renderAdminMetrics()}
+    <section class="staff-panel">
+      <h2>Добавить преподавателя</h2>
+      ${renderAdminTeacherForm()}
+    </section>
+    <div class="staff-card-grid">
+      ${teachers.length ? teachers.map(renderAdminTeacherCard).join("") : renderStaffEmpty("Преподаватели пока не добавлены.")}
+    </div>
+  `;
+}
+
+function renderAdminCuratorForm(curator = {}) {
+  return `
+    <form class="staff-lesson-form admin-edit-form" data-admin-curator-form>
+      <input type="hidden" name="curatorId" value="${escapeHtml(curator.curatorId || "")}" />
+      <label>Имя<input name="firstName" type="text" value="${escapeHtml(curator.firstName || "")}" placeholder="Пока неизвестно" /></label>
+      <label>Фамилия<input name="lastName" type="text" value="${escapeHtml(curator.lastName || "")}" placeholder="Пока неизвестно" /></label>
+      <label>Телефон<input name="phone" type="text" value="${escapeHtml(curator.phone || "")}" placeholder="Пока неизвестно" /></label>
+      <label>Email<input name="email" type="email" value="${escapeHtml(curator.email || "")}" placeholder="Пока неизвестно" /></label>
+      <label>Telegram<input name="telegramLink" type="url" value="${escapeHtml(curator.telegram || "")}" placeholder="Пока неизвестно" /></label>
+      <label>Логин<input name="login" type="text" value="${escapeHtml(curator.login || "")}" placeholder="Пока неизвестно" /></label>
+      <label>Новый пароль<input name="password" type="password" minlength="6" placeholder="${curator.curatorId ? "Оставьте пустым, чтобы не менять" : "curator123 по умолчанию"}" /></label>
+      <button type="submit"><svg><use href="#icon-upload" /></svg>${curator.curatorId ? "Сохранить куратора" : "Добавить куратора"}</button>
+      <p class="staff-form-status" aria-live="polite"></p>
+    </form>
+  `;
+}
+
+function renderAdminCuratorCard(curator) {
+  const courses = curator.courses || [];
+  const students = curator.students || [];
+  const teachers = curator.teachers || [];
+
+  return `
+    <article class="staff-card admin-person-card">
+      <div class="staff-card__meta">
+        <span class="resource-chip is-green">Средняя оценка ${Number(curator.rating || 0).toFixed(1)} / 10</span>
+        <span class="resource-chip is-blue">${formatNumber(curator.studentsCount || 0)} учен.</span>
+        <span class="resource-chip">${formatNumber(curator.teachersCount || teachers.length)} преп.</span>
+      </div>
+      <h3>${escapeHtml(curator.curatorName || "Пока неизвестно")}</h3>
+      <p>${escapeHtml([curator.phone, curator.email, curator.telegram].filter(Boolean).join(" · ") || "Контакты пока неизвестны")}</p>
+      <div class="staff-info-grid">
+        <span>Проверено преподавателями<strong>${formatNumber(curator.homeworkCheckedByTeachers || 0)}</strong></span>
+        <span>Фидбек куратора<strong>${formatNumber(curator.curatorFeedbackTotal || 0)}</strong></span>
+        <span>Курсы<strong>${formatNumber(curator.coursesCount || courses.length)}</strong></span>
+        <span>Логин<strong>${escapeHtml(adminText(curator.login))}</strong></span>
+      </div>
+      <details class="staff-details">
+        <summary>Вся информация и редактирование</summary>
+        ${renderAdminCuratorForm(curator)}
+        <section class="admin-detail-block">
+          <h4>Курсы</h4>
+          <div class="staff-card__meta">${renderAdminPersonChips(courses, (course) => `${course.courseTitle} · ${course.teacherNames || "преподаватель неизвестен"} · ${formatNumber(course.studentsCount || 0)} учен.`)}</div>
+        </section>
+        <section class="admin-detail-block">
+          <h4>Ученики</h4>
+          <div class="staff-card__meta">${renderAdminPersonChips(students, (student) => `${student.studentName} · ${student.courseTitle} · ${student.teacherName || "преподаватель неизвестен"}`)}</div>
+        </section>
+        <section class="admin-detail-block">
+          <h4>Преподаватели</h4>
+          <div class="staff-card__meta">${renderAdminPersonChips(teachers, (teacher) => `${teacher.teacherName} · ${formatNumber(teacher.studentsCount || 0)} учен.`)}</div>
+        </section>
+      </details>
+    </article>
+  `;
+}
+
+function renderAdminCurators() {
+  const curators = getStaffItems("curators");
+
+  return `
+    ${renderAdminMetrics()}
+    <section class="staff-panel">
+      <h2>Добавить куратора</h2>
+      ${renderAdminCuratorForm()}
+    </section>
+    <div class="staff-card-grid">
+      ${curators.length ? curators.map(renderAdminCuratorCard).join("") : renderStaffEmpty("Кураторы пока не добавлены.")}
+    </div>
+  `;
+}
+
 function renderStaffPage(pageName = currentStaffPage) {
   if (pageName === "messages") {
     return;
@@ -3425,6 +3584,16 @@ function renderStaffPage(pageName = currentStaffPage) {
 
     if (pageName === "parents") {
       content.innerHTML = renderAdminParents();
+      return;
+    }
+
+    if (pageName === "teachers") {
+      content.innerHTML = renderAdminTeachers();
+      return;
+    }
+
+    if (pageName === "curators") {
+      content.innerHTML = renderAdminCurators();
       return;
     }
   }
@@ -5151,6 +5320,22 @@ document.addEventListener("submit", (event) => {
   if (adminParentForm) {
     event.preventDefault();
     submitStaffJsonForm(adminParentForm, "/api/admin/parents", "Родитель сохранён.");
+    return;
+  }
+
+  const adminTeacherForm = event.target.closest("[data-admin-teacher-form]");
+
+  if (adminTeacherForm) {
+    event.preventDefault();
+    submitStaffJsonForm(adminTeacherForm, "/api/admin/teachers", "Преподаватель сохранён.");
+    return;
+  }
+
+  const adminCuratorForm = event.target.closest("[data-admin-curator-form]");
+
+  if (adminCuratorForm) {
+    event.preventDefault();
+    submitStaffJsonForm(adminCuratorForm, "/api/admin/curators", "Куратор сохранён.");
     return;
   }
 

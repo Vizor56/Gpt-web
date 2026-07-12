@@ -2149,6 +2149,166 @@ app.post(
   }),
 );
 
+async function upsertStaffAccountForPerson(client, { role, teacherId = null, curatorId = null, login, password }) {
+  const cleanLogin = normalizeLogin(login);
+
+  if (!cleanLogin) {
+    return;
+  }
+
+  const personColumn = role === "Teacher" ? "teacher_id" : "curator_id";
+  const personId = role === "Teacher" ? teacherId : curatorId;
+  const defaultHash = role === "Teacher" ? teacherPassword : curatorPassword;
+  const hasNewPassword = cleanText(password, 200).length >= 6;
+  const passwordHash = hasNewPassword ? hashPassword(password) : defaultHash;
+  const existing = await client.query(`SELECT id FROM staff_accounts WHERE role = $1 AND ${personColumn} = $2`, [role, personId]);
+
+  if (existing.rowCount > 0) {
+    await client.query(
+      `
+        UPDATE staff_accounts
+        SET login = $1,
+            password_hash = CASE WHEN $2::boolean THEN $3 ELSE password_hash END,
+            auth_token = NULL,
+            auth_expires_at = NULL
+        WHERE id = $4
+      `,
+      [cleanLogin, hasNewPassword, passwordHash, existing.rows[0].id],
+    );
+    return;
+  }
+
+  await client.query(
+    `
+      INSERT INTO staff_accounts (role, teacher_id, curator_id, login, password_hash)
+      VALUES ($1, $2, $3, $4, $5)
+    `,
+    [role, teacherId, curatorId, cleanLogin, passwordHash],
+  );
+}
+
+app.post(
+  "/api/admin/teachers",
+  asyncRoute(async (request, response) => {
+    await requireAdmin(request);
+    const teacherId = toInt(request.body.teacherId, 0);
+    const firstName = cleanText(request.body.firstName || request.body.first_name, 100) || "Пока";
+    const lastName = cleanText(request.body.lastName || request.body.last_name, 100) || "неизвестно";
+    const phone = cleanNullableText(request.body.phone, 80);
+    const email = cleanNullableText(request.body.email, 160);
+    const telegramLink = cleanNullableText(request.body.telegramLink || request.body.telegram_link || request.body.telegram, 300);
+    const login = normalizeLogin(request.body.login);
+    const password = cleanText(request.body.password, 200);
+
+    const client = await requireDatabase().connect();
+
+    try {
+      await client.query("BEGIN");
+      const result = teacherId
+        ? await client.query(
+            `
+              UPDATE teachers
+              SET first_name = $2,
+                  last_name = $3,
+                  phone = $4,
+                  email = $5,
+                  telegram_link = $6,
+                  active = TRUE
+              WHERE id = $1
+              RETURNING id AS "teacherId"
+            `,
+            [teacherId, firstName, lastName, phone, email, telegramLink],
+          )
+        : await client.query(
+            `
+              INSERT INTO teachers (first_name, last_name, phone, email, telegram_link, active)
+              VALUES ($1, $2, $3, $4, $5, TRUE)
+              RETURNING id AS "teacherId"
+            `,
+            [firstName, lastName, phone, email, telegramLink],
+          );
+
+      if (result.rowCount === 0) {
+        throw createHttpError(404, "Teacher not found.");
+      }
+
+      const savedTeacherId = result.rows[0].teacherId;
+      await upsertStaffAccountForPerson(client, { role: "Teacher", teacherId: savedTeacherId, login, password });
+      await client.query("COMMIT");
+      response.status(teacherId ? 200 : 201).json({ ok: true, source: "database", teacherId: savedTeacherId });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      if (error?.code === "23505") {
+        throw createHttpError(409, "This login is already used by another team account.");
+      }
+      throw error;
+    } finally {
+      client.release();
+    }
+  }),
+);
+
+app.post(
+  "/api/admin/curators",
+  asyncRoute(async (request, response) => {
+    await requireAdmin(request);
+    const curatorId = toInt(request.body.curatorId, 0);
+    const firstName = cleanText(request.body.firstName || request.body.first_name, 100) || "Пока";
+    const lastName = cleanText(request.body.lastName || request.body.last_name, 100) || "неизвестно";
+    const phone = cleanNullableText(request.body.phone, 80);
+    const email = cleanNullableText(request.body.email, 160);
+    const telegramLink = cleanNullableText(request.body.telegramLink || request.body.telegram_link || request.body.telegram, 300);
+    const login = normalizeLogin(request.body.login);
+    const password = cleanText(request.body.password, 200);
+
+    const client = await requireDatabase().connect();
+
+    try {
+      await client.query("BEGIN");
+      const result = curatorId
+        ? await client.query(
+            `
+              UPDATE curators
+              SET first_name = $2,
+                  last_name = $3,
+                  phone = $4,
+                  email = $5,
+                  telegram_link = $6,
+                  active = TRUE
+              WHERE id = $1
+              RETURNING id AS "curatorId"
+            `,
+            [curatorId, firstName, lastName, phone, email, telegramLink],
+          )
+        : await client.query(
+            `
+              INSERT INTO curators (first_name, last_name, phone, email, telegram_link, active)
+              VALUES ($1, $2, $3, $4, $5, TRUE)
+              RETURNING id AS "curatorId"
+            `,
+            [firstName, lastName, phone, email, telegramLink],
+          );
+
+      if (result.rowCount === 0) {
+        throw createHttpError(404, "Curator not found.");
+      }
+
+      const savedCuratorId = result.rows[0].curatorId;
+      await upsertStaffAccountForPerson(client, { role: "Curator", curatorId: savedCuratorId, login, password });
+      await client.query("COMMIT");
+      response.status(curatorId ? 200 : 201).json({ ok: true, source: "database", curatorId: savedCuratorId });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      if (error?.code === "23505") {
+        throw createHttpError(409, "This login is already used by another team account.");
+      }
+      throw error;
+    } finally {
+      client.release();
+    }
+  }),
+);
+
 async function buildAdminWorkspace(staff) {
   const applications = await dbQuery(
     `
@@ -2197,16 +2357,107 @@ async function buildAdminWorkspace(staff) {
     `
       SELECT
         t.id AS "teacherId",
+        t.first_name AS "firstName",
+        t.last_name AS "lastName",
         CONCAT(t.first_name, ' ', t.last_name) AS "teacherName",
         t.phone,
         t.email,
         t.telegram_link AS telegram,
-        COUNT(DISTINCT CASE WHEN ce.status = 'Active' THEN ce.student_id END)::integer AS "studentsCount"
+        sa.login,
+        (
+          SELECT COUNT(DISTINCT c.id)::integer
+          FROM courses c
+          WHERE c.status = 'Active'
+            AND (
+              c.teacher_id = t.id
+              OR EXISTS (
+                SELECT 1 FROM course_enrollments ce_scope
+                WHERE ce_scope.course_id = c.id
+                  AND ce_scope.status <> 'Cancelled'
+                  AND ce_scope.teacher_id = t.id
+              )
+            )
+        ) AS "coursesCount",
+        (
+          SELECT COUNT(DISTINCT ce.student_id)::integer
+          FROM course_enrollments ce
+          JOIN courses c ON c.id = ce.course_id
+          WHERE ce.status = 'Active'
+            AND COALESCE(ce.teacher_id, c.teacher_id) = t.id
+        ) AS "studentsCount",
+        (
+          SELECT COUNT(DISTINCT COALESCE(ce.curator_id, c.curator_id))::integer
+          FROM course_enrollments ce
+          JOIN courses c ON c.id = ce.course_id
+          WHERE ce.status = 'Active'
+            AND COALESCE(ce.teacher_id, c.teacher_id) = t.id
+            AND COALESCE(ce.curator_id, c.curator_id) IS NOT NULL
+        ) AS "curatorsCount",
+        (
+          SELECT COUNT(DISTINCT ha.id)::integer
+          FROM homework_assignments ha
+          JOIN homework_templates ht ON ht.id = ha.template_id
+          JOIN courses c ON c.id = ht.course_id
+          LEFT JOIN course_enrollments ce ON ce.id = ha.enrollment_id
+          LEFT JOIN homework_submissions hs ON hs.assignment_id = ha.id
+          WHERE ha.status <> 'Cancelled'
+            AND COALESCE(ha.teacher_id, ce.teacher_id, c.teacher_id) = t.id
+            AND (ha.status IN ('Submitted', 'Checked') OR hs.status IN ('Submitted', 'Checked'))
+        ) AS "homeworkSubmitted",
+        (
+          SELECT COUNT(DISTINCT ha.id)::integer
+          FROM homework_assignments ha
+          JOIN homework_templates ht ON ht.id = ha.template_id
+          JOIN courses c ON c.id = ht.course_id
+          LEFT JOIN course_enrollments ce ON ce.id = ha.enrollment_id
+          LEFT JOIN homework_submissions hs ON hs.assignment_id = ha.id
+          WHERE ha.status <> 'Cancelled'
+            AND COALESCE(ha.teacher_id, ce.teacher_id, c.teacher_id) = t.id
+            AND (ha.status = 'Checked' OR hs.status = 'Checked')
+        ) AS "homeworkChecked",
+        COALESCE((
+          SELECT AVG(hs.score)
+          FROM homework_assignments ha
+          JOIN homework_templates ht ON ht.id = ha.template_id
+          JOIN courses c ON c.id = ht.course_id
+          LEFT JOIN course_enrollments ce ON ce.id = ha.enrollment_id
+          JOIN homework_submissions hs ON hs.assignment_id = ha.id
+          WHERE COALESCE(ha.teacher_id, ce.teacher_id, c.teacher_id) = t.id
+            AND hs.status = 'Checked'
+            AND hs.score IS NOT NULL
+        ), 0) AS "averageHomeworkScore",
+        COALESCE((
+          SELECT AVG(review_rating)
+          FROM (
+            SELECT r.rating AS review_rating
+            FROM staff_resource_reviews r
+            JOIN lessons l ON r.resource_type = 'Lesson' AND r.resource_id = l.id
+            JOIN courses c ON c.id = l.course_id
+            WHERE r.staff_role = 'Curator' AND r.rating IS NOT NULL AND c.teacher_id = t.id
+            UNION ALL
+            SELECT r.rating
+            FROM staff_resource_reviews r
+            JOIN notes n ON r.resource_type = 'Note' AND r.resource_id = n.id
+            JOIN courses c ON c.id = n.course_id
+            WHERE r.staff_role = 'Curator' AND r.rating IS NOT NULL AND c.teacher_id = t.id
+            UNION ALL
+            SELECT r.rating
+            FROM staff_resource_reviews r
+            JOIN live_streams ls ON r.resource_type = 'Stream' AND r.resource_id = ls.id
+            JOIN courses c ON c.id = ls.course_id
+            WHERE r.staff_role = 'Curator' AND r.rating IS NOT NULL AND c.teacher_id = t.id
+            UNION ALL
+            SELECT r.rating
+            FROM staff_resource_reviews r
+            JOIN homework_assignments ha ON r.resource_type = 'Homework' AND r.resource_id = ha.id
+            JOIN homework_templates ht ON ht.id = ha.template_id
+            JOIN courses c ON c.id = ht.course_id
+            WHERE r.staff_role = 'Curator' AND r.rating IS NOT NULL AND c.teacher_id = t.id
+          ) ratings
+        ), t.average_rating, 0) AS rating
       FROM teachers t
-      LEFT JOIN courses c ON c.teacher_id = t.id
-      LEFT JOIN course_enrollments ce ON COALESCE(ce.teacher_id, c.teacher_id) = t.id
+      LEFT JOIN staff_accounts sa ON sa.role = 'Teacher' AND sa.teacher_id = t.id
       WHERE t.active = TRUE
-      GROUP BY t.id
       ORDER BY t.id
     `,
   );
@@ -2215,16 +2466,74 @@ async function buildAdminWorkspace(staff) {
     `
       SELECT
         cu.id AS "curatorId",
+        cu.first_name AS "firstName",
+        cu.last_name AS "lastName",
         CONCAT(cu.first_name, ' ', cu.last_name) AS "curatorName",
         cu.phone,
         cu.email,
         cu.telegram_link AS telegram,
-        COUNT(DISTINCT CASE WHEN ce.status = 'Active' THEN ce.student_id END)::integer AS "studentsCount"
+        sa.login,
+        (
+          SELECT COUNT(DISTINCT c.id)::integer
+          FROM courses c
+          WHERE c.status = 'Active'
+            AND (
+              c.curator_id = cu.id
+              OR EXISTS (
+                SELECT 1 FROM course_enrollments ce_scope
+                WHERE ce_scope.course_id = c.id
+                  AND ce_scope.status <> 'Cancelled'
+                  AND ce_scope.curator_id = cu.id
+              )
+            )
+        ) AS "coursesCount",
+        (
+          SELECT COUNT(DISTINCT ce.student_id)::integer
+          FROM course_enrollments ce
+          JOIN courses c ON c.id = ce.course_id
+          WHERE ce.status = 'Active'
+            AND COALESCE(ce.curator_id, c.curator_id) = cu.id
+        ) AS "studentsCount",
+        (
+          SELECT COUNT(DISTINCT COALESCE(ce.teacher_id, c.teacher_id))::integer
+          FROM course_enrollments ce
+          JOIN courses c ON c.id = ce.course_id
+          WHERE ce.status = 'Active'
+            AND COALESCE(ce.curator_id, c.curator_id) = cu.id
+            AND COALESCE(ce.teacher_id, c.teacher_id) IS NOT NULL
+        ) AS "teachersCount",
+        (
+          SELECT COUNT(DISTINCT ha.id)::integer
+          FROM homework_assignments ha
+          JOIN homework_templates ht ON ht.id = ha.template_id
+          JOIN courses c ON c.id = ht.course_id
+          LEFT JOIN course_enrollments ce ON ce.id = ha.enrollment_id
+          LEFT JOIN homework_submissions hs ON hs.assignment_id = ha.id
+          WHERE ha.status <> 'Cancelled'
+            AND COALESCE(ce.curator_id, c.curator_id) = cu.id
+            AND (ha.status = 'Checked' OR hs.status = 'Checked')
+        ) AS "homeworkCheckedByTeachers",
+        (
+          SELECT COUNT(DISTINCT r.id)::integer
+          FROM staff_resource_reviews r
+          JOIN homework_assignments ha ON r.resource_type = 'Homework' AND r.resource_id = ha.id
+          JOIN homework_templates ht ON ht.id = ha.template_id
+          JOIN courses c ON c.id = ht.course_id
+          LEFT JOIN course_enrollments ce ON ce.id = ha.enrollment_id
+          WHERE r.staff_role = 'Curator'
+            AND r.staff_id = cu.id
+            AND COALESCE(ce.curator_id, c.curator_id) = cu.id
+        ) AS "curatorFeedbackTotal",
+        COALESCE((
+          SELECT AVG(r.rating)
+          FROM staff_resource_reviews r
+          WHERE r.staff_role = 'Curator'
+            AND r.staff_id = cu.id
+            AND r.rating IS NOT NULL
+        ), cu.average_rating, 0) AS rating
       FROM curators cu
-      LEFT JOIN courses c ON c.curator_id = cu.id
-      LEFT JOIN course_enrollments ce ON COALESCE(ce.curator_id, c.curator_id) = cu.id
+      LEFT JOIN staff_accounts sa ON sa.role = 'Curator' AND sa.curator_id = cu.id
       WHERE cu.active = TRUE
-      GROUP BY cu.id
       ORDER BY cu.id
     `,
   );
@@ -2356,10 +2665,134 @@ async function buildAdminWorkspace(staff) {
     `,
   );
 
+  const teacherCourses = await dbQuery(
+    `
+      SELECT
+        COALESCE(ce.teacher_id, c.teacher_id) AS "teacherId",
+        c.id AS "courseId",
+        c.title AS "courseTitle",
+        c.subject,
+        COUNT(DISTINCT CASE WHEN ce.status = 'Active' THEN ce.student_id END)::integer AS "studentsCount",
+        STRING_AGG(DISTINCT CONCAT(cu.first_name, ' ', cu.last_name), ', ') FILTER (WHERE cu.id IS NOT NULL) AS "curatorNames"
+      FROM courses c
+      LEFT JOIN course_enrollments ce ON ce.course_id = c.id AND ce.status = 'Active'
+      LEFT JOIN curators cu ON cu.id = COALESCE(ce.curator_id, c.curator_id)
+      WHERE c.status = 'Active'
+        AND COALESCE(ce.teacher_id, c.teacher_id) IS NOT NULL
+      GROUP BY COALESCE(ce.teacher_id, c.teacher_id), c.id
+      ORDER BY c.id
+    `,
+  );
+
+  const teacherStudents = await dbQuery(
+    `
+      SELECT DISTINCT
+        COALESCE(ce.teacher_id, c.teacher_id) AS "teacherId",
+        s.id AS "studentId",
+        CONCAT(s.first_name, ' ', s.last_name) AS "studentName",
+        s.grade,
+        c.id AS "courseId",
+        c.title AS "courseTitle",
+        COALESCE(ce.curator_id, c.curator_id) AS "curatorId",
+        CONCAT(cu.first_name, ' ', cu.last_name) AS "curatorName"
+      FROM course_enrollments ce
+      JOIN courses c ON c.id = ce.course_id
+      JOIN students s ON s.id = ce.student_id
+      LEFT JOIN curators cu ON cu.id = COALESCE(ce.curator_id, c.curator_id)
+      WHERE ce.status = 'Active'
+        AND COALESCE(ce.teacher_id, c.teacher_id) IS NOT NULL
+      ORDER BY "studentName", c.id
+    `,
+  );
+
+  const teacherCurators = await dbQuery(
+    `
+      SELECT
+        COALESCE(ce.teacher_id, c.teacher_id) AS "teacherId",
+        COALESCE(ce.curator_id, c.curator_id) AS "curatorId",
+        CONCAT(cu.first_name, ' ', cu.last_name) AS "curatorName",
+        COUNT(DISTINCT c.id)::integer AS "coursesCount",
+        COUNT(DISTINCT ce.student_id)::integer AS "studentsCount"
+      FROM course_enrollments ce
+      JOIN courses c ON c.id = ce.course_id
+      JOIN curators cu ON cu.id = COALESCE(ce.curator_id, c.curator_id)
+      WHERE ce.status = 'Active'
+        AND COALESCE(ce.teacher_id, c.teacher_id) IS NOT NULL
+        AND COALESCE(ce.curator_id, c.curator_id) IS NOT NULL
+      GROUP BY COALESCE(ce.teacher_id, c.teacher_id), COALESCE(ce.curator_id, c.curator_id), cu.id
+      ORDER BY "curatorName"
+    `,
+  );
+
+  const curatorCourses = await dbQuery(
+    `
+      SELECT
+        COALESCE(ce.curator_id, c.curator_id) AS "curatorId",
+        c.id AS "courseId",
+        c.title AS "courseTitle",
+        c.subject,
+        COUNT(DISTINCT CASE WHEN ce.status = 'Active' THEN ce.student_id END)::integer AS "studentsCount",
+        STRING_AGG(DISTINCT CONCAT(t.first_name, ' ', t.last_name), ', ') FILTER (WHERE t.id IS NOT NULL) AS "teacherNames"
+      FROM courses c
+      LEFT JOIN course_enrollments ce ON ce.course_id = c.id AND ce.status = 'Active'
+      LEFT JOIN teachers t ON t.id = COALESCE(ce.teacher_id, c.teacher_id)
+      WHERE c.status = 'Active'
+        AND COALESCE(ce.curator_id, c.curator_id) IS NOT NULL
+      GROUP BY COALESCE(ce.curator_id, c.curator_id), c.id
+      ORDER BY c.id
+    `,
+  );
+
+  const curatorStudents = await dbQuery(
+    `
+      SELECT DISTINCT
+        COALESCE(ce.curator_id, c.curator_id) AS "curatorId",
+        s.id AS "studentId",
+        CONCAT(s.first_name, ' ', s.last_name) AS "studentName",
+        s.grade,
+        c.id AS "courseId",
+        c.title AS "courseTitle",
+        COALESCE(ce.teacher_id, c.teacher_id) AS "teacherId",
+        CONCAT(t.first_name, ' ', t.last_name) AS "teacherName"
+      FROM course_enrollments ce
+      JOIN courses c ON c.id = ce.course_id
+      JOIN students s ON s.id = ce.student_id
+      LEFT JOIN teachers t ON t.id = COALESCE(ce.teacher_id, c.teacher_id)
+      WHERE ce.status = 'Active'
+        AND COALESCE(ce.curator_id, c.curator_id) IS NOT NULL
+      ORDER BY "studentName", c.id
+    `,
+  );
+
+  const curatorTeachers = await dbQuery(
+    `
+      SELECT
+        COALESCE(ce.curator_id, c.curator_id) AS "curatorId",
+        COALESCE(ce.teacher_id, c.teacher_id) AS "teacherId",
+        CONCAT(t.first_name, ' ', t.last_name) AS "teacherName",
+        COUNT(DISTINCT c.id)::integer AS "coursesCount",
+        COUNT(DISTINCT ce.student_id)::integer AS "studentsCount"
+      FROM course_enrollments ce
+      JOIN courses c ON c.id = ce.course_id
+      JOIN teachers t ON t.id = COALESCE(ce.teacher_id, c.teacher_id)
+      WHERE ce.status = 'Active'
+        AND COALESCE(ce.curator_id, c.curator_id) IS NOT NULL
+        AND COALESCE(ce.teacher_id, c.teacher_id) IS NOT NULL
+      GROUP BY COALESCE(ce.curator_id, c.curator_id), COALESCE(ce.teacher_id, c.teacher_id), t.id
+      ORDER BY "teacherName"
+    `,
+  );
+
   const groupedEnrollments = groupRowsBy(enrollments.rows, "studentId");
   const groupedParents = groupRowsBy(studentParents.rows, "studentId");
   const groupedComments = groupRowsBy(comments.rows.map((row) => ({ ...row, createdAt: toDateText(row.createdAt) })), "studentId");
   const groupedChildren = groupRowsBy(parentChildren.rows, "parentId");
+  const groupedTeacherCourses = groupRowsBy(teacherCourses.rows, "teacherId");
+  const groupedTeacherStudents = groupRowsBy(teacherStudents.rows, "teacherId");
+  const groupedTeacherCurators = groupRowsBy(teacherCurators.rows, "teacherId");
+  const groupedCuratorCourses = groupRowsBy(curatorCourses.rows, "curatorId");
+  const groupedCuratorStudents = groupRowsBy(curatorStudents.rows, "curatorId");
+  const groupedCuratorTeachers = groupRowsBy(curatorTeachers.rows, "curatorId");
 
   return {
     source: "database",
@@ -2390,8 +2823,21 @@ async function buildAdminWorkspace(staff) {
       };
     }),
     courses: courses.rows,
-    teachers: teachers.rows,
-    curators: curators.rows,
+    teachers: teachers.rows.map((teacher) => ({
+      ...teacher,
+      rating: Number(teacher.rating || 0),
+      averageHomeworkScore: Number(teacher.averageHomeworkScore || 0),
+      courses: groupedTeacherCourses.get(Number(teacher.teacherId)) || [],
+      students: groupedTeacherStudents.get(Number(teacher.teacherId)) || [],
+      curators: groupedTeacherCurators.get(Number(teacher.teacherId)) || [],
+    })),
+    curators: curators.rows.map((curator) => ({
+      ...curator,
+      rating: Number(curator.rating || 0),
+      courses: groupedCuratorCourses.get(Number(curator.curatorId)) || [],
+      students: groupedCuratorStudents.get(Number(curator.curatorId)) || [],
+      teachers: groupedCuratorTeachers.get(Number(curator.curatorId)) || [],
+    })),
     homeworks: [],
     streams: [],
     homeworkStats: [],

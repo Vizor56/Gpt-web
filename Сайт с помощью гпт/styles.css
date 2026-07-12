@@ -3311,6 +3311,19 @@ svg {
   gap: 10px;
 }
 
+.admin-detail-block {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.admin-detail-block h4 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 900;
+}
+
 .staff-form-status {
   min-height: 18px;
   margin: 0;
