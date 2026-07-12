@@ -302,7 +302,32 @@ async function runSchemaAndSeed() {
   const schemaPath = path.join(rootDir, "database", "neon-schema.sql");
   const schema = await fs.readFile(schemaPath, "utf8");
   await dbQuery(schema);
+  await runRuntimeMigrations();
   await seedDatabase();
+}
+
+async function runRuntimeMigrations() {
+  await dbQuery(`
+    ALTER TABLE chats ALTER COLUMN student_id DROP NOT NULL;
+    ALTER TABLE chats ADD COLUMN IF NOT EXISTS admin_id INTEGER REFERENCES admin_accounts(id) ON DELETE SET NULL;
+    ALTER TABLE chats ADD COLUMN IF NOT EXISTS chat_type TEXT NOT NULL DEFAULT 'Legacy';
+    ALTER TABLE chats ADD COLUMN IF NOT EXISTS target_role TEXT;
+
+    CREATE TABLE IF NOT EXISTS curator_teachers (
+      curator_id INTEGER NOT NULL REFERENCES curators(id) ON DELETE CASCADE,
+      teacher_id INTEGER NOT NULL REFERENCES teachers(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (curator_id, teacher_id)
+    );
+
+    DO $$
+    BEGIN
+      ALTER TABLE chat_messages DROP CONSTRAINT IF EXISTS chat_messages_sender_role_check;
+      ALTER TABLE chat_messages
+        ADD CONSTRAINT chat_messages_sender_role_check
+        CHECK (sender_role IN ('Student', 'Teacher', 'Curator', 'Admin', 'System'));
+    END $$;
+  `);
 }
 
 async function seedDatabase() {
@@ -433,6 +458,17 @@ async function seedDatabase() {
         course,
       );
     }
+
+    await client.query(
+      `
+        INSERT INTO curator_teachers (curator_id, teacher_id)
+        SELECT DISTINCT curator_id, teacher_id
+        FROM courses
+        WHERE curator_id IS NOT NULL
+          AND teacher_id IS NOT NULL
+        ON CONFLICT (curator_id, teacher_id) DO NOTHING
+      `,
+    );
 
     const lessons = createSeedLessons();
 
@@ -722,6 +758,9 @@ async function assignHomeworksForEnrollment(client, enrollmentId) {
 }
 
 async function ensureChatsForStudent(client, studentId) {
+  await client.query("SELECT $1::integer", [studentId]);
+  return;
+
   await client.query(
     `
       INSERT INTO chats (student_id, teacher_id, curator_id, title)
@@ -1948,6 +1987,10 @@ app.post(
     const vkLink = cleanNullableText(request.body.vkLink || request.body.vk_link, 300);
     const sourcePlatform = cleanNullableText(request.body.sourcePlatform || request.body.source_platform, 200);
     const commentText = cleanNullableText(request.body.commentText || request.body.comment_text, 2000);
+    const childFieldPresent = Object.prototype.hasOwnProperty.call(request.body, "childIds");
+    const childIds = (Array.isArray(request.body.childIds) ? request.body.childIds : [request.body.childIds])
+      .map((value) => optionalInt(value))
+      .filter(Boolean);
 
     if (!firstName || !lastName) {
       throw createHttpError(400, "Parent first and last name are required.");
@@ -1984,7 +2027,24 @@ app.post(
       throw createHttpError(404, "Parent not found.");
     }
 
-    response.status(parentId ? 200 : 201).json({ ok: true, source: "database", parentId: result.rows[0].parentId });
+    const savedParentId = result.rows[0].parentId;
+
+    if (childFieldPresent) {
+      await dbQuery("DELETE FROM student_parents WHERE parent_id = $1", [savedParentId]);
+
+      for (const childId of childIds) {
+        await dbQuery(
+          `
+            INSERT INTO student_parents (student_id, parent_id, relation_type)
+            VALUES ($1, $2, 'Parent')
+            ON CONFLICT (student_id, parent_id) DO UPDATE SET relation_type = student_parents.relation_type
+          `,
+          [childId, savedParentId],
+        );
+      }
+    }
+
+    response.status(parentId ? 200 : 201).json({ ok: true, source: "database", parentId: savedParentId });
   }),
 );
 
@@ -2001,6 +2061,8 @@ app.post(
     const telegramLink = cleanNullableText(request.body.telegramLink || request.body.telegram_link, 300);
     const vkLink = cleanNullableText(request.body.vkLink || request.body.vk_link, 300);
     const sourcePlatform = cleanNullableText(request.body.sourcePlatform || request.body.source_platform, 200);
+    const login = normalizeLogin(request.body.login);
+    const password = cleanText(request.body.password, 200);
     const requestedStatus = cleanText(request.body.studentStatus || request.body.student_status, 30) || "Student";
     const studentStatus = studentStatuses.has(requestedStatus) ? requestedStatus : "Student";
     const parentFieldPresent = Object.prototype.hasOwnProperty.call(request.body, "parentId");
@@ -2047,6 +2109,45 @@ app.post(
       }
 
       const savedStudentId = result.rows[0].studentId;
+
+      if (login) {
+        const existingLogin = await client.query("SELECT student_id FROM student_accounts WHERE login = $1 AND student_id <> $2", [login, savedStudentId]);
+
+        if (existingLogin.rowCount > 0) {
+          throw createHttpError(409, "This student login is already used.");
+        }
+
+        const existingAccount = await client.query("SELECT id FROM student_accounts WHERE student_id = $1", [savedStudentId]);
+        const passwordHash = password.length >= 6 ? hashPassword(password) : studentPassword;
+
+        if (existingAccount.rowCount > 0) {
+          await client.query(
+            `
+              UPDATE student_accounts
+              SET login = $2,
+                  password_hash = CASE WHEN $3::boolean THEN $4 ELSE password_hash END,
+                  auth_token = NULL,
+                  auth_expires_at = NULL
+              WHERE student_id = $1
+            `,
+            [savedStudentId, login, password.length >= 6, passwordHash],
+          );
+        } else {
+          if (password.length < 6) {
+            throw createHttpError(400, "Student password must be at least 6 characters.");
+          }
+
+          await client.query(
+            `
+              INSERT INTO student_accounts (student_id, login, password_hash)
+              VALUES ($1, $2, $3)
+            `,
+            [savedStudentId, login, passwordHash],
+          );
+        }
+      } else if (!studentId && password) {
+        throw createHttpError(400, "Student login is required when setting a password.");
+      }
 
       if (parentFieldPresent) {
         await client.query("DELETE FROM student_parents WHERE student_id = $1", [savedStudentId]);
@@ -2439,6 +2540,31 @@ app.post(
   }),
 );
 
+function parseIdList(value) {
+  return [...new Set((Array.isArray(value) ? value : [value]).map((item) => optionalInt(item)).filter(Boolean))];
+}
+
+async function syncCuratorTeachers(client, curatorId, teacherIds) {
+  await client.query("DELETE FROM curator_teachers WHERE curator_id = $1", [curatorId]);
+
+  for (const teacherId of teacherIds) {
+    const teacher = await client.query("SELECT id FROM teachers WHERE id = $1 AND active = TRUE", [teacherId]);
+
+    if (teacher.rowCount === 0) {
+      throw createHttpError(404, "Teacher not found.");
+    }
+
+    await client.query(
+      `
+        INSERT INTO curator_teachers (curator_id, teacher_id)
+        VALUES ($1, $2)
+        ON CONFLICT (curator_id, teacher_id) DO NOTHING
+      `,
+      [curatorId, teacherId],
+    );
+  }
+}
+
 app.post(
   "/api/admin/curators",
   asyncRoute(async (request, response) => {
@@ -2451,6 +2577,8 @@ app.post(
     const telegramLink = cleanNullableText(request.body.telegramLink || request.body.telegram_link || request.body.telegram, 300);
     const login = normalizeLogin(request.body.login);
     const password = cleanText(request.body.password, 200);
+    const teacherFieldPresent = Object.prototype.hasOwnProperty.call(request.body, "teacherIds");
+    const teacherIds = parseIdList(request.body.teacherIds);
 
     const client = await requireDatabase().connect();
 
@@ -2486,6 +2614,9 @@ app.post(
 
       const savedCuratorId = result.rows[0].curatorId;
       await upsertStaffAccountForPerson(client, { role: "Curator", curatorId: savedCuratorId, login, password });
+      if (teacherFieldPresent) {
+        await syncCuratorTeachers(client, savedCuratorId, teacherIds);
+      }
       await client.query("COMMIT");
       response.status(curatorId ? 200 : 201).json({ ok: true, source: "database", curatorId: savedCuratorId });
     } catch (error) {
@@ -2493,6 +2624,39 @@ app.post(
       if (error?.code === "23505") {
         throw createHttpError(409, "This login is already used by another team account.");
       }
+      throw error;
+    } finally {
+      client.release();
+    }
+  }),
+);
+
+app.post(
+  "/api/admin/curators/:id/teachers",
+  asyncRoute(async (request, response) => {
+    await requireAdmin(request);
+    const curatorId = toInt(request.params.id, 0);
+    const teacherIds = parseIdList(request.body.teacherIds);
+
+    if (!curatorId) {
+      throw createHttpError(400, "Curator is required.");
+    }
+
+    const client = await requireDatabase().connect();
+
+    try {
+      await client.query("BEGIN");
+      const curator = await client.query("SELECT id FROM curators WHERE id = $1 AND active = TRUE", [curatorId]);
+
+      if (curator.rowCount === 0) {
+        throw createHttpError(404, "Curator not found.");
+      }
+
+      await syncCuratorTeachers(client, curatorId, teacherIds);
+      await client.query("COMMIT");
+      response.json({ ok: true, source: "database", curatorId, teacherIds });
+    } catch (error) {
+      await client.query("ROLLBACK");
       throw error;
     } finally {
       client.release();
@@ -2733,12 +2897,19 @@ async function buildAdminWorkspace(staff) {
             AND COALESCE(ce.curator_id, c.curator_id) = cu.id
         ) AS "studentsCount",
         (
-          SELECT COUNT(DISTINCT COALESCE(ce.teacher_id, c.teacher_id))::integer
-          FROM course_enrollments ce
-          JOIN courses c ON c.id = ce.course_id
-          WHERE ce.status = 'Active'
-            AND COALESCE(ce.curator_id, c.curator_id) = cu.id
-            AND COALESCE(ce.teacher_id, c.teacher_id) IS NOT NULL
+          SELECT COUNT(DISTINCT teacher_id)::integer
+          FROM (
+            SELECT COALESCE(ce.teacher_id, c.teacher_id) AS teacher_id
+            FROM course_enrollments ce
+            JOIN courses c ON c.id = ce.course_id
+            WHERE ce.status = 'Active'
+              AND COALESCE(ce.curator_id, c.curator_id) = cu.id
+              AND COALESCE(ce.teacher_id, c.teacher_id) IS NOT NULL
+            UNION
+            SELECT ct.teacher_id
+            FROM curator_teachers ct
+            WHERE ct.curator_id = cu.id
+          ) curator_teacher_scope
         ) AS "teachersCount",
         (
           SELECT COUNT(DISTINCT ha.id)::integer
@@ -2790,6 +2961,7 @@ async function buildAdminWorkspace(staff) {
         s.vk_link AS "vkLink",
         s.source_platform AS "sourcePlatform",
         s.student_status AS "studentStatus",
+        sa.login,
         s.created_at AS "createdAt",
         COALESCE(AVG(hs.score) FILTER (WHERE hs.status = 'Checked' AND hs.score IS NOT NULL), 0) AS "averageScore",
         COUNT(DISTINCT ha.id)::integer AS "homeworkTotal",
@@ -2797,9 +2969,10 @@ async function buildAdminWorkspace(staff) {
         COUNT(DISTINCT CASE WHEN ha.status = 'Checked' THEN ha.id END)::integer AS "homeworkChecked"
       FROM students s
       LEFT JOIN course_enrollments ce ON ce.student_id = s.id AND ce.status <> 'Cancelled'
+      LEFT JOIN student_accounts sa ON sa.student_id = s.id
       LEFT JOIN homework_assignments ha ON ha.student_id = s.id AND ha.status <> 'Cancelled'
       LEFT JOIN homework_submissions hs ON hs.assignment_id = ha.id
-      GROUP BY s.id
+      GROUP BY s.id, sa.login
       ORDER BY s.last_name, s.first_name, s.id
     `,
   );
@@ -3027,16 +3200,50 @@ async function buildAdminWorkspace(staff) {
     `,
   );
 
+  const curatorTeacherLinks = await dbQuery(
+    `
+      SELECT
+        ct.curator_id AS "curatorId",
+        ct.teacher_id AS "teacherId",
+        CONCAT(t.first_name, ' ', t.last_name) AS "teacherName",
+        0::integer AS "coursesCount",
+        COUNT(DISTINCT ce.student_id)::integer AS "studentsCount"
+      FROM curator_teachers ct
+      JOIN teachers t ON t.id = ct.teacher_id
+      LEFT JOIN course_enrollments ce ON ce.teacher_id = ct.teacher_id AND ce.curator_id = ct.curator_id AND ce.status = 'Active'
+      WHERE t.active = TRUE
+      GROUP BY ct.curator_id, ct.teacher_id, t.id
+      ORDER BY "teacherName"
+    `,
+  );
+
+  const teacherCuratorLinks = await dbQuery(
+    `
+      SELECT
+        ct.teacher_id AS "teacherId",
+        ct.curator_id AS "curatorId",
+        CONCAT(cu.first_name, ' ', cu.last_name) AS "curatorName",
+        0::integer AS "coursesCount",
+        COUNT(DISTINCT ce.student_id)::integer AS "studentsCount"
+      FROM curator_teachers ct
+      JOIN curators cu ON cu.id = ct.curator_id
+      LEFT JOIN course_enrollments ce ON ce.teacher_id = ct.teacher_id AND ce.curator_id = ct.curator_id AND ce.status = 'Active'
+      WHERE cu.active = TRUE
+      GROUP BY ct.teacher_id, ct.curator_id, cu.id
+      ORDER BY "curatorName"
+    `,
+  );
+
   const groupedEnrollments = groupRowsBy(enrollments.rows, "studentId");
   const groupedParents = groupRowsBy(studentParents.rows, "studentId");
   const groupedComments = groupRowsBy(comments.rows.map((row) => ({ ...row, createdAt: toDateText(row.createdAt) })), "studentId");
   const groupedChildren = groupRowsBy(parentChildren.rows, "parentId");
   const groupedTeacherCourses = groupRowsBy(teacherCourses.rows, "teacherId");
   const groupedTeacherStudents = groupRowsBy(teacherStudents.rows, "teacherId");
-  const groupedTeacherCurators = groupRowsBy(teacherCurators.rows, "teacherId");
+  const groupedTeacherCurators = groupRowsBy([...teacherCurators.rows, ...teacherCuratorLinks.rows], "teacherId");
   const groupedCuratorCourses = groupRowsBy(curatorCourses.rows, "curatorId");
   const groupedCuratorStudents = groupRowsBy(curatorStudents.rows, "curatorId");
-  const groupedCuratorTeachers = groupRowsBy(curatorTeachers.rows, "curatorId");
+  const groupedCuratorTeachers = groupRowsBy([...curatorTeachers.rows, ...curatorTeacherLinks.rows], "curatorId");
 
   return {
     source: "database",
@@ -3875,6 +4082,30 @@ app.get(
   }),
 );
 
+app.get(
+  "/api/messages/recipients",
+  asyncRoute(async (request, response) => {
+    const actor = await getMessageActorFromRequest(request);
+    response.json({ source: "database", recipients: await getMessageRecipients(actor) });
+  }),
+);
+
+app.post(
+  "/api/messages/start",
+  asyncRoute(async (request, response) => {
+    const actor = await getMessageActorFromRequest(request);
+    const targetRole = cleanText(request.body.targetRole, 30);
+    const targetId = toInt(request.body.targetId, 0);
+
+    if (!targetRole || !targetId) {
+      throw createHttpError(400, "Выберите, кому написать.");
+    }
+
+    const conversation = await findOrCreateConversation(actor, targetRole, targetId);
+    response.status(201).json({ ok: true, source: "database", activeConversationId: conversation.conversationId });
+  }),
+);
+
 app.post(
   "/api/messages",
   asyncRoute(async (request, response) => {
@@ -3909,13 +4140,181 @@ async function getMessageActorFromRequest(request) {
   return { role: "Student", id: student.studentId, name: `${student.firstName} ${student.lastName}`.trim() || student.login, student };
 }
 
+async function getMessageRecipients(actor) {
+  if (actor.role === "Admin") {
+    const result = await dbQuery(
+      `
+        SELECT 'Teacher' AS "targetRole", id AS "targetId", CONCAT(first_name, ' ', last_name) AS "targetName", 'Преподаватель' AS "recipientGroup", email AS subtitle
+        FROM teachers
+        WHERE active = TRUE
+        UNION ALL
+        SELECT 'Curator' AS "targetRole", id AS "targetId", CONCAT(first_name, ' ', last_name) AS "targetName", 'Куратор' AS "recipientGroup", email AS subtitle
+        FROM curators
+        WHERE active = TRUE
+        ORDER BY "recipientGroup", "targetName"
+      `,
+    );
+    return result.rows;
+  }
+
+  if (actor.role === "Teacher") {
+    const result = await dbQuery(
+      `
+        SELECT 'Admin' AS "targetRole", id AS "targetId", CONCAT(first_name, ' ', last_name) AS "targetName", 'Администратор' AS "recipientGroup", login AS subtitle
+        FROM admin_accounts
+        UNION ALL
+        SELECT DISTINCT 'Student' AS "targetRole", s.id AS "targetId", CONCAT(s.first_name, ' ', s.last_name) AS "targetName", 'Ученики' AS "recipientGroup", c.title AS subtitle
+        FROM course_enrollments ce
+        JOIN courses c ON c.id = ce.course_id
+        JOIN students s ON s.id = ce.student_id
+        WHERE ce.status = 'Active'
+          AND COALESCE(ce.teacher_id, c.teacher_id) = $1
+        ORDER BY "recipientGroup", "targetName"
+      `,
+      [actor.id],
+    );
+    return result.rows;
+  }
+
+  if (actor.role === "Curator") {
+    const result = await dbQuery(
+      `
+        SELECT 'Admin' AS "targetRole", id AS "targetId", CONCAT(first_name, ' ', last_name) AS "targetName", 'Администратор' AS "recipientGroup", login AS subtitle
+        FROM admin_accounts
+        UNION ALL
+        SELECT DISTINCT 'Student' AS "targetRole", s.id AS "targetId", CONCAT(s.first_name, ' ', s.last_name) AS "targetName", 'Ученики' AS "recipientGroup", c.title AS subtitle
+        FROM course_enrollments ce
+        JOIN courses c ON c.id = ce.course_id
+        JOIN students s ON s.id = ce.student_id
+        WHERE ce.status = 'Active'
+          AND COALESCE(ce.curator_id, c.curator_id) = $1
+        ORDER BY "recipientGroup", "targetName"
+      `,
+      [actor.id],
+    );
+    return result.rows;
+  }
+
+  const result = await dbQuery(
+    `
+      SELECT DISTINCT 'Teacher' AS "targetRole", COALESCE(ce.teacher_id, c.teacher_id) AS "targetId", CONCAT(t.first_name, ' ', t.last_name) AS "targetName", 'Преподаватели' AS "recipientGroup", c.title AS subtitle
+      FROM course_enrollments ce
+      JOIN courses c ON c.id = ce.course_id
+      JOIN teachers t ON t.id = COALESCE(ce.teacher_id, c.teacher_id)
+      WHERE ce.student_id = $1
+        AND ce.status = 'Active'
+      UNION ALL
+      SELECT DISTINCT 'Curator' AS "targetRole", COALESCE(ce.curator_id, c.curator_id) AS "targetId", CONCAT(cu.first_name, ' ', cu.last_name) AS "targetName", 'Кураторы' AS "recipientGroup", c.title AS subtitle
+      FROM course_enrollments ce
+      JOIN courses c ON c.id = ce.course_id
+      JOIN curators cu ON cu.id = COALESCE(ce.curator_id, c.curator_id)
+      WHERE ce.student_id = $1
+        AND ce.status = 'Active'
+      ORDER BY "recipientGroup", "targetName"
+    `,
+    [actor.id],
+  );
+  return result.rows;
+}
+
+function getChatShape(actor, targetRole, targetId) {
+  if (actor.role === "Admin" && targetRole === "Teacher") {
+    return { chatType: "TeacherAdmin", studentId: null, teacherId: targetId, curatorId: null, adminId: actor.id, targetRole };
+  }
+
+  if (actor.role === "Admin" && targetRole === "Curator") {
+    return { chatType: "CuratorAdmin", studentId: null, teacherId: null, curatorId: targetId, adminId: actor.id, targetRole };
+  }
+
+  if (actor.role === "Teacher" && targetRole === "Admin") {
+    return { chatType: "TeacherAdmin", studentId: null, teacherId: actor.id, curatorId: null, adminId: targetId, targetRole };
+  }
+
+  if (actor.role === "Curator" && targetRole === "Admin") {
+    return { chatType: "CuratorAdmin", studentId: null, teacherId: null, curatorId: actor.id, adminId: targetId, targetRole };
+  }
+
+  if (actor.role === "Student" && targetRole === "Teacher") {
+    return { chatType: "StudentTeacher", studentId: actor.id, teacherId: targetId, curatorId: null, adminId: null, targetRole };
+  }
+
+  if (actor.role === "Student" && targetRole === "Curator") {
+    return { chatType: "StudentCurator", studentId: actor.id, teacherId: null, curatorId: targetId, adminId: null, targetRole };
+  }
+
+  if (actor.role === "Teacher" && targetRole === "Student") {
+    return { chatType: "StudentTeacher", studentId: targetId, teacherId: actor.id, curatorId: null, adminId: null, targetRole };
+  }
+
+  if (actor.role === "Curator" && targetRole === "Student") {
+    return { chatType: "StudentCurator", studentId: targetId, teacherId: null, curatorId: actor.id, adminId: null, targetRole };
+  }
+
+  return null;
+}
+
+async function getRecipientDetails(actor, targetRole, targetId) {
+  const allowed = await getMessageRecipients(actor);
+  return allowed.find((item) => item.targetRole === targetRole && Number(item.targetId) === Number(targetId)) || null;
+}
+
+async function findOrCreateConversation(actor, targetRole, targetId) {
+  const shape = getChatShape(actor, targetRole, targetId);
+  const recipient = shape ? await getRecipientDetails(actor, targetRole, targetId) : null;
+
+  if (!shape || !recipient) {
+    throw createHttpError(403, "Этот адресат недоступен для чата.");
+  }
+
+  const existing = await dbOne(
+    `
+      SELECT id AS "conversationId"
+      FROM chats
+      WHERE chat_type = $1
+        AND student_id IS NOT DISTINCT FROM $2
+        AND teacher_id IS NOT DISTINCT FROM $3
+        AND curator_id IS NOT DISTINCT FROM $4
+        AND admin_id IS NOT DISTINCT FROM $5
+      ORDER BY id
+      LIMIT 1
+    `,
+    [shape.chatType, shape.studentId, shape.teacherId, shape.curatorId, shape.adminId],
+  );
+
+  if (existing) {
+    return existing;
+  }
+
+  const title = `${actor.name || actor.role} · ${recipient.targetName}`;
+  const created = await dbOne(
+    `
+      INSERT INTO chats (student_id, teacher_id, curator_id, admin_id, chat_type, target_role, title)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING id AS "conversationId"
+    `,
+    [shape.studentId, shape.teacherId, shape.curatorId, shape.adminId, shape.chatType, shape.targetRole, title],
+  );
+
+  await dbQuery(
+    `
+      INSERT INTO chat_messages (chat_id, sender_role, sender_name, message_text)
+      VALUES ($1, 'System', 'Онлайн-школа', $2)
+    `,
+    [created.conversationId, `Чат создан: ${actor.name || actor.role} и ${recipient.targetName}.`],
+  );
+
+  return created;
+}
+
 async function assertConversationAllowed(actor, conversationId) {
   const where =
     actor.role === "Student"
-      ? "student_id = $2"
+      ? "student_id = $2 AND chat_type IN ('StudentTeacher', 'StudentCurator')"
       : actor.role === "Teacher"
-        ? "teacher_id = $2"
-        : "curator_id = $2";
+        ? "teacher_id = $2 AND chat_type IN ('StudentTeacher', 'TeacherAdmin')"
+        : actor.role === "Curator"
+          ? "curator_id = $2 AND chat_type IN ('StudentCurator', 'CuratorAdmin')"
+          : "admin_id = $2 AND chat_type IN ('TeacherAdmin', 'CuratorAdmin')";
   const row = await dbOne(`SELECT 1 FROM chats WHERE id = $1 AND ${where}`, [conversationId, actor.id]);
 
   if (!row) {
@@ -3926,28 +4325,45 @@ async function assertConversationAllowed(actor, conversationId) {
 async function getMessagesPayload(actor, requestedConversationId = 0) {
   const where =
     actor.role === "Student"
-      ? "ch.student_id = $1"
+      ? "ch.student_id = $1 AND ch.chat_type IN ('StudentTeacher', 'StudentCurator')"
       : actor.role === "Teacher"
-        ? "ch.teacher_id = $1"
-        : "ch.curator_id = $1";
+        ? "ch.teacher_id = $1 AND ch.chat_type IN ('StudentTeacher', 'TeacherAdmin')"
+        : actor.role === "Curator"
+          ? "ch.curator_id = $1 AND ch.chat_type IN ('StudentCurator', 'CuratorAdmin')"
+          : "ch.admin_id = $1 AND ch.chat_type IN ('TeacherAdmin', 'CuratorAdmin')";
 
   const conversations = await dbQuery(
     `
       SELECT
         ch.id AS "conversationId",
         ch.title,
+        ch.chat_type AS "chatType",
+        ch.target_role AS "targetRole",
         CONCAT(s.first_name, ' ', s.last_name) AS "studentName",
-        COALESCE(CONCAT(t.first_name, ' ', t.last_name), CONCAT(cu.first_name, ' ', cu.last_name)) AS "staffName",
+        CONCAT(t.first_name, ' ', t.last_name) AS "teacherName",
+        CONCAT(cu.first_name, ' ', cu.last_name) AS "curatorName",
+        CONCAT(a.first_name, ' ', a.last_name) AS "adminName",
+        COALESCE(CONCAT(t.first_name, ' ', t.last_name), CONCAT(cu.first_name, ' ', cu.last_name), CONCAT(a.first_name, ' ', a.last_name), CONCAT(s.first_name, ' ', s.last_name)) AS "staffName",
         ch.created_at AS "createdAt",
         MAX(cm.sent_at) AS "lastMessageAt"
       FROM chats ch
-      JOIN students s ON s.id = ch.student_id
+      LEFT JOIN students s ON s.id = ch.student_id
       LEFT JOIN teachers t ON t.id = ch.teacher_id
       LEFT JOIN curators cu ON cu.id = ch.curator_id
+      LEFT JOIN admin_accounts a ON a.id = ch.admin_id
       LEFT JOIN chat_messages cm ON cm.chat_id = ch.id
       WHERE ${where}
-      GROUP BY ch.id, s.id, t.id, cu.id
-      ORDER BY "lastMessageAt" DESC NULLS LAST, ch.created_at DESC
+      GROUP BY ch.id, s.id, t.id, cu.id, a.id
+      ORDER BY
+        CASE ch.chat_type
+          WHEN 'TeacherAdmin' THEN 1
+          WHEN 'CuratorAdmin' THEN 2
+          WHEN 'StudentTeacher' THEN 3
+          WHEN 'StudentCurator' THEN 4
+          ELSE 5
+        END,
+        "lastMessageAt" DESC NULLS LAST,
+        ch.created_at DESC
     `,
     [actor.id],
   );
@@ -3974,6 +4390,7 @@ async function getMessagesPayload(actor, requestedConversationId = 0) {
   return {
     source: "database",
     activeConversationId,
+    recipients: await getMessageRecipients(actor),
     conversations: conversations.rows.map((row) => ({
       ...row,
       createdAt: toDateText(row.createdAt),

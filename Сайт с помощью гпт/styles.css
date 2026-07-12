@@ -2648,6 +2648,68 @@ svg {
   background: #f8fbff;
 }
 
+.conversation-start-form {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #d8e6f8;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.conversation-start-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.conversation-start-form select {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 10px;
+  color: var(--ink);
+  border: 1px solid #c9dedc;
+  border-radius: 7px;
+  background: #fff;
+  font-weight: 750;
+}
+
+.conversation-start-form button,
+.conversation-filters button {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 10px;
+  color: var(--blue);
+  border: 1px solid #b9d9ff;
+  border-radius: 7px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.conversation-start-form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.conversation-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.conversation-filters button.is-active {
+  color: #fff;
+  border-color: var(--blue);
+  background: var(--blue);
+}
+
 .conversation-button {
   display: grid;
   gap: 5px;
@@ -2864,7 +2926,10 @@ svg {
   background: #f1fbfa;
   cursor: pointer;
   font-weight: 850;
+  line-height: 1.15;
+  min-width: 0;
   text-decoration: none;
+  white-space: normal;
 }
 
 .staff-refresh-button svg,
@@ -3193,7 +3258,7 @@ svg {
 }
 
 .staff-inline-form {
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   align-items: start;
 }
 
@@ -3203,10 +3268,12 @@ svg {
 
 .staff-inline-form input,
 .staff-inline-form select,
+.staff-inline-form select[multiple],
 .staff-inline-form textarea,
 .staff-review-form input,
 .staff-review-form textarea,
 .staff-lesson-form input,
+.staff-lesson-form select,
 .staff-stream-form input,
 .staff-stream-form select,
 .staff-filterbar select {
@@ -3218,10 +3285,18 @@ svg {
   font-weight: 750;
 }
 
+.staff-inline-form select[multiple],
+.staff-lesson-form select[multiple],
+.admin-edit-form select[multiple] {
+  min-height: 118px;
+  padding: 8px 10px;
+}
+
 .staff-inline-form input,
 .staff-inline-form select,
 .staff-review-form input,
 .staff-lesson-form input,
+.staff-lesson-form select,
 .staff-stream-form input,
 .staff-stream-form select,
 .staff-filterbar select {
@@ -3273,7 +3348,7 @@ svg {
 }
 
 .admin-edit-form {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
 }
 
 .admin-edit-form label:nth-of-type(2),
@@ -3299,11 +3374,21 @@ svg {
 }
 
 .admin-edit-form label:has(textarea) {
-  grid-column: span 3;
+  grid-column: 1 / -1;
+}
+
+.admin-edit-form label:has(select[multiple]) {
+  grid-column: 1 / -1;
 }
 
 .admin-enrollment-form {
-  grid-template-columns: minmax(130px, 1fr) minmax(130px, 1fr) minmax(130px, 1fr) minmax(120px, 0.8fr) auto;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.admin-enrollment-form button,
+.admin-course-staff-form button,
+.admin-parent-child-form button {
+  width: 100%;
 }
 
 .admin-course-list {

@@ -471,6 +471,7 @@ let latestShop = null;
 let latestMessages = null;
 let latestStaffWorkspace = null;
 let currentConversationId = null;
+let currentMessageFilter = "all";
 let streamsLoaded = false;
 let currentStaffPage = "messages";
 let staffFilters = {};
@@ -1542,6 +1543,7 @@ function getStaffNavItems() {
 
   if (role === "Admin") {
     return [
+      { page: "messages", label: "Сообщения", icon: "#icon-message" },
       { page: "applications", label: "Заявки", icon: "#icon-clipboard" },
       { page: "students", label: "Ученики", icon: "#icon-book" },
       { page: "parents", label: "Родители", icon: "#icon-user" },
@@ -1669,9 +1671,9 @@ function enterStaffMode(staff = currentStaff, pageName = "") {
 
   renderGlobalNotifications();
   const hashPage = location.hash.startsWith("#staff-") ? location.hash.replace("#staff-", "") : "";
-  const fallbackPage = staffProfile.role === "Admin" ? "applications" : "messages";
+  const fallbackPage = "messages";
   const requestedPage = pageName || hashPage || currentStaffPage || fallbackPage;
-  openStaffPage(staffProfile.role === "Admin" && requestedPage === "messages" ? "applications" : requestedPage);
+  openStaffPage(requestedPage);
   loadStaffWorkspace({ silent: true });
 }
 
@@ -1693,10 +1695,6 @@ function openStaffPage(pageName = "messages") {
   if (!hasAuthenticatedStaff()) {
     openAccount();
     return;
-  }
-
-  if (getStaffProfile().role === "Admin" && pageName === "messages") {
-    pageName = "applications";
   }
 
   ensureStaffShell();
@@ -3114,6 +3112,20 @@ function renderAdminStudentOptions(selectedStudentId = "") {
     .join("")}`;
 }
 
+function renderAdminStudentMultiOptions(selectedStudentIds = []) {
+  const selected = new Set((selectedStudentIds || []).map((id) => String(id)));
+  return getStaffItems("students")
+    .map((student) => `<option value="${escapeHtml(student.studentId)}" ${selected.has(String(student.studentId)) ? "selected" : ""}>${escapeHtml(student.studentName)} · ${escapeHtml(student.grade ? `${student.grade} класс` : "класс не указан")}</option>`)
+    .join("");
+}
+
+function renderAdminTeacherMultiOptions(selectedTeacherIds = []) {
+  const selected = new Set((selectedTeacherIds || []).map((id) => String(id)));
+  return getStaffItems("teachers")
+    .map((teacher) => `<option value="${escapeHtml(teacher.teacherId)}" ${selected.has(String(teacher.teacherId)) ? "selected" : ""}>${escapeHtml(teacher.teacherName)} · ${formatNumber(teacher.studentsCount || 0)} учен.</option>`)
+    .join("");
+}
+
 function renderAdminParentChildForm(parent = {}, child = {}) {
   return `
     <form class="staff-inline-form admin-parent-child-form" data-admin-parent-child-form data-parent-id="${escapeHtml(parent.parentId || "")}">
@@ -3289,9 +3301,11 @@ function renderAdminStudentForm(student = {}) {
       <label>Telegram<input name="telegramLink" type="url" value="${escapeHtml(student.telegramLink || "")}" placeholder="https://t.me/..." /></label>
       <label>VK<input name="vkLink" type="url" value="${escapeHtml(student.vkLink || "")}" placeholder="https://vk.com/..." /></label>
       <label>Платформа<input name="sourcePlatform" type="text" value="${escapeHtml(student.sourcePlatform || "")}" /></label>
+      <label>Логин<input name="login" type="text" value="${escapeHtml(student.login || "")}" placeholder="student_login" /></label>
+      <label>Пароль<input name="password" type="password" minlength="6" placeholder="${student.studentId ? "оставьте пустым, чтобы не менять" : "минимум 6 символов"}" /></label>
       <label>Родитель<select name="parentId">${renderAdminParentOptions(parent.parentId || "")}</select></label>
       <label>Связь<input name="relationType" type="text" value="${escapeHtml(parent.relationType || "Родитель")}" /></label>
-      <button type="submit"><svg><use href="#icon-upload" /></svg>${student.studentId ? "Сохранить ученика" : "Добавить ученика"}</button>
+      <button type="submit"><svg><use href="#icon-upload" /></svg>${student.studentId ? "Сохранить" : "Добавить"}</button>
       <p class="staff-form-status" aria-live="polite"></p>
     </form>
   `;
@@ -3382,6 +3396,8 @@ function renderAdminStudents() {
 }
 
 function renderAdminParentForm(parent = {}) {
+  const childIds = (parent.children || []).map((child) => child.studentId);
+
   return `
     <form class="staff-lesson-form admin-edit-form" data-admin-parent-form>
       <input type="hidden" name="parentId" value="${escapeHtml(parent.parentId || "")}" />
@@ -3393,7 +3409,8 @@ function renderAdminParentForm(parent = {}) {
       <label>VK<input name="vkLink" type="url" value="${escapeHtml(parent.vkLink || "")}" /></label>
       <label>Платформа<input name="sourcePlatform" type="text" value="${escapeHtml(parent.sourcePlatform || "")}" /></label>
       <label>Комментарий<textarea name="commentText" rows="2">${escapeHtml(parent.commentText || "")}</textarea></label>
-      <button type="submit"><svg><use href="#icon-upload" /></svg>${parent.parentId ? "Сохранить родителя" : "Добавить родителя"}</button>
+      <label>Дети<select name="childIds" multiple size="4">${renderAdminStudentMultiOptions(childIds)}</select></label>
+      <button type="submit"><svg><use href="#icon-upload" /></svg>${parent.parentId ? "Сохранить" : "Добавить"}</button>
       <p class="staff-form-status" aria-live="polite"></p>
     </form>
   `;
@@ -3544,6 +3561,8 @@ function renderAdminTeachers() {
 }
 
 function renderAdminCuratorForm(curator = {}) {
+  const teacherIds = (curator.teachers || []).map((teacher) => teacher.teacherId);
+
   return `
     <form class="staff-lesson-form admin-edit-form" data-admin-curator-form>
       <input type="hidden" name="curatorId" value="${escapeHtml(curator.curatorId || "")}" />
@@ -3554,7 +3573,8 @@ function renderAdminCuratorForm(curator = {}) {
       <label>Telegram<input name="telegramLink" type="url" value="${escapeHtml(curator.telegram || "")}" placeholder="Пока неизвестно" /></label>
       <label>Логин<input name="login" type="text" value="${escapeHtml(curator.login || "")}" placeholder="Пока неизвестно" /></label>
       <label>Новый пароль<input name="password" type="password" minlength="6" placeholder="${curator.curatorId ? "Оставьте пустым, чтобы не менять" : "curator123 по умолчанию"}" /></label>
-      <button type="submit"><svg><use href="#icon-upload" /></svg>${curator.curatorId ? "Сохранить куратора" : "Добавить куратора"}</button>
+      <label>Преподаватели<select name="teacherIds" multiple size="4">${renderAdminTeacherMultiOptions(teacherIds)}</select></label>
+      <button type="submit"><svg><use href="#icon-upload" /></svg>${curator.curatorId ? "Сохранить" : "Добавить"}</button>
       <p class="staff-form-status" aria-live="polite"></p>
     </form>
   `;
@@ -4025,6 +4045,75 @@ function getMessageActor() {
   return null;
 }
 
+function getMessageTargetLabel(role = "") {
+  return {
+    Admin: "Администратор",
+    Teacher: "Преподаватель",
+    Curator: "Куратор",
+    Student: "Ученик",
+  }[role] || role || "Адресат";
+}
+
+function getConversationFilterType(conversation = {}) {
+  if (conversation.chatType === "TeacherAdmin") {
+    return "teachers";
+  }
+
+  if (conversation.chatType === "CuratorAdmin") {
+    return "curators";
+  }
+
+  return "all";
+}
+
+function renderMessageStartPanel(recipients = [], actor = getMessageActor()) {
+  if (!actor) {
+    return "";
+  }
+
+  const options = recipients
+    .map(
+      (recipient) => `
+        <option value="${escapeHtml(`${recipient.targetRole}:${recipient.targetId}`)}">
+          ${escapeHtml(getMessageTargetLabel(recipient.targetRole))}: ${escapeHtml(recipient.targetName)}${recipient.subtitle ? ` · ${escapeHtml(recipient.subtitle)}` : ""}
+        </option>
+      `,
+    )
+    .join("");
+
+  const filters =
+    actor.role === "Admin"
+      ? `
+        <div class="conversation-filters" data-message-filter-scope>
+          ${[
+            ["all", "Все"],
+            ["teachers", "Преподаватели"],
+            ["curators", "Кураторы"],
+          ]
+            .map((item) => `<button type="button" class="${currentMessageFilter === item[0] ? "is-active" : ""}" data-message-filter="${item[0]}">${item[1]}</button>`)
+            .join("")}
+        </div>
+      `
+      : "";
+
+  return `
+    <form class="conversation-start-form" data-message-start-form>
+      <label>
+        Кому написать
+        <select name="recipient" ${recipients.length ? "" : "disabled"} required>
+          <option value="">Выберите адресата</option>
+          ${options}
+        </select>
+      </label>
+      <button type="submit" ${recipients.length ? "" : "disabled"}>
+        <svg><use href="#icon-message" /></svg>Начать чат
+      </button>
+      ${recipients.length ? "" : `<p>Нет доступных адресатов.</p>`}
+    </form>
+    ${filters}
+  `;
+}
+
 function renderMessages(payload) {
   latestMessages = payload;
   const actor = getMessageActor();
@@ -4043,14 +4132,23 @@ function renderMessages(payload) {
   }
 
   if (conversationList) {
-    if (conversations.length === 0) {
-      conversationList.innerHTML = `<div class="resource-empty">Чаты пока не найдены.</div>`;
+    const recipients = payload?.recipients || [];
+    const filteredConversations =
+      actor?.role === "Admin" && currentMessageFilter !== "all"
+        ? conversations.filter((conversation) => getConversationFilterType(conversation) === currentMessageFilter)
+        : conversations;
+
+    if (filteredConversations.length === 0) {
+      conversationList.innerHTML = `${renderMessageStartPanel(recipients, actor)}<div class="resource-empty">Чаты пока не найдены.</div>`;
     } else {
-      conversationList.innerHTML = conversations
+      conversationList.innerHTML =
+        renderMessageStartPanel(recipients, actor) +
+        filteredConversations
         .map((conversation) => `
           <button class="conversation-button ${String(conversation.conversationId) === String(currentConversationId) ? "is-active" : ""}" type="button" data-conversation-id="${escapeHtml(conversation.conversationId)}">
             <strong>${escapeHtml(conversation.title)}</strong>
-            <span>${escapeHtml(conversation.studentName || conversation.staffName || "Учебный чат")}</span>
+            <span>${escapeHtml([conversation.studentName, conversation.teacherName, conversation.curatorName, conversation.adminName].filter(Boolean).join(" · ") || conversation.staffName || "Учебный чат")}</span>
+            <span>${escapeHtml(conversation.chatType === "TeacherAdmin" ? "Чат с преподавателем" : conversation.chatType === "CuratorAdmin" ? "Чат с куратором" : "Учебный чат")}</span>
             <span>${escapeHtml(formatStreamDate(conversation.lastMessageAt || conversation.createdAt))}</span>
           </button>
         `)
@@ -4113,6 +4211,52 @@ async function loadMessages(conversationId = currentConversationId) {
   } catch (error) {
     setMessageStatus(error.message || "Не удалось загрузить сообщения.", "error");
     return null;
+  }
+}
+
+async function startMessageConversation(form) {
+  const value = String(new FormData(form).get("recipient") || "");
+  const [targetRole, targetId] = value.split(":");
+
+  if (!targetRole || !targetId) {
+    setMessageStatus("Выберите адресата.", "error");
+    return;
+  }
+
+  const button = form.querySelector("button[type='submit']");
+
+  if (button) {
+    button.disabled = true;
+  }
+
+  setMessageStatus("Создаю чат...", "pending");
+
+  try {
+    const response = await apiFetch("/api/messages/start", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ targetRole, targetId }),
+    });
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(result.message || result.error || "Не удалось создать чат");
+    }
+
+    currentConversationId = result.activeConversationId;
+    if (getMessageActor()?.role === "Admin") {
+      currentMessageFilter = targetRole === "Teacher" ? "teachers" : targetRole === "Curator" ? "curators" : currentMessageFilter;
+    }
+    await loadMessages(currentConversationId);
+    setMessageStatus("Чат открыт.", "success");
+  } catch (error) {
+    setMessageStatus(error.message || "Не удалось создать чат.", "error");
+  } finally {
+    if (button) {
+      button.disabled = false;
+    }
   }
 }
 
@@ -5591,7 +5735,12 @@ document.addEventListener("submit", (event) => {
 
   if (adminParentForm) {
     event.preventDefault();
-    submitStaffJsonForm(adminParentForm, "/api/admin/parents", "Родитель сохранён.");
+    submitStaffJsonForm(adminParentForm, "/api/admin/parents", "Родитель сохранён.", (form) => {
+      const formData = new FormData(form);
+      const payload = Object.fromEntries(formData.entries());
+      payload.childIds = formData.getAll("childIds");
+      return payload;
+    });
     return;
   }
 
@@ -5607,7 +5756,12 @@ document.addEventListener("submit", (event) => {
 
   if (adminCuratorForm) {
     event.preventDefault();
-    submitStaffJsonForm(adminCuratorForm, "/api/admin/curators", "Куратор сохранён.");
+    submitStaffJsonForm(adminCuratorForm, "/api/admin/curators", "Куратор сохранён.", (form) => {
+      const formData = new FormData(form);
+      const payload = Object.fromEntries(formData.entries());
+      payload.teacherIds = formData.getAll("teacherIds");
+      return payload;
+    });
     return;
   }
 
@@ -5672,11 +5826,31 @@ document.addEventListener("submit", (event) => {
 
 if (conversationList) {
   conversationList.addEventListener("click", (event) => {
+    const filterButton = event.target.closest("[data-message-filter]");
+
+    if (filterButton) {
+      event.preventDefault();
+      currentMessageFilter = filterButton.dataset.messageFilter || "all";
+      renderMessages(latestMessages || { conversations: [], messages: [] });
+      return;
+    }
+
     const button = event.target.closest("[data-conversation-id]");
 
     if (button) {
       currentConversationId = button.dataset.conversationId;
       loadMessages(currentConversationId);
+    }
+  });
+}
+
+if (conversationList) {
+  conversationList.addEventListener("submit", (event) => {
+    const form = event.target.closest("[data-message-start-form]");
+
+    if (form) {
+      event.preventDefault();
+      startMessageConversation(form);
     }
   });
 }
