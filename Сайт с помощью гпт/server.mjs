@@ -389,6 +389,7 @@ async function seedDatabase() {
       [1, "Алексей", "Админов", "admin", adminPassword],
       [2, "Ольга", "Управляющая", "admin_olga", adminPassword],
       [3, "Никита", "Координатор", "admin_nikita", adminPassword],
+      [4, "Виктор", "Администратор", "vizor_admin", adminPassword],
     ];
 
     for (const admin of adminAccounts) {
