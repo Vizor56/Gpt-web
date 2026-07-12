@@ -1231,6 +1231,7 @@ async function getCourseLessons(slug, studentId = 0) {
         c.description AS "courseDescription",
         c.total_lessons AS "totalLessons",
         COUNT(l.id) OVER (PARTITION BY c.id)::integer AS "lessonsTotal",
+        ce.id AS "enrollmentId",
         ce.progress_percent AS "progressPercent",
         l.id AS "lessonId",
         l.lesson_number AS "lessonNumber",
@@ -1273,7 +1274,8 @@ async function getCourseLessons(slug, studentId = 0) {
   }
 
   const first = rows.rows[0];
-  const lessons = rows.rows.map((row) => ({
+  const isOwned = Boolean(first.enrollmentId);
+  const rawLessons = rows.rows.map((row) => ({
     lessonId: row.lessonId,
     lessonNumber: row.lessonNumber,
     lessonTitle: row.lessonTitle,
@@ -1298,6 +1300,31 @@ async function getCourseLessons(slug, studentId = 0) {
     homeworkScore: row.homeworkScore,
     checkedAt: toDateText(row.checkedAt),
   }));
+  const lessons = isOwned
+    ? rawLessons
+    : rawLessons.map((lesson, index) => ({
+        ...lesson,
+        isPreviewLesson: index === 0,
+        isPreviewLocked: index > 0,
+        videoUrl: index === 0 ? lesson.videoUrl : null,
+        notesUrl: index === 0 ? lesson.notesUrl : null,
+        homeworkUrl: null,
+        homeworkTemplateId: null,
+        homeworkTitle: null,
+        homeworkDescription: null,
+        homeworkTaskUrl: null,
+        homeworkAssignmentId: null,
+        homeworkStatus: "Assigned",
+        homeworkDueAt: null,
+        homeworkUploadUrl: null,
+        homeworkSubmissionId: null,
+        submittedHomeworkUrl: null,
+        submissionStatus: null,
+        feedbackUrl: null,
+        feedbackText: null,
+        homeworkScore: null,
+        checkedAt: null,
+      }));
 
   const homeworkTotal = lessons.filter((lesson) => lesson.homeworkTemplateId || lesson.homeworkAssignmentId).length;
   const homeworkSubmitted = lessons.filter((lesson) => ["Submitted", "Checked"].includes(lesson.homeworkStatus) || ["Submitted", "Checked"].includes(lesson.submissionStatus)).length;
@@ -1312,6 +1339,7 @@ async function getCourseLessons(slug, studentId = 0) {
       courseDescription: first.courseDescription,
       totalLessons: first.totalLessons,
       lessonsTotal: first.lessonsTotal,
+      isOwned,
       progressPercent: homeworkTotal > 0 ? Math.round((homeworkChecked * 10000) / homeworkTotal) / 100 : 0,
       homeworkTotal,
       homeworkSubmitted,
@@ -2150,6 +2178,168 @@ app.post(
   }),
 );
 
+app.post(
+  "/api/admin/parents/:id/children",
+  asyncRoute(async (request, response) => {
+    await requireAdmin(request);
+    const parentId = toInt(request.params.id, 0);
+    const studentId = toInt(request.body.studentId, 0);
+    const originalStudentId = toInt(request.body.originalStudentId, 0);
+    const action = cleanText(request.body.action, 30) || "save";
+    const relationType = cleanText(request.body.relationType || request.body.relation_type, 80) || "Parent";
+
+    if (!parentId || !studentId) {
+      throw createHttpError(400, "Parent and student are required.");
+    }
+
+    const client = await requireDatabase().connect();
+
+    try {
+      await client.query("BEGIN");
+
+      const parent = await client.query("SELECT id FROM parents WHERE id = $1", [parentId]);
+      const student = await client.query("SELECT id FROM students WHERE id = $1", [studentId]);
+
+      if (parent.rowCount === 0 || student.rowCount === 0) {
+        throw createHttpError(404, "Parent or student not found.");
+      }
+
+      if (action === "remove") {
+        await client.query("DELETE FROM student_parents WHERE parent_id = $1 AND student_id = $2", [parentId, studentId]);
+      } else {
+        if (originalStudentId && originalStudentId !== studentId) {
+          await client.query("DELETE FROM student_parents WHERE parent_id = $1 AND student_id = $2", [parentId, originalStudentId]);
+        }
+
+        await client.query(
+          `
+            INSERT INTO student_parents (student_id, parent_id, relation_type)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (student_id, parent_id) DO UPDATE SET relation_type = EXCLUDED.relation_type
+          `,
+          [studentId, parentId, relationType],
+        );
+      }
+
+      await client.query("COMMIT");
+      response.json({ ok: true, source: "database", parentId, studentId, action });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }),
+);
+
+app.post(
+  "/api/admin/courses/:id/staff",
+  asyncRoute(async (request, response) => {
+    await requireAdmin(request);
+    const courseId = toInt(request.params.id, 0);
+    const teacherId = optionalInt(request.body.teacherId);
+    const curatorId = optionalInt(request.body.curatorId);
+
+    if (!courseId) {
+      throw createHttpError(400, "Course is required.");
+    }
+
+    const client = await requireDatabase().connect();
+
+    try {
+      await client.query("BEGIN");
+
+      const courseResult = await client.query(
+        "SELECT id, teacher_id AS \"teacherId\", curator_id AS \"curatorId\" FROM courses WHERE id = $1 AND status = 'Active' FOR UPDATE",
+        [courseId],
+      );
+
+      if (courseResult.rowCount === 0) {
+        throw createHttpError(404, "Active course not found.");
+      }
+
+      if (teacherId) {
+        const teacher = await client.query("SELECT id FROM teachers WHERE id = $1 AND active = TRUE", [teacherId]);
+        if (teacher.rowCount === 0) {
+          throw createHttpError(404, "Teacher not found.");
+        }
+      }
+
+      if (curatorId) {
+        const curator = await client.query("SELECT id FROM curators WHERE id = $1 AND active = TRUE", [curatorId]);
+        if (curator.rowCount === 0) {
+          throw createHttpError(404, "Curator not found.");
+        }
+      }
+
+      const previousTeacherId = courseResult.rows[0].teacherId || null;
+      const previousCuratorId = courseResult.rows[0].curatorId || null;
+
+      await client.query(
+        `
+          UPDATE courses
+          SET teacher_id = $2,
+              curator_id = $3
+          WHERE id = $1
+        `,
+        [courseId, teacherId, curatorId],
+      );
+
+      await client.query(
+        `
+          UPDATE course_enrollments
+          SET teacher_id = CASE
+                WHEN teacher_id IS NULL OR teacher_id IS NOT DISTINCT FROM $3 THEN $2
+                ELSE teacher_id
+              END,
+              curator_id = CASE
+                WHEN curator_id IS NULL OR curator_id IS NOT DISTINCT FROM $5 THEN $4
+                ELSE curator_id
+              END
+          WHERE course_id = $1
+            AND status <> 'Cancelled'
+        `,
+        [courseId, teacherId, previousTeacherId, curatorId, previousCuratorId],
+      );
+
+      await client.query(
+        `
+          UPDATE homework_assignments ha
+          SET teacher_id = COALESCE(ce.teacher_id, c.teacher_id)
+          FROM course_enrollments ce
+          JOIN courses c ON c.id = ce.course_id
+          WHERE ha.enrollment_id = ce.id
+            AND ce.course_id = $1
+            AND ha.status <> 'Checked'
+        `,
+        [courseId],
+      );
+
+      const affectedStudents = await client.query(
+        `
+          SELECT DISTINCT student_id AS "studentId"
+          FROM course_enrollments
+          WHERE course_id = $1
+            AND status = 'Active'
+        `,
+        [courseId],
+      );
+
+      for (const row of affectedStudents.rows) {
+        await ensureChatsForStudent(client, row.studentId);
+      }
+
+      await client.query("COMMIT");
+      response.json({ ok: true, source: "database", courseId, teacherId, curatorId });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }),
+);
+
 async function upsertStaffAccountForPerson(client, { role, teacherId = null, curatorId = null, login, password }) {
   const cleanLogin = normalizeLogin(login);
 
@@ -2309,6 +2499,53 @@ app.post(
     }
   }),
 );
+
+function formatAgeText(value) {
+  const date = value instanceof Date ? value : new Date(value);
+
+  if (!value || Number.isNaN(date.getTime())) {
+    return "недавно";
+  }
+
+  const minutes = Math.max(1, Math.floor((Date.now() - date.getTime()) / 60000));
+
+  if (minutes < 60) {
+    return `${minutes} мин.`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+
+  if (hours < 48) {
+    return `${hours} ч.`;
+  }
+
+  return `${Math.floor(hours / 24)} дн.`;
+}
+
+function buildAdminNotifications(applications = []) {
+  const pending = applications.filter((application) => application.status === "New");
+
+  if (pending.length === 0) {
+    return [];
+  }
+
+  const oldest = pending.reduce((left, right) => (new Date(left.createdAt) <= new Date(right.createdAt) ? left : right), pending[0]);
+  const newest = pending.reduce((left, right) => (new Date(left.createdAt) >= new Date(right.createdAt) ? left : right), pending[0]);
+
+  return [
+    {
+      notificationId: `admin-applications-${pending.length}-${oldest.applicationId}`,
+      type: "ApplicationsPending",
+      tone: "warning",
+      title: "Пришла новая заявка",
+      text: `Необработанных: ${pending.length}. Самая старая ждёт ${formatAgeText(oldest.createdAt)}.`,
+      createdAt: toDateText(newest.createdAt),
+      link: "#staff-applications",
+      applicationsTotal: pending.length,
+      oldestPendingAt: toDateText(oldest.createdAt),
+    },
+  ];
+}
 
 async function buildAdminWorkspace(staff) {
   const applications = await dbQuery(
@@ -2673,6 +2910,8 @@ async function buildAdminWorkspace(staff) {
         c.id AS "courseId",
         c.title AS "courseTitle",
         c.subject,
+        c.teacher_id AS "courseTeacherId",
+        c.curator_id AS "courseCuratorId",
         COUNT(DISTINCT CASE WHEN ce.status = 'Active' THEN ce.student_id END)::integer AS "studentsCount",
         STRING_AGG(DISTINCT CONCAT(cu.first_name, ' ', cu.last_name), ', ') FILTER (WHERE cu.id IS NOT NULL) AS "curatorNames"
       FROM courses c
@@ -2694,6 +2933,7 @@ async function buildAdminWorkspace(staff) {
         s.grade,
         c.id AS "courseId",
         c.title AS "courseTitle",
+        ce.status AS "enrollmentStatus",
         COALESCE(ce.curator_id, c.curator_id) AS "curatorId",
         CONCAT(cu.first_name, ' ', cu.last_name) AS "curatorName"
       FROM course_enrollments ce
@@ -2732,6 +2972,8 @@ async function buildAdminWorkspace(staff) {
         c.id AS "courseId",
         c.title AS "courseTitle",
         c.subject,
+        c.teacher_id AS "courseTeacherId",
+        c.curator_id AS "courseCuratorId",
         COUNT(DISTINCT CASE WHEN ce.status = 'Active' THEN ce.student_id END)::integer AS "studentsCount",
         STRING_AGG(DISTINCT CONCAT(t.first_name, ' ', t.last_name), ', ') FILTER (WHERE t.id IS NOT NULL) AS "teacherNames"
       FROM courses c
@@ -2753,6 +2995,7 @@ async function buildAdminWorkspace(staff) {
         s.grade,
         c.id AS "courseId",
         c.title AS "courseTitle",
+        ce.status AS "enrollmentStatus",
         COALESCE(ce.teacher_id, c.teacher_id) AS "teacherId",
         CONCAT(t.first_name, ' ', t.last_name) AS "teacherName"
       FROM course_enrollments ce
@@ -2842,7 +3085,7 @@ async function buildAdminWorkspace(staff) {
     homeworks: [],
     streams: [],
     homeworkStats: [],
-    notifications: [],
+    notifications: buildAdminNotifications(applications.rows),
   };
 }
 

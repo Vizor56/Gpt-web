@@ -1062,20 +1062,20 @@ function applyAccountToCourseCards(account = latestAccount) {
   studyCourseCards.forEach((card) => {
     const courseKey = card.dataset.course;
     const accountCourse = courses.get(courseKey);
-    const isPreview = !hasSession;
     const isOwned = hasSession && Boolean(accountCourse?.isOwned);
+    const isPreview = !isOwned;
     const lessonCount = accountCourse?.lessonsTotal || getFallbackLessonCount(courseKey);
 
     card.dataset.owned = isOwned ? "true" : "false";
-    card.classList.toggle("course-card--locked", !isOwned && !isPreview);
+    card.classList.toggle("course-card--locked", !isOwned);
     card.setAttribute(
       "aria-label",
       isOwned || isPreview ? `Открыть курс ${courseData[courseKey]?.title || courseKey}` : `Курс ${courseData[courseKey]?.title || courseKey} не куплен`,
     );
     card.querySelectorAll(".course-actions button").forEach((button) => {
       const isLessonsButton = button.dataset.courseAction === "lessons";
-      button.disabled = hasSession ? !isOwned : !isLessonsButton;
-      button.title = isOwned ? "" : isPreview ? "До входа открыт первый урок курса" : "Курс ещё не куплен";
+      button.disabled = !isOwned && !isLessonsButton;
+      button.title = isOwned ? "" : hasSession ? "Открыт первый урок, остальные после покупки курса" : "До входа открыт первый урок курса";
     });
     ensureOwnedBadge(card, isOwned, isPreview);
     updateCourseCardLessonCount(card, lessonCount);
@@ -1085,7 +1085,7 @@ function applyAccountToCourseCards(account = latestAccount) {
         const percent = lessonCount > 0 ? Math.round(100 / lessonCount) : 0;
         card.querySelector(".progress-text").textContent = `1 из ${lessonCount} ${getLessonGenitiveWord(lessonCount)} открыт`;
         card.querySelector(".progress-track span").style.width = `${percent}%`;
-        card.querySelector(".progress-percent").textContent = "гость";
+        card.querySelector(".progress-percent").textContent = hasSession ? "превью" : "гость";
       } else {
         card.querySelector(".progress-text").textContent = "Курс не куплен";
         card.querySelector(".progress-track span").style.width = "0%";
@@ -2270,7 +2270,7 @@ function renderNotificationEventBars(item) {
         )
         .join("")}
       ${
-        Object.prototype.hasOwnProperty.call(item, "curatorReviewedTotal")
+        Number.isFinite(Number(item.curatorReviewedTotal))
           ? `
             <div class="staff-bar is-curator">
               <div>
@@ -2372,6 +2372,9 @@ function getStaffNotificationItems(workspace = latestStaffWorkspace) {
     homeworkTotal: item.homeworkTotal,
     submittedTotal: item.submittedTotal,
     checkedTotal: item.checkedTotal,
+    curatorReviewedTotal: item.curatorReviewedTotal,
+    applicationsTotal: item.applicationsTotal,
+    oldestPendingAt: item.oldestPendingAt,
   }));
 }
 
@@ -3105,6 +3108,48 @@ function renderAdminParentOptions(selectedParentId = "") {
     .join("")}`;
 }
 
+function renderAdminStudentOptions(selectedStudentId = "") {
+  return `<option value="">Пока не указано</option>${getStaffItems("students")
+    .map((student) => `<option value="${escapeHtml(student.studentId)}" ${String(student.studentId) === String(selectedStudentId) ? "selected" : ""}>${escapeHtml(student.studentName)} · ${escapeHtml(student.grade ? `${student.grade} класс` : "класс не указан")}</option>`)
+    .join("")}`;
+}
+
+function renderAdminParentChildForm(parent = {}, child = {}) {
+  return `
+    <form class="staff-inline-form admin-parent-child-form" data-admin-parent-child-form data-parent-id="${escapeHtml(parent.parentId || "")}">
+      <input type="hidden" name="originalStudentId" value="${escapeHtml(child.studentId || "")}" />
+      <select name="studentId" required>${renderAdminStudentOptions(child.studentId || "")}</select>
+      <input name="relationType" type="text" value="${escapeHtml(child.relationType || "Родитель")}" placeholder="Связь" />
+      <select name="action">
+        <option value="save">Сохранить связь</option>
+        ${child.studentId ? `<option value="remove">Убрать ребёнка</option>` : ""}
+      </select>
+      <button type="submit"><svg><use href="#icon-upload" /></svg>${child.studentId ? "Сохранить ребёнка" : "Добавить ребёнка"}</button>
+      <p class="staff-form-status" aria-live="polite"></p>
+    </form>
+  `;
+}
+
+function renderAdminCourseStaffForm(course = {}, defaults = {}) {
+  const fixedCourseId = course.courseId || "";
+  const selectedTeacherId = defaults.teacherId ?? course.courseTeacherId ?? course.teacherId ?? "";
+  const selectedCuratorId = defaults.curatorId ?? course.courseCuratorId ?? course.curatorId ?? "";
+
+  return `
+    <form class="staff-inline-form admin-course-staff-form" data-admin-course-staff-form data-course-id="${escapeHtml(fixedCourseId)}">
+      ${
+        fixedCourseId
+          ? `<input type="hidden" name="courseId" value="${escapeHtml(fixedCourseId)}" />`
+          : `<select name="courseId" required>${renderAdminCourseOptions("", true)}</select>`
+      }
+      <select name="teacherId">${renderAdminTeacherOptions(selectedTeacherId)}</select>
+      <select name="curatorId">${renderAdminCuratorOptions(selectedCuratorId)}</select>
+      <button type="submit"><svg><use href="#icon-upload" /></svg>Сохранить связку</button>
+      <p class="staff-form-status" aria-live="polite"></p>
+    </form>
+  `;
+}
+
 function renderAdminApplicationForm(application = {}) {
   const isNew = application.status === "New";
 
@@ -3380,6 +3425,30 @@ function renderAdminParents() {
                       ${(parent.children || []).map((child) => `<span class="resource-chip">${escapeHtml(child.studentName)} · ${child.studentStatus === "Graduate" ? "выпускник" : "ученик"}</span>`).join("") || `<span class="resource-chip">Дети не указаны</span>`}
                     </div>
                     ${renderAdminParentForm(parent)}
+                    <details class="staff-details" open>
+                      <summary>Дети и связи</summary>
+                      <div class="admin-course-list">
+                        ${
+                          (parent.children || []).length
+                            ? parent.children
+                                .map(
+                                  (child) => `
+                                    <div class="staff-reviewed-note">
+                                      <strong>${escapeHtml(child.studentName)}</strong>
+                                      <span>${escapeHtml(child.studentStatus === "Graduate" ? "выпускник" : "ученик")} · ${escapeHtml(child.relationType || "Родитель")}</span>
+                                      ${renderAdminParentChildForm(parent, child)}
+                                    </div>
+                                  `,
+                                )
+                                .join("")
+                            : `<div class="staff-reviewed-note is-muted"><strong>Дети не указаны</strong><span>Добавьте связь с учеником ниже.</span></div>`
+                        }
+                        <div class="staff-reviewed-note is-pending">
+                          <strong>Добавить ребёнка</strong>
+                          ${renderAdminParentChildForm(parent)}
+                        </div>
+                      </div>
+                    </details>
                   </article>
                 `,
               )
@@ -3543,6 +3612,168 @@ function renderAdminCurators() {
     <div class="staff-card-grid">
       ${curators.length ? curators.map(renderAdminCuratorCard).join("") : renderStaffEmpty("Кураторы пока не добавлены.")}
     </div>
+  `;
+}
+
+function renderAdminTeacherCard(teacher) {
+  const courses = teacher.courses || [];
+  const students = teacher.students || [];
+  const curators = teacher.curators || [];
+
+  return `
+    <article class="staff-card admin-person-card">
+      <div class="staff-card__meta">
+        <span class="resource-chip is-green">Рейтинг ${Number(teacher.rating || 0).toFixed(1)} / 10</span>
+        <span class="resource-chip is-blue">${formatNumber(teacher.studentsCount || 0)} учен.</span>
+        <span class="resource-chip">${formatNumber(teacher.coursesCount || courses.length)} курс.</span>
+      </div>
+      <h3>${escapeHtml(teacher.teacherName || "Пока неизвестно")}</h3>
+      <p>${escapeHtml([teacher.phone, teacher.email, teacher.telegram].filter(Boolean).join(" · ") || "Контакты пока неизвестны")}</p>
+      <div class="staff-info-grid">
+        <span>ДЗ прислали<strong>${formatNumber(teacher.homeworkSubmitted || 0)}</strong></span>
+        <span>ДЗ проверено<strong>${formatNumber(teacher.homeworkChecked || 0)}</strong></span>
+        <span>Средний балл за ДЗ<strong>${Number(teacher.averageHomeworkScore || 0).toFixed(1)}</strong></span>
+        <span>Логин<strong>${escapeHtml(adminText(teacher.login))}</strong></span>
+      </div>
+      <details class="staff-details">
+        <summary>Вся информация и редактирование</summary>
+        ${renderAdminTeacherForm(teacher)}
+        <section class="admin-detail-block">
+          <h4>Курсы</h4>
+          <div class="admin-course-list">
+            ${
+              courses.length
+                ? courses
+                    .map(
+                      (course) => `
+                        <div class="staff-reviewed-note">
+                          <strong>${escapeHtml(course.courseTitle)} · ${formatNumber(course.studentsCount || 0)} учен.</strong>
+                          <span>${escapeHtml(course.curatorNames || "Куратор не указан")}</span>
+                          ${renderAdminCourseStaffForm(course, { teacherId: teacher.teacherId, curatorId: course.courseCuratorId || "" })}
+                        </div>
+                      `,
+                    )
+                    .join("")
+                : `<div class="staff-reviewed-note is-muted"><strong>Курсы не закреплены</strong><span>Выберите курс ниже.</span></div>`
+            }
+            <div class="staff-reviewed-note is-pending">
+              <strong>Добавить курс преподавателю</strong>
+              ${renderAdminCourseStaffForm({}, { teacherId: teacher.teacherId })}
+            </div>
+          </div>
+        </section>
+        <section class="admin-detail-block">
+          <h4>Ученики</h4>
+          <div class="admin-course-list">
+            ${
+              students.length
+                ? students
+                    .map(
+                      (student) => `
+                        <div class="staff-reviewed-note">
+                          <strong>${escapeHtml(student.studentName)} · ${escapeHtml(student.courseTitle)}</strong>
+                          <span>${escapeHtml(student.curatorName || "Куратор не указан")}</span>
+                          ${renderAdminEnrollmentForm(student, {
+                            courseId: student.courseId,
+                            teacherId: teacher.teacherId,
+                            curatorId: student.curatorId || "",
+                            enrollmentStatus: student.enrollmentStatus || "Active",
+                          })}
+                        </div>
+                      `,
+                    )
+                    .join("")
+                : `<div class="staff-reviewed-note is-muted"><strong>Ученики не закреплены</strong><span>Их можно добавить через раздел учеников.</span></div>`
+            }
+          </div>
+        </section>
+        <section class="admin-detail-block">
+          <h4>Кураторы</h4>
+          <div class="staff-card__meta">${renderAdminPersonChips(curators, (curator) => `${curator.curatorName} · ${formatNumber(curator.studentsCount || 0)} учен.`)}</div>
+        </section>
+      </details>
+    </article>
+  `;
+}
+
+function renderAdminCuratorCard(curator) {
+  const courses = curator.courses || [];
+  const students = curator.students || [];
+  const teachers = curator.teachers || [];
+
+  return `
+    <article class="staff-card admin-person-card">
+      <div class="staff-card__meta">
+        <span class="resource-chip is-green">Средняя оценка ${Number(curator.rating || 0).toFixed(1)} / 10</span>
+        <span class="resource-chip is-blue">${formatNumber(curator.studentsCount || 0)} учен.</span>
+        <span class="resource-chip">${formatNumber(curator.teachersCount || teachers.length)} преп.</span>
+      </div>
+      <h3>${escapeHtml(curator.curatorName || "Пока неизвестно")}</h3>
+      <p>${escapeHtml([curator.phone, curator.email, curator.telegram].filter(Boolean).join(" · ") || "Контакты пока неизвестны")}</p>
+      <div class="staff-info-grid">
+        <span>Проверено преподавателями<strong>${formatNumber(curator.homeworkCheckedByTeachers || 0)}</strong></span>
+        <span>Фидбек куратора<strong>${formatNumber(curator.curatorFeedbackTotal || 0)}</strong></span>
+        <span>Курсы<strong>${formatNumber(curator.coursesCount || courses.length)}</strong></span>
+        <span>Логин<strong>${escapeHtml(adminText(curator.login))}</strong></span>
+      </div>
+      <details class="staff-details">
+        <summary>Вся информация и редактирование</summary>
+        ${renderAdminCuratorForm(curator)}
+        <section class="admin-detail-block">
+          <h4>Курсы</h4>
+          <div class="admin-course-list">
+            ${
+              courses.length
+                ? courses
+                    .map(
+                      (course) => `
+                        <div class="staff-reviewed-note">
+                          <strong>${escapeHtml(course.courseTitle)} · ${formatNumber(course.studentsCount || 0)} учен.</strong>
+                          <span>${escapeHtml(course.teacherNames || "Преподаватель не указан")}</span>
+                          ${renderAdminCourseStaffForm(course, { teacherId: course.courseTeacherId || "", curatorId: curator.curatorId })}
+                        </div>
+                      `,
+                    )
+                    .join("")
+                : `<div class="staff-reviewed-note is-muted"><strong>Курсы не закреплены</strong><span>Выберите курс ниже.</span></div>`
+            }
+            <div class="staff-reviewed-note is-pending">
+              <strong>Добавить курс куратору</strong>
+              ${renderAdminCourseStaffForm({}, { curatorId: curator.curatorId })}
+            </div>
+          </div>
+        </section>
+        <section class="admin-detail-block">
+          <h4>Ученики</h4>
+          <div class="admin-course-list">
+            ${
+              students.length
+                ? students
+                    .map(
+                      (student) => `
+                        <div class="staff-reviewed-note">
+                          <strong>${escapeHtml(student.studentName)} · ${escapeHtml(student.courseTitle)}</strong>
+                          <span>${escapeHtml(student.teacherName || "Преподаватель не указан")}</span>
+                          ${renderAdminEnrollmentForm(student, {
+                            courseId: student.courseId,
+                            teacherId: student.teacherId || "",
+                            curatorId: curator.curatorId,
+                            enrollmentStatus: student.enrollmentStatus || "Active",
+                          })}
+                        </div>
+                      `,
+                    )
+                    .join("")
+                : `<div class="staff-reviewed-note is-muted"><strong>Ученики не закреплены</strong><span>Их можно добавить через раздел учеников.</span></div>`
+            }
+          </div>
+        </section>
+        <section class="admin-detail-block">
+          <h4>Преподаватели</h4>
+          <div class="staff-card__meta">${renderAdminPersonChips(teachers, (teacher) => `${teacher.teacherName} · ${formatNumber(teacher.studentsCount || 0)} учен.`)}</div>
+        </section>
+      </details>
+    </article>
   `;
 }
 
@@ -4277,15 +4508,21 @@ function getHomeworkButtonMeta(lesson) {
   };
 }
 
-function applyLessonAccessRules(lessons) {
-  if (hasAuthenticatedAccount()) {
+function applyLessonAccessRules(lessons, courseAccess = null) {
+  const shouldLimitToPreview = courseAccess ? !courseAccess.isOwned : !hasAuthenticatedAccount();
+
+  if (!shouldLimitToPreview) {
     return lessons;
   }
+
+  const lockReason = hasAuthenticatedAccount() ? "purchase" : "login";
 
   return lessons.map((lesson, index) => ({
     ...lesson,
     isPreviewLesson: index === 0,
     isPreviewLocked: index > 0,
+    previewLockReason: index > 0 ? lockReason : "",
+    homeworkAccessLocked: true,
     homeworkAssignmentId: null,
     homeworkTemplateId: null,
     homeworkTitle: null,
@@ -4312,15 +4549,19 @@ function renderLessonRow(lesson) {
   const actionButtons = [];
 
   if (lesson.isPreviewLocked) {
+    const lockedTitle =
+      lesson.previewLockReason === "purchase" ? "Этот урок откроется после покупки курса" : "Зарегистрируйтесь, чтобы открыть урок";
+    const lockedHomeworkLabel = lesson.previewLockReason === "purchase" ? "ДЗ после покупки" : "ДЗ после входа";
+
     actionButtons.push(`
-      <button type="button" disabled title="Зарегистрируйтесь, чтобы открыть урок">
+      <button type="button" disabled title="${escapeHtml(lockedTitle)}">
         <svg><use href="#icon-lock" /></svg>Запись
       </button>
-      <button type="button" disabled title="Конспект откроется после регистрации">
+      <button type="button" disabled title="${escapeHtml(lockedTitle)}">
         <svg><use href="#icon-file" /></svg>Конспект
       </button>
-      <button class="button-yellow" type="button" disabled title="Домашка доступна после входа">
-        <svg><use href="#icon-upload" /></svg>ДЗ после входа
+      <button class="button-yellow" type="button" disabled title="${escapeHtml(lockedTitle)}">
+        <svg><use href="#icon-upload" /></svg>${lockedHomeworkLabel}
       </button>
     `);
   } else {
@@ -4358,7 +4599,15 @@ function renderLessonRow(lesson) {
 
   const homeworkButton = getHomeworkButtonMeta(lesson);
 
-    if (hasAuthenticatedAccount()) {
+    if (lesson.homeworkAccessLocked) {
+      const homeworkLabel = hasAuthenticatedAccount() ? "ДЗ после покупки" : "ДЗ после входа";
+      const homeworkTitle = hasAuthenticatedAccount() ? "Домашнее задание откроется после покупки курса" : "Зарегистрируйтесь, чтобы сдавать ДЗ";
+      actionButtons.push(`
+        <button class="button-yellow" type="button" disabled title="${escapeHtml(homeworkTitle)}">
+          <svg><use href="#icon-upload" /></svg>${homeworkLabel}
+        </button>
+      `);
+    } else if (hasAuthenticatedAccount()) {
       actionButtons.push(`
         <button class="${homeworkButton.className}" type="button" data-homework-lesson-id="${escapeHtml(getLessonKey(lesson))}" title="${homeworkButton.title}">
           <svg><use href="${homeworkButton.icon}" /></svg>${homeworkButton.label}
@@ -4468,8 +4717,8 @@ function renderCourseNotes(lessons) {
     .join("");
 }
 
-function renderCourseData(lessons) {
-  const visibleLessons = applyLessonAccessRules(lessons);
+function renderCourseData(lessons, courseAccess = null) {
+  const visibleLessons = applyLessonAccessRules(lessons, courseAccess);
   currentLessons = visibleLessons;
   renderLessons(visibleLessons);
   renderHomeworks(visibleLessons);
@@ -4823,30 +5072,32 @@ function showLockedCourseNotice(courseKey) {
 }
 
 async function openCourse(courseKey, viewName = "lessons") {
-  if (!isCourseOwned(courseKey)) {
-    showLockedCourseNotice(courseKey);
-    return;
-  }
-
   currentCourseKey = courseKey;
   currentCourseView = viewName;
   const course = courseData[courseKey] || courseData.math;
   const fallbackLessonCount = getFallbackLessonCount(courseKey);
   const isGuest = !hasAuthenticatedAccount();
+  const accountCourse = getAccountCourse(courseKey);
+  const hasFullCourseAccess = Boolean(accountCourse?.isOwned);
+  const isPreviewAccess = !hasFullCourseAccess;
 
   detailTitle.textContent = course.title;
   detailDescription.textContent = course.description;
-  detailLessons.textContent = isGuest ? `1 из ${fallbackLessonCount} ${getLessonGenitiveWord(fallbackLessonCount)} открыт` : course.lessonsText;
-  detailProgressText.textContent = isGuest ? "Остальные уроки откроются после регистрации" : course.progressText;
+  detailLessons.textContent = isPreviewAccess ? `1 из ${fallbackLessonCount} ${getLessonGenitiveWord(fallbackLessonCount)} открыт` : course.lessonsText;
+  detailProgressText.textContent = isPreviewAccess
+    ? isGuest
+      ? "Остальные уроки откроются после регистрации"
+      : "Остальные уроки откроются после покупки курса"
+    : course.progressText;
   breadcrumbCourse.textContent = course.breadcrumb;
 
   detailIcon.className = `course-illustration course-hero__icon ${course.iconClass}`;
   detailIcon.querySelector("use").setAttribute("href", course.iconSymbol);
   const guestPercent = fallbackLessonCount > 0 ? Math.round(100 / fallbackLessonCount) : 0;
-  donut.style.setProperty("--value", String(isGuest ? guestPercent : course.donut));
-  donut.querySelector("span").textContent = isGuest ? `${guestPercent}%` : `${course.donut}%`;
+  donut.style.setProperty("--value", String(isPreviewAccess ? guestPercent : course.donut));
+  donut.querySelector("span").textContent = isPreviewAccess ? `${guestPercent}%` : `${course.donut}%`;
 
-  renderCourseData(getFallbackLessons(courseKey));
+  renderCourseData(getFallbackLessons(courseKey), { isOwned: hasFullCourseAccess });
   renderStreamCards(courseStreamList, getFallbackStreams(courseKey));
   showPage("course");
   setActiveStudyNav();
@@ -4858,22 +5109,24 @@ async function openCourse(courseKey, viewName = "lessons") {
   try {
     const result = await loadLessonsFromApi(courseKey);
     if (currentCourseKey === courseKey && result.lessons.length > 0) {
-      renderCourseData(result.lessons);
-      if (!hasAuthenticatedAccount()) {
+      renderCourseData(result.lessons, result.course);
+      if (!hasAuthenticatedAccount() || result.course?.isOwned === false) {
         const lessonCount = result.course?.lessonsTotal || result.lessons.length;
         const previewPercent = lessonCount > 0 ? Math.round(100 / lessonCount) : 0;
         detailLessons.textContent = `1 из ${lessonCount} ${getLessonGenitiveWord(lessonCount)} открыт`;
-        detailProgressText.textContent = "Зарегистрируйтесь, чтобы открыть остальные уроки и сдавать ДЗ";
+        detailProgressText.textContent = hasAuthenticatedAccount()
+          ? "Остальные уроки и ДЗ откроются после покупки курса"
+          : "Зарегистрируйтесь, чтобы открыть остальные уроки и сдавать ДЗ";
         donut.style.setProperty("--value", String(previewPercent));
         donut.querySelector("span").textContent = `${previewPercent}%`;
-      } else if (result.course) {
+      } else if (result.course?.isOwned) {
         applyCourseDetailProgress(
           courseKey,
           normalizeAccountCourse({
             ...result.course,
             courseSlug: courseKey,
             courseTitle: course.title,
-            isOwned: true,
+            isOwned: result.course.isOwned,
             pointsEarned: getAccountCourse(courseKey)?.pointsEarned || 0,
           }),
         );
@@ -5312,6 +5565,25 @@ document.addEventListener("submit", (event) => {
     event.preventDefault();
     const studentId = adminEnrollmentForm.dataset.studentId;
     submitStaffJsonForm(adminEnrollmentForm, `/api/admin/students/${encodeURIComponent(studentId)}/enrollment`, "Курс ученика обновлён.");
+    return;
+  }
+
+  const adminParentChildForm = event.target.closest("[data-admin-parent-child-form]");
+
+  if (adminParentChildForm) {
+    event.preventDefault();
+    const parentId = adminParentChildForm.dataset.parentId;
+    submitStaffJsonForm(adminParentChildForm, `/api/admin/parents/${encodeURIComponent(parentId)}/children`, "Связь родителя и ребёнка обновлена.");
+    return;
+  }
+
+  const adminCourseStaffForm = event.target.closest("[data-admin-course-staff-form]");
+
+  if (adminCourseStaffForm) {
+    event.preventDefault();
+    const formData = new FormData(adminCourseStaffForm);
+    const courseId = adminCourseStaffForm.dataset.courseId || formData.get("courseId");
+    submitStaffJsonForm(adminCourseStaffForm, `/api/admin/courses/${encodeURIComponent(courseId)}/staff`, "Связка курса обновлена.");
     return;
   }
 
