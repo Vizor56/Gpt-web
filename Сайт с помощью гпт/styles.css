@@ -3241,6 +3241,36 @@ a > svg {
   gap: 6px;
 }
 
+.staff-course-step-card {
+  align-content: start;
+}
+
+.staff-course-step-card__body {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.staff-course-step-card .course-illustration {
+  width: 78px;
+  height: 88px;
+  border-radius: 8px;
+}
+
+.staff-course-step-card .course-illustration__icon {
+  width: 42px;
+  height: 42px;
+}
+
+.staff-course-step-card p {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 750;
+  line-height: 1.45;
+}
+
 .staff-lesson-summary {
   display: grid;
   gap: 12px;
@@ -4409,6 +4439,15 @@ a > svg {
 
   .staff-step-heading__actions {
     justify-content: flex-start;
+  }
+
+  .staff-course-step-card__body {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  .staff-course-step-card .course-illustration {
+    width: 64px;
+    height: 74px;
   }
 
   .staff-group-heading {

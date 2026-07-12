@@ -2922,6 +2922,31 @@ function renderTeacherLessonRow(course, lesson) {
   `;
 }
 
+function renderTeacherCourseStepCard(course, lessons) {
+  const visual = getTeacherCourseVisual(course);
+
+  return `
+    <button class="staff-step-card staff-course-step-card" type="button" data-staff-open-course="courses" data-course-id="${escapeHtml(getCourseSelectionKey(course))}">
+      <div class="staff-course-step-card__body">
+        <div class="course-illustration ${escapeHtml(visual.iconClass)}" aria-hidden="true">
+          <svg class="course-illustration__icon"><use href="${escapeHtml(visual.iconSymbol)}" /></svg>
+        </div>
+        <div class="staff-step-card__top">
+          <span>${escapeHtml(course.teacherName || "Ваш курс")}</span>
+          <strong>${escapeHtml(course.courseTitle || "Курс")}</strong>
+        </div>
+      </div>
+      <p>${escapeHtml(visual.description)}</p>
+      <div class="staff-step-card__meta">
+        <span class="resource-chip">${formatNumber(lessons.length)} урок.</span>
+        <span class="resource-chip is-blue">${formatNumber(course.studentsCount || 0)} учен.</span>
+        <span class="resource-chip is-green">${formatNumber(course.homeworksCount || 0)} ДЗ</span>
+        <span class="resource-chip">${formatNumber(course.streamsCount || 0)} трансляц.</span>
+      </div>
+    </button>
+  `;
+}
+
 function renderTeacherCourses() {
   const courses = getStaffItems("courses");
   const lessonsByCourse = groupBy(getStaffItems("lessons"), (lesson) => lesson.courseId);
@@ -2930,63 +2955,84 @@ function renderTeacherCourses() {
     return renderStaffEmpty("Курсы преподавателя пока не найдены.");
   }
 
+  const state = getStaffDrilldown("courses");
+
+  if (!state.courseId) {
+    return `
+      ${renderStaffStepHeading("Курсы преподавателя", "Выберите курс, чтобы открыть уроки, материалы и инструменты")}
+      <div class="staff-step-grid">
+        ${courses
+          .map((course) => {
+            const lessons = (lessonsByCourse[course.courseId] || []).sort((a, b) => Number(a.lessonNumber || 0) - Number(b.lessonNumber || 0));
+            return renderTeacherCourseStepCard(course, lessons);
+          })
+          .join("")}
+      </div>
+    `;
+  }
+
+  const selectedCourse = courses.find((course) => matchesCourseSelection(course, state.courseId));
+
+  if (!selectedCourse) {
+    return `
+      ${renderStaffStepHeading("Курсы преподавателя", "Выбранный курс не найден", renderStaffStepBack("courses", "courses", "", "К курсам"))}
+      ${renderStaffEmpty("Курс мог быть изменён в базе. Вернитесь к списку и выберите курс заново.")}
+    `;
+  }
+
+  const lessons = (lessonsByCourse[selectedCourse.courseId] || []).sort((a, b) => Number(a.lessonNumber || 0) - Number(b.lessonNumber || 0));
+  const visual = getTeacherCourseVisual(selectedCourse);
+
   return `
-    ${courses
-      .map((course) => {
-        const lessons = (lessonsByCourse[course.courseId] || []).sort((a, b) => Number(a.lessonNumber || 0) - Number(b.lessonNumber || 0));
-        const visual = getTeacherCourseVisual(course);
-        return `
-          <section class="staff-group staff-teacher-course">
-            <article class="course-card staff-course-card">
-              <div class="course-card__body">
-                <div class="course-illustration ${escapeHtml(visual.iconClass)}" aria-hidden="true">
-                  <svg class="course-illustration__icon"><use href="${escapeHtml(visual.iconSymbol)}" /></svg>
-                </div>
-                <div class="course-info">
-                  <h2>${escapeHtml(course.courseTitle)}</h2>
-                  <p>${escapeHtml(visual.description)}</p>
-                  <div class="progress-line">
-                    <span class="progress-text">${formatNumber(lessons.length)} уроков · ${formatNumber(course.studentsCount || 0)} учеников</span>
-                    <div class="progress-track"><span style="width: ${clampPercent(lessons.length ? 100 : 0)}%"></span></div>
-                    <span class="progress-percent">${formatNumber(course.homeworksCount || 0)} ДЗ</span>
-                  </div>
-                  <div class="course-actions">
-                    <button type="button" data-staff-scroll-target="teacher-course-lessons-${escapeHtml(course.courseId)}"><svg><use href="#icon-play" /></svg>Уроки</button>
-                    <button type="button" data-staff-scroll-target="teacher-course-create-${escapeHtml(course.courseId)}"><svg><use href="#icon-upload" /></svg>Новый урок</button>
-                    <button type="button" data-staff-scroll-target="teacher-course-stream-${escapeHtml(course.courseId)}"><svg><use href="#icon-broadcast" /></svg>Трансляция</button>
-                  </div>
-                </div>
-              </div>
-            </article>
-            <section class="staff-panel" id="teacher-course-lessons-${escapeHtml(course.courseId)}">
-              <header class="staff-panel-heading">
-                <h3>Уроки курса</h3>
-                <span>${formatNumber(lessons.length)} материалов</span>
-              </header>
-              <div class="lesson-list staff-teacher-lesson-list">
-                ${
-                  lessons.length
-                    ? lessons.map((lesson) => renderTeacherLessonRow(course, lesson)).join("")
-                    : renderStaffEmpty("В этом курсе пока нет уроков.")
-                }
-              </div>
-            </section>
-            <div class="staff-course-tools">
-              <section class="staff-panel" id="teacher-course-create-${escapeHtml(course.courseId)}">
-                <h3>Создать урок, конспект и ДЗ</h3>
-                <p>Если заполнить ссылки на конспект и домашнее задание, сайт автоматически создаст связанные записи в базе и выдаст ДЗ ученикам курса.</p>
-                ${renderLessonForm(course)}
-              </section>
-              <section class="staff-panel" id="teacher-course-stream-${escapeHtml(course.courseId)}">
-                <h3>Создать трансляцию</h3>
-                <p>Трансляция появится у учеников курса и в уведомлениях.</p>
-                ${renderStreamForm(course)}
-              </section>
+    ${renderStaffStepHeading(selectedCourse.courseTitle || "Курс", "Уроки, материалы и инструменты курса", renderStaffStepBack("courses", "courses", "", "К курсам"))}
+    <section class="staff-group staff-teacher-course">
+      <article class="course-card staff-course-card is-selected">
+        <div class="course-card__body">
+          <div class="course-illustration ${escapeHtml(visual.iconClass)}" aria-hidden="true">
+            <svg class="course-illustration__icon"><use href="${escapeHtml(visual.iconSymbol)}" /></svg>
+          </div>
+          <div class="course-info">
+            <h2>${escapeHtml(selectedCourse.courseTitle)}</h2>
+            <p>${escapeHtml(visual.description)}</p>
+            <div class="progress-line">
+              <span class="progress-text">${formatNumber(lessons.length)} уроков · ${formatNumber(selectedCourse.studentsCount || 0)} учеников</span>
+              <div class="progress-track"><span style="width: ${clampPercent(lessons.length ? 100 : 0)}%"></span></div>
+              <span class="progress-percent">${formatNumber(selectedCourse.homeworksCount || 0)} ДЗ</span>
             </div>
-          </section>
-        `;
-      })
-      .join("")}
+            <div class="course-actions">
+              <button type="button" data-staff-scroll-target="teacher-course-lessons-${escapeHtml(selectedCourse.courseId)}"><svg><use href="#icon-play" /></svg>Уроки</button>
+              <button type="button" data-staff-scroll-target="teacher-course-create-${escapeHtml(selectedCourse.courseId)}"><svg><use href="#icon-upload" /></svg>Новый урок</button>
+              <button type="button" data-staff-scroll-target="teacher-course-stream-${escapeHtml(selectedCourse.courseId)}"><svg><use href="#icon-broadcast" /></svg>Трансляция</button>
+            </div>
+          </div>
+        </div>
+      </article>
+      <section class="staff-panel" id="teacher-course-lessons-${escapeHtml(selectedCourse.courseId)}">
+        <header class="staff-panel-heading">
+          <h3>Уроки курса</h3>
+          <span>${formatNumber(lessons.length)} материалов</span>
+        </header>
+        <div class="lesson-list staff-teacher-lesson-list">
+          ${
+            lessons.length
+              ? lessons.map((lesson) => renderTeacherLessonRow(selectedCourse, lesson)).join("")
+              : renderStaffEmpty("В этом курсе пока нет уроков.")
+          }
+        </div>
+      </section>
+      <div class="staff-course-tools">
+        <section class="staff-panel" id="teacher-course-create-${escapeHtml(selectedCourse.courseId)}">
+          <h3>Создать урок, конспект и ДЗ</h3>
+          <p>Если заполнить ссылки на конспект и домашнее задание, сайт автоматически создаст связанные записи в базе и выдаст ДЗ ученикам курса.</p>
+          ${renderLessonForm(selectedCourse)}
+        </section>
+        <section class="staff-panel" id="teacher-course-stream-${escapeHtml(selectedCourse.courseId)}">
+          <h3>Создать трансляцию</h3>
+          <p>Трансляция появится у учеников курса и в уведомлениях.</p>
+          ${renderStreamForm(selectedCourse)}
+        </section>
+      </div>
+    </section>
   `;
 }
 
