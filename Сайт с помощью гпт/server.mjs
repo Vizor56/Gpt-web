@@ -4410,6 +4410,9 @@ async function getMessageRecipients(actor) {
         SELECT 'Curator' AS "targetRole", id AS "targetId", CONCAT(first_name, ' ', last_name) AS "targetName", 'Куратор' AS "recipientGroup", email AS subtitle
         FROM curators
         WHERE active = TRUE
+        UNION ALL
+        SELECT 'Student' AS "targetRole", id AS "targetId", CONCAT(first_name, ' ', last_name) AS "targetName", 'Ученики' AS "recipientGroup", COALESCE(email, phone, grade::text || ' класс') AS subtitle
+        FROM students
         ORDER BY "recipientGroup", "targetName"
       `,
     );
@@ -4483,6 +4486,14 @@ function getChatShape(actor, targetRole, targetId) {
 
   if (actor.role === "Admin" && targetRole === "Curator") {
     return { chatType: "CuratorAdmin", studentId: null, teacherId: null, curatorId: targetId, adminId: actor.id, targetRole };
+  }
+
+  if (actor.role === "Admin" && targetRole === "Student") {
+    return { chatType: "StudentAdmin", studentId: targetId, teacherId: null, curatorId: null, adminId: actor.id, targetRole };
+  }
+
+  if (actor.role === "Student" && targetRole === "Admin") {
+    return { chatType: "StudentAdmin", studentId: actor.id, teacherId: null, curatorId: null, adminId: targetId, targetRole };
   }
 
   if (actor.role === "Teacher" && targetRole === "Admin") {
@@ -4568,12 +4579,12 @@ async function findOrCreateConversation(actor, targetRole, targetId) {
 async function assertConversationAllowed(actor, conversationId) {
   const where =
     actor.role === "Student"
-      ? "student_id = $2 AND chat_type IN ('StudentTeacher', 'StudentCurator')"
+      ? "student_id = $2 AND chat_type IN ('StudentTeacher', 'StudentCurator', 'StudentAdmin')"
       : actor.role === "Teacher"
         ? "teacher_id = $2 AND chat_type IN ('StudentTeacher', 'TeacherAdmin')"
         : actor.role === "Curator"
           ? "curator_id = $2 AND chat_type IN ('StudentCurator', 'CuratorAdmin')"
-          : "admin_id = $2 AND chat_type IN ('TeacherAdmin', 'CuratorAdmin')";
+          : "admin_id = $2 AND chat_type IN ('TeacherAdmin', 'CuratorAdmin', 'StudentAdmin')";
   const row = await dbOne(`SELECT 1 FROM chats WHERE id = $1 AND ${where}`, [conversationId, actor.id]);
 
   if (!row) {
@@ -4584,12 +4595,12 @@ async function assertConversationAllowed(actor, conversationId) {
 async function getMessagesPayload(actor, requestedConversationId = 0) {
   const where =
     actor.role === "Student"
-      ? "ch.student_id = $1 AND ch.chat_type IN ('StudentTeacher', 'StudentCurator')"
+      ? "ch.student_id = $1 AND ch.chat_type IN ('StudentTeacher', 'StudentCurator', 'StudentAdmin')"
       : actor.role === "Teacher"
         ? "ch.teacher_id = $1 AND ch.chat_type IN ('StudentTeacher', 'TeacherAdmin')"
         : actor.role === "Curator"
           ? "ch.curator_id = $1 AND ch.chat_type IN ('StudentCurator', 'CuratorAdmin')"
-          : "ch.admin_id = $1 AND ch.chat_type IN ('TeacherAdmin', 'CuratorAdmin')";
+          : "ch.admin_id = $1 AND ch.chat_type IN ('TeacherAdmin', 'CuratorAdmin', 'StudentAdmin')";
 
   const conversations = await dbQuery(
     `
@@ -4617,8 +4628,9 @@ async function getMessagesPayload(actor, requestedConversationId = 0) {
         CASE ch.chat_type
           WHEN 'TeacherAdmin' THEN 1
           WHEN 'CuratorAdmin' THEN 2
-          WHEN 'StudentTeacher' THEN 3
-          WHEN 'StudentCurator' THEN 4
+          WHEN 'StudentAdmin' THEN 3
+          WHEN 'StudentTeacher' THEN 4
+          WHEN 'StudentCurator' THEN 5
           ELSE 5
         END,
         "lastMessageAt" DESC NULLS LAST,

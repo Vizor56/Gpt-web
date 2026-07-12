@@ -785,7 +785,7 @@ function openSupport() {
 }
 
 function openMessages() {
-  if (isStaffMode()) {
+  if (hasAuthenticatedStaff()) {
     openStaffPage("messages");
     return;
   }
@@ -4930,6 +4930,10 @@ function getConversationFilterType(conversation = {}) {
     return "curators";
   }
 
+  if (conversation.chatType === "StudentAdmin") {
+    return "students";
+  }
+
   return "all";
 }
 
@@ -4956,6 +4960,7 @@ function renderMessageStartPanel(recipients = [], actor = getMessageActor()) {
             ["all", "Все"],
             ["teachers", "Преподаватели"],
             ["curators", "Кураторы"],
+            ["students", "Ученики"],
           ]
             .map((item) => `<button type="button" class="${currentMessageFilter === item[0] ? "is-active" : ""}" data-message-filter="${item[0]}">${item[1]}</button>`)
             .join("")}
@@ -5015,7 +5020,7 @@ function renderMessages(payload) {
           <button class="conversation-button ${String(conversation.conversationId) === String(currentConversationId) ? "is-active" : ""}" type="button" data-conversation-id="${escapeHtml(conversation.conversationId)}">
             <strong>${escapeHtml(conversation.title)}</strong>
             <span>${escapeHtml([conversation.studentName, conversation.teacherName, conversation.curatorName, conversation.adminName].filter(Boolean).join(" · ") || conversation.staffName || "Учебный чат")}</span>
-            <span>${escapeHtml(conversation.chatType === "TeacherAdmin" ? "Чат с преподавателем" : conversation.chatType === "CuratorAdmin" ? "Чат с куратором" : "Учебный чат")}</span>
+            <span>${escapeHtml(conversation.chatType === "TeacherAdmin" ? "Чат с преподавателем" : conversation.chatType === "CuratorAdmin" ? "Чат с куратором" : conversation.chatType === "StudentAdmin" ? "Чат с учеником" : "Учебный чат")}</span>
             <span>${escapeHtml(formatStreamDate(conversation.lastMessageAt || conversation.createdAt))}</span>
           </button>
         `)
@@ -5057,7 +5062,7 @@ async function loadMessages(conversationId = currentConversationId) {
   if (!actor) {
     currentConversationId = null;
     renderMessages({ conversations: [], messages: [] });
-    setMessageStatus("Войдите как ученик, куратор или преподаватель.", "error");
+    setMessageStatus("Войдите как ученик или сотрудник команды.", "error");
     return null;
   }
 
@@ -5114,7 +5119,7 @@ async function startMessageConversation(form) {
 
     currentConversationId = result.activeConversationId;
     if (getMessageActor()?.role === "Admin") {
-      currentMessageFilter = targetRole === "Teacher" ? "teachers" : targetRole === "Curator" ? "curators" : currentMessageFilter;
+      currentMessageFilter = targetRole === "Teacher" ? "teachers" : targetRole === "Curator" ? "curators" : targetRole === "Student" ? "students" : currentMessageFilter;
     }
     await loadMessages(currentConversationId);
     setMessageStatus("Чат открыт.", "success");
