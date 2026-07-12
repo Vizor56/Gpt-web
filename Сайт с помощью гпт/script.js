@@ -4171,7 +4171,7 @@ function renderAdminStudentCard(student) {
   const comments = student.comments || [];
 
   return `
-    <article class="staff-card admin-student-card">
+    <article class="staff-card admin-student-card admin-compact-card">
       <div class="staff-card__meta">
         <span class="resource-chip ${student.studentStatus === "Graduate" ? "is-green" : "is-blue"}">${student.studentStatus === "Graduate" ? "Выпускник" : "Ученик"}</span>
         <span class="resource-chip">${escapeHtml(student.grade ? `${student.grade} класс` : "класс не указан")}</span>
@@ -4183,9 +4183,14 @@ function renderAdminStudentCard(student) {
       <div class="staff-card__meta">
         ${(student.parents || []).map((parent) => `<span class="resource-chip">${escapeHtml(parent.parentName)}</span>`).join("") || `<span class="resource-chip">Родитель не указан</span>`}
       </div>
-      ${renderAdminStudentForm(student)}
-      <details class="staff-details" open>
-        <summary>Курсы и закрепления</summary>
+      <details class="staff-details admin-person-details">
+        <summary>Подробности и редактирование ученика</summary>
+        <section class="admin-detail-block">
+          <h4>Личные данные</h4>
+          ${renderAdminStudentForm(student)}
+        </section>
+        <section class="admin-detail-block">
+          <h4>Курсы и закрепления</h4>
         <div class="admin-course-list">
           ${
             courses.length
@@ -4207,14 +4212,15 @@ function renderAdminStudentCard(student) {
             ${renderAdminEnrollmentForm(student)}
           </div>
         </div>
-      </details>
-      <details class="staff-details">
-        <summary>Комментарии команды</summary>
+        </section>
+        <section class="admin-detail-block">
+          <h4>Комментарии команды</h4>
         ${
           comments.length
             ? comments.map((comment) => `<blockquote>${escapeHtml(comment.authorName || comment.staffRole)}: ${escapeHtml(comment.commentText || "")}</blockquote>`).join("")
             : `<p>Комментариев пока нет.</p>`
         }
+        </section>
       </details>
     </article>
   `;
@@ -4226,10 +4232,7 @@ function renderAdminStudents() {
 
   return `
     ${renderAdminMetrics()}
-    <section class="staff-panel">
-      <h2>Добавить ученика</h2>
-      ${renderAdminStudentForm()}
-    </section>
+    ${renderAdminAddDetails("Добавить ученика", renderAdminStudentForm())}
     ${renderAdminFilters("students", students)}
     <div class="staff-card-grid">
       ${filteredStudents.length ? filteredStudents.map(renderAdminStudentCard).join("") : renderStaffEmpty("Ученики по выбранным фильтрам не найдены.")}
@@ -4263,17 +4266,14 @@ function renderAdminParents() {
 
   return `
     ${renderAdminMetrics()}
-    <section class="staff-panel">
-      <h2>Добавить родителя</h2>
-      ${renderAdminParentForm()}
-    </section>
+    ${renderAdminAddDetails("Добавить родителя", renderAdminParentForm())}
     <div class="staff-card-grid">
       ${
         parents.length
           ? parents
               .map(
                 (parent) => `
-                  <article class="staff-card">
+                  <article class="staff-card admin-compact-card">
                     <div class="staff-card__meta">
                       <span class="resource-chip ${parent.parentStatus === "Parent_Student" ? "is-blue" : "is-green"}">${parent.parentStatus === "Parent_Student" ? "Родитель ученика" : "Родитель выпускника"}</span>
                       <span class="resource-chip">${formatNumber((parent.children || []).length)} детей</span>
@@ -4283,9 +4283,14 @@ function renderAdminParents() {
                     <div class="staff-card__meta">
                       ${(parent.children || []).map((child) => `<span class="resource-chip">${escapeHtml(child.studentName)} · ${child.studentStatus === "Graduate" ? "выпускник" : "ученик"}</span>`).join("") || `<span class="resource-chip">Дети не указаны</span>`}
                     </div>
-                    ${renderAdminParentForm(parent)}
-                    <details class="staff-details" open>
-                      <summary>Дети и связи</summary>
+                    <details class="staff-details admin-person-details">
+                      <summary>Подробности и редактирование родителя</summary>
+                      <section class="admin-detail-block">
+                        <h4>Личные данные</h4>
+                        ${renderAdminParentForm(parent)}
+                      </section>
+                      <section class="admin-detail-block">
+                        <h4>Дети и связи</h4>
                       <div class="admin-course-list">
                         ${
                           (parent.children || []).length
@@ -4307,6 +4312,7 @@ function renderAdminParents() {
                           ${renderAdminParentChildForm(parent)}
                         </div>
                       </div>
+                      </section>
                     </details>
                   </article>
                 `,
@@ -4328,6 +4334,15 @@ function renderAdminPersonChips(items = [], getLabel) {
   }
 
   return items.map((item) => `<span class="resource-chip">${escapeHtml(getLabel(item))}</span>`).join("");
+}
+
+function renderAdminAddDetails(label, formHtml) {
+  return `
+    <details class="staff-details admin-add-details">
+      <summary><svg><use href="#icon-upload" /></svg>${escapeHtml(label)}</summary>
+      ${formHtml}
+    </details>
+  `;
 }
 
 function renderAdminTeacherForm(teacher = {}) {
@@ -4392,10 +4407,7 @@ function renderAdminTeachers() {
 
   return `
     ${renderAdminMetrics()}
-    <section class="staff-panel">
-      <h2>Добавить преподавателя</h2>
-      ${renderAdminTeacherForm()}
-    </section>
+    ${renderAdminAddDetails("Добавить преподавателя", renderAdminTeacherForm())}
     <div class="staff-card-grid">
       ${teachers.length ? teachers.map(renderAdminTeacherCard).join("") : renderStaffEmpty("Преподаватели пока не добавлены.")}
     </div>
@@ -4467,10 +4479,7 @@ function renderAdminCurators() {
 
   return `
     ${renderAdminMetrics()}
-    <section class="staff-panel">
-      <h2>Добавить куратора</h2>
-      ${renderAdminCuratorForm()}
-    </section>
+    ${renderAdminAddDetails("Добавить куратора", renderAdminCuratorForm())}
     <div class="staff-card-grid">
       ${curators.length ? curators.map(renderAdminCuratorCard).join("") : renderStaffEmpty("Кураторы пока не добавлены.")}
     </div>
@@ -4483,7 +4492,7 @@ function renderAdminTeacherCard(teacher) {
   const curators = teacher.curators || [];
 
   return `
-    <article class="staff-card admin-person-card">
+    <article class="staff-card admin-person-card admin-compact-card">
       <div class="staff-card__meta">
         <span class="resource-chip is-green">Рейтинг ${Number(teacher.rating || 0).toFixed(1)} / 10</span>
         <span class="resource-chip is-blue">${formatNumber(teacher.studentsCount || 0)} учен.</span>
@@ -4491,15 +4500,18 @@ function renderAdminTeacherCard(teacher) {
       </div>
       <h3>${escapeHtml(teacher.teacherName || "Пока неизвестно")}</h3>
       <p>${escapeHtml([teacher.phone, teacher.email, teacher.telegram].filter(Boolean).join(" · ") || "Контакты пока неизвестны")}</p>
-      <div class="staff-info-grid">
-        <span>ДЗ прислали<strong>${formatNumber(teacher.homeworkSubmitted || 0)}</strong></span>
-        <span>ДЗ проверено<strong>${formatNumber(teacher.homeworkChecked || 0)}</strong></span>
-        <span>Средний балл за ДЗ<strong>${Number(teacher.averageHomeworkScore || 0).toFixed(1)}</strong></span>
-        <span>Логин<strong>${escapeHtml(adminText(teacher.login))}</strong></span>
-      </div>
-      <details class="staff-details">
-        <summary>Вся информация и редактирование</summary>
+      <details class="staff-details admin-person-details">
+        <summary>Подробности и редактирование преподавателя</summary>
+        <div class="staff-info-grid">
+          <span>ДЗ прислали<strong>${formatNumber(teacher.homeworkSubmitted || 0)}</strong></span>
+          <span>ДЗ проверено<strong>${formatNumber(teacher.homeworkChecked || 0)}</strong></span>
+          <span>Средний балл за ДЗ<strong>${Number(teacher.averageHomeworkScore || 0).toFixed(1)}</strong></span>
+          <span>Логин<strong>${escapeHtml(adminText(teacher.login))}</strong></span>
+        </div>
+        <section class="admin-detail-block">
+          <h4>Личные данные</h4>
         ${renderAdminTeacherForm(teacher)}
+        </section>
         <section class="admin-detail-block">
           <h4>Курсы</h4>
           <div class="admin-course-list">
@@ -4564,7 +4576,7 @@ function renderAdminCuratorCard(curator) {
   const teachers = curator.teachers || [];
 
   return `
-    <article class="staff-card admin-person-card">
+    <article class="staff-card admin-person-card admin-compact-card">
       <div class="staff-card__meta">
         <span class="resource-chip is-green">Средняя оценка ${Number(curator.rating || 0).toFixed(1)} / 10</span>
         <span class="resource-chip is-blue">${formatNumber(curator.studentsCount || 0)} учен.</span>
@@ -4572,15 +4584,18 @@ function renderAdminCuratorCard(curator) {
       </div>
       <h3>${escapeHtml(curator.curatorName || "Пока неизвестно")}</h3>
       <p>${escapeHtml([curator.phone, curator.email, curator.telegram].filter(Boolean).join(" · ") || "Контакты пока неизвестны")}</p>
-      <div class="staff-info-grid">
-        <span>Проверено преподавателями<strong>${formatNumber(curator.homeworkCheckedByTeachers || 0)}</strong></span>
-        <span>Фидбек куратора<strong>${formatNumber(curator.curatorFeedbackTotal || 0)}</strong></span>
-        <span>Курсы<strong>${formatNumber(curator.coursesCount || courses.length)}</strong></span>
-        <span>Логин<strong>${escapeHtml(adminText(curator.login))}</strong></span>
-      </div>
-      <details class="staff-details">
-        <summary>Вся информация и редактирование</summary>
+      <details class="staff-details admin-person-details">
+        <summary>Подробности и редактирование куратора</summary>
+        <div class="staff-info-grid">
+          <span>Проверено преподавателями<strong>${formatNumber(curator.homeworkCheckedByTeachers || 0)}</strong></span>
+          <span>Фидбек куратора<strong>${formatNumber(curator.curatorFeedbackTotal || 0)}</strong></span>
+          <span>Курсы<strong>${formatNumber(curator.coursesCount || courses.length)}</strong></span>
+          <span>Логин<strong>${escapeHtml(adminText(curator.login))}</strong></span>
+        </div>
+        <section class="admin-detail-block">
+          <h4>Личные данные</h4>
         ${renderAdminCuratorForm(curator)}
+        </section>
         <section class="admin-detail-block">
           <h4>Курсы</h4>
           <div class="admin-course-list">

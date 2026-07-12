@@ -3642,6 +3642,54 @@ a > svg {
   font-weight: 900;
 }
 
+.admin-add-details {
+  margin: 0 0 14px;
+  background: #f7fcfb;
+}
+
+.admin-add-details summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  color: #0b6f66;
+}
+
+.admin-add-details summary svg {
+  width: 18px;
+  height: 18px;
+}
+
+.admin-compact-card {
+  align-content: start;
+}
+
+.admin-compact-card > .staff-details {
+  margin-top: 14px;
+}
+
+.admin-person-details > summary {
+  background: #f8fbff;
+  border-radius: 8px 8px 0 0;
+}
+
+.admin-person-details .staff-info-grid {
+  margin: 0;
+  padding: 0 14px 2px;
+}
+
+.admin-person-details .admin-detail-block {
+  padding: 0 14px 14px;
+}
+
+.admin-person-details .admin-detail-block > .staff-lesson-form {
+  padding: 0;
+}
+
+.admin-person-details .admin-detail-block + .admin-detail-block {
+  padding-top: 0;
+}
+
 .staff-form-status {
   min-height: 18px;
   margin: 0;
