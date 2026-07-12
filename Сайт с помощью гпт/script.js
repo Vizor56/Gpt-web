@@ -464,6 +464,7 @@ let currentCourseKey = "math";
 let currentCourseView = "lessons";
 let currentLessons = getFallbackLessons("math");
 let libraryLoaded = false;
+let libraryAccessKey = "";
 let currentAccount = readStoredAccount();
 let currentStaff = readStoredStaff();
 let latestAccount = null;
@@ -876,7 +877,7 @@ function normalizeAccountCourse(course) {
   };
 }
 
-function getAccountCourses(account = latestAccount) {
+function getAccountCourses(account = latestAccount || currentAccount) {
   return (account?.courses || []).map(normalizeAccountCourse);
 }
 
@@ -1545,6 +1546,7 @@ function getStaffNavItems() {
     return [
       { page: "messages", label: "Сообщения", icon: "#icon-message" },
       { page: "applications", label: "Заявки", icon: "#icon-clipboard" },
+      { page: "support", label: "Обращения", icon: "#icon-message" },
       { page: "students", label: "Ученики", icon: "#icon-book" },
       { page: "parents", label: "Родители", icon: "#icon-user" },
       { page: "teachers", label: "Преподаватели", icon: "#icon-play" },
@@ -1563,6 +1565,7 @@ function getStaffNavItems() {
       { page: "notes", label: "Конспекты", icon: "#icon-file" },
       { page: "homework", label: "Домашние задания", icon: "#icon-clipboard" },
       { page: "streams", label: "Трансляции", icon: "#icon-broadcast" },
+      { page: "calls", label: "Созвоны", icon: "#icon-clock" },
       { page: "archive", label: "Архив оценок", icon: "#icon-folder" },
       { page: "account", label: "Аккаунт", icon: "#icon-user" },
     ];
@@ -1610,6 +1613,7 @@ function getStaffPageTitle(pageName) {
   const role = getStaffProfile().role;
   const titles = {
     applications: "Заявки",
+    support: "Обращения",
     parents: "Родители",
     curators: "Кураторы",
     messages: "Сообщения",
@@ -1623,6 +1627,7 @@ function getStaffPageTitle(pageName) {
     lessons: "Уроки",
     notes: "Конспекты",
     streams: "Трансляции",
+    calls: "Созвоны",
   };
 
   return titles[pageName] || "Рабочий кабинет";
@@ -2728,6 +2733,92 @@ function renderCuratorTeachers() {
   `;
 }
 
+function getCuratorCallStudents() {
+  const unique = new Map();
+
+  getStaffItems("students").forEach((student) => {
+    if (student.studentId && !unique.has(String(student.studentId))) {
+      unique.set(String(student.studentId), student);
+    }
+  });
+
+  return [...unique.values()].sort((left, right) => String(left.studentName || "").localeCompare(String(right.studentName || ""), "ru"));
+}
+
+function renderCuratorCallForm() {
+  const students = getCuratorCallStudents();
+
+  return `
+    <form class="staff-lesson-form staff-call-form" data-staff-call-form>
+      <label>
+        Название
+        <input name="callTitle" type="text" placeholder="Созвон по прогрессу" required />
+      </label>
+      <label>
+        Дата и время
+        <input name="startsAt" type="datetime-local" required />
+      </label>
+      <label>
+        Ссылка
+        <input name="callLink" type="url" placeholder="https://meet.google.com/..." />
+      </label>
+      <label>
+        Ученики
+        <select name="studentIds" multiple size="6" required>
+          ${students
+            .map((student) => `<option value="${escapeHtml(student.studentId)}">${escapeHtml(student.studentName)}${student.courseTitle ? ` · ${escapeHtml(student.courseTitle)}` : ""}</option>`)
+            .join("")}
+        </select>
+      </label>
+      <button type="submit" ${students.length ? "" : "disabled"}><svg><use href="#icon-clock" /></svg>Создать созвон</button>
+      <p class="staff-form-status" aria-live="polite"></p>
+    </form>
+  `;
+}
+
+function renderCuratorCalls() {
+  const calls = getStaffItems("calls");
+
+  return `
+    <section class="staff-panel">
+      <h2>Новый созвон</h2>
+      ${renderCuratorCallForm()}
+    </section>
+    <section class="staff-group">
+      <header class="staff-group-heading">
+        <div>
+          <span>Календарь куратора</span>
+          <h2>Созвоны с учениками</h2>
+        </div>
+        <span class="resource-chip is-blue">${formatNumber(calls.length)} шт.</span>
+      </header>
+      <div class="staff-card-grid">
+        ${
+          calls.length
+            ? calls
+                .map(
+                  (call) => `
+                    <article class="staff-card">
+                      <div class="staff-card__meta">
+                        <span class="resource-chip is-blue">${escapeHtml(call.status === "Done" ? "Завершён" : call.status === "Cancelled" ? "Отменён" : "Запланирован")}</span>
+                        ${call.startsAt ? `<span class="resource-chip">${escapeHtml(formatStreamDate(call.startsAt))}</span>` : ""}
+                      </div>
+                      <h3>${escapeHtml(call.callTitle || "Созвон")}</h3>
+                      <p>${escapeHtml((call.students || []).map((student) => student.studentName).filter(Boolean).join(" · ") || "Ученики не указаны")}</p>
+                      <div class="staff-card__actions">
+                        ${createStaffLink(call.callLink, "Открыть созвон", "#icon-clock")}
+                      </div>
+                    </article>
+                  `,
+                )
+                .join("")
+            : renderStaffEmpty("Созвонов пока нет. Создайте первый созвон с учениками выше.")
+        }
+      </div>
+    </section>
+  `;
+}
+
 function getCuratorResourceConfig(pageName) {
   const configs = {
     lessons: {
@@ -3031,12 +3122,14 @@ function renderCuratorResourcePage(pageName) {
 
 function renderAdminMetrics() {
   const newApplications = getStaffItems("applications").filter((item) => item.status === "New").length;
+  const newSupportRequests = getStaffItems("supportRequests").filter((item) => item.status === "New").length;
   const students = getStaffItems("students");
   const parents = getStaffItems("parents");
 
   return `
     <section class="staff-metrics" aria-label="Сводка администратора">
       <article><span>Новые заявки</span><strong>${formatNumber(newApplications)}</strong></article>
+      <article><span>Новые обращения</span><strong>${formatNumber(newSupportRequests)}</strong></article>
       <article><span>Ученики</span><strong>${formatNumber(students.length)}</strong></article>
       <article><span>Родители</span><strong>${formatNumber(parents.length)}</strong></article>
       <article><span>Курсы</span><strong>${formatNumber(getStaffItems("courses").length)}</strong></article>
@@ -3050,6 +3143,16 @@ function renderAdminStatusOptions(selectedStatus = "New") {
     ["Contacted", "Связались"],
     ["Enrolled", "Записан"],
     ["Rejected", "Отказ"],
+  ];
+
+  return statuses.map(([value, label]) => `<option value="${value}" ${value === selectedStatus ? "selected" : ""}>${label}</option>`).join("");
+}
+
+function renderAdminSupportStatusOptions(selectedStatus = "New") {
+  const statuses = [
+    ["New", "Не обработано"],
+    ["In_Progress", "В работе"],
+    ["Resolved", "Обработано"],
   ];
 
   return statuses.map(([value, label]) => `<option value="${value}" ${value === selectedStatus ? "selected" : ""}>${label}</option>`).join("");
@@ -3252,6 +3355,73 @@ function renderAdminApplications() {
   `;
 }
 
+function renderAdminSupportForm(request = {}) {
+  const isNew = request.status === "New";
+
+  return `
+    <form class="staff-lesson-form admin-edit-form" data-admin-support-form data-support-request-id="${escapeHtml(request.supportRequestId)}">
+      <label>Тема<input name="topic" type="text" value="${escapeHtml(request.topic || "")}" /></label>
+      <label>Статус<select name="status">${renderAdminSupportStatusOptions(request.status || "New")}</select></label>
+      <label>Текст обращения<textarea name="messageText" rows="3">${escapeHtml(request.messageText || "")}</textarea></label>
+      <label>Заметка администратора<textarea name="adminNote" rows="2" placeholder="Что уже сделали по обращению">${escapeHtml(request.adminNote || "")}</textarea></label>
+      <button type="submit"><svg><use href="#icon-upload" /></svg>${isNew ? "Сохранить / обработать" : "Сохранить обращение"}</button>
+      <p class="staff-form-status" aria-live="polite"></p>
+    </form>
+  `;
+}
+
+function renderAdminSupportCard(request, archived = false) {
+  const statusLabel = request.status === "Resolved" ? "Обработано" : request.status === "In_Progress" ? "В работе" : "Не обработано";
+  const statusClass = request.status === "Resolved" ? "is-green" : request.status === "In_Progress" ? "is-blue" : "is-yellow";
+
+  return `
+    <article class="staff-card ${archived ? "staff-card--archived" : ""}">
+      <div class="staff-card__meta">
+        <span class="resource-chip ${statusClass}">${statusLabel}</span>
+        ${request.createdAt ? `<span class="resource-chip">${escapeHtml(formatStreamDate(request.createdAt))}</span>` : ""}
+      </div>
+      <h3>${escapeHtml(request.topic || "Обращение")}</h3>
+      <p>${escapeHtml(request.messageText || "")}</p>
+      <p>${escapeHtml([request.studentName || "Гость", request.phone, request.email].filter(Boolean).join(" · "))}</p>
+      ${renderAdminSupportForm(request)}
+    </article>
+  `;
+}
+
+function renderAdminSupportRequests() {
+  const requests = getStaffItems("supportRequests");
+  const active = requests.filter((item) => item.status === "New" || item.status === "In_Progress");
+  const archived = requests.filter((item) => item.status === "Resolved");
+
+  return `
+    ${renderAdminMetrics()}
+    <section class="staff-group">
+      <header class="staff-group-heading">
+        <div>
+          <span>Поддержка</span>
+          <h2>Не обработанные обращения</h2>
+        </div>
+        <span class="resource-chip is-yellow">${formatNumber(active.length)} шт.</span>
+      </header>
+      <div class="staff-card-grid">
+        ${active.length ? active.map((request) => renderAdminSupportCard(request)).join("") : renderStaffEmpty("Новых обращений пока нет.")}
+      </div>
+    </section>
+    <section class="staff-group">
+      <header class="staff-group-heading">
+        <div>
+          <span>Архив</span>
+          <h2>Обработанные обращения</h2>
+        </div>
+        <span class="resource-chip is-green">${formatNumber(archived.length)} шт.</span>
+      </header>
+      <div class="staff-card-grid">
+        ${archived.length ? archived.map((request) => renderAdminSupportCard(request, true)).join("") : renderStaffEmpty("Архив обращений пока пуст.")}
+      </div>
+    </section>
+  `;
+}
+
 function renderAdminFilters(pageName, items) {
   const selectedCourse = getFilterValue(pageName, "course");
   const selectedTeacher = getFilterValue(pageName, "teacher");
@@ -3283,6 +3453,46 @@ function applyAdminStudentFilters(students) {
     const teacherMatches = !selectedTeacher || courses.some((course) => String(course.teacherId) === String(selectedTeacher));
     const curatorMatches = !selectedCurator || courses.some((course) => String(course.curatorId) === String(selectedCurator));
     return courseMatches && teacherMatches && curatorMatches;
+  });
+}
+
+function getAdminStudentFormDraftKey(form, index) {
+  const studentId = form.querySelector("[name='studentId']")?.value || "";
+  return studentId ? `student:${studentId}` : `new:${index}`;
+}
+
+function collectAdminStudentFormDrafts() {
+  return Array.from(document.querySelectorAll("[data-admin-student-form]")).map((form, index) => ({
+    key: getAdminStudentFormDraftKey(form, index),
+    values: Object.fromEntries(new FormData(form).entries()),
+  }));
+}
+
+function restoreAdminStudentFormDrafts(drafts = []) {
+  if (!drafts.length || currentStaffPage !== "students") {
+    return;
+  }
+
+  window.requestAnimationFrame(() => {
+    const forms = Array.from(document.querySelectorAll("[data-admin-student-form]"));
+
+    forms.forEach((form, index) => {
+      const draft = drafts.find((item) => item.key === getAdminStudentFormDraftKey(form, index));
+
+      if (!draft) {
+        return;
+      }
+
+      Object.entries(draft.values).forEach(([name, value]) => {
+        const field = form.elements[name];
+
+        if (!field || field.type === "hidden") {
+          return;
+        }
+
+        field.value = value;
+      });
+    });
   });
 }
 
@@ -3828,6 +4038,11 @@ function renderStaffPage(pageName = currentStaffPage) {
       return;
     }
 
+    if (pageName === "support") {
+      content.innerHTML = renderAdminSupportRequests();
+      return;
+    }
+
     if (pageName === "students") {
       content.innerHTML = renderAdminStudents();
       return;
@@ -3879,6 +4094,11 @@ function renderStaffPage(pageName = currentStaffPage) {
   if (role === "Curator") {
     if (pageName === "teachers") {
       content.innerHTML = renderCuratorTeachers();
+      return;
+    }
+
+    if (pageName === "calls") {
+      content.innerHTML = renderCuratorCalls();
       return;
     }
 
@@ -4352,6 +4572,7 @@ function normalizeNote(rawNote) {
     materialType: rawNote.materialType || "Конспект",
     authorName: rawNote.authorName || "",
     fileUrl: rawNote.fileUrl,
+    isOwned: Boolean(rawNote.isOwned),
   };
 }
 
@@ -4384,6 +4605,24 @@ async function loadNotesFromApi(courseKey = "") {
 
   const payload = await response.json();
   return (payload.items || []).map(normalizeNote);
+}
+
+function getNotesLibraryAccessKey() {
+  const owned = getAccountCourses()
+    .filter((course) => course.isOwned)
+    .map((course) => course.courseSlug)
+    .sort()
+    .join(",");
+
+  return `${hasAuthenticatedAccount() ? "student" : "guest"}:${owned}`;
+}
+
+function canViewLibraryNote(note) {
+  return Number(note.lessonNumber || 0) === 1 || Boolean(getAccountCourse(note.courseSlug)?.isOwned) || Boolean(note.isOwned);
+}
+
+function filterNotesForCurrentAccess(notes) {
+  return (notes || []).filter(canViewLibraryNote);
 }
 
 function normalizeStream(rawStream) {
@@ -5120,7 +5359,9 @@ function closeHomeworkModal() {
 }
 
 async function loadNotesLibrary() {
-  if (libraryLoaded) {
+  const accessKey = getNotesLibraryAccessKey();
+
+  if (libraryLoaded && libraryAccessKey === accessKey) {
     return;
   }
 
@@ -5133,17 +5374,14 @@ async function loadNotesLibrary() {
   let notes = [];
 
   try {
-    notes = await loadNotesFromApi();
+    notes = filterNotesForCurrentAccess(await loadNotesFromApi());
   } catch (error) {
-    notes = getFallbackNotesLibrary();
+    notes = filterNotesForCurrentAccess(getFallbackNotesLibrary());
     console.info("Конспекты из базы не загружены, показан локальный список.", error);
   }
 
-  const fallbackNotes = getFallbackNotesLibrary();
-  const seenNotes = new Set(notes.map((note) => note.fileUrl || note.noteId));
-  notes = notes.concat(fallbackNotes.filter((note) => !seenNotes.has(note.fileUrl || note.noteId)));
-
   libraryLoaded = true;
+  libraryAccessKey = accessKey;
 
   if (libraryCount) {
     libraryCount.textContent = `${notes.length} файлов`;
@@ -5363,7 +5601,7 @@ async function submitSupportRequest(event) {
     }
 
     supportForm.reset();
-    setSupportStatus(`Обращение №${result.supportId} отправлено.`, "success");
+    setSupportStatus(`Обращение №${result.supportId || result.supportRequestId} отправлено.`, "success");
   } catch (error) {
     setSupportStatus(error.message || "Обращение не отправлено. Проверьте сервер.", "error");
   } finally {
@@ -5695,6 +5933,15 @@ document.addEventListener("submit", (event) => {
     return;
   }
 
+  const adminSupportForm = event.target.closest("[data-admin-support-form]");
+
+  if (adminSupportForm) {
+    event.preventDefault();
+    const supportRequestId = adminSupportForm.dataset.supportRequestId;
+    submitStaffJsonForm(adminSupportForm, `/api/admin/support/${encodeURIComponent(supportRequestId)}`, "Обращение сохранено.");
+    return;
+  }
+
   const adminStudentForm = event.target.closest("[data-admin-student-form]");
 
   if (adminStudentForm) {
@@ -5708,7 +5955,10 @@ document.addEventListener("submit", (event) => {
   if (adminEnrollmentForm) {
     event.preventDefault();
     const studentId = adminEnrollmentForm.dataset.studentId;
-    submitStaffJsonForm(adminEnrollmentForm, `/api/admin/students/${encodeURIComponent(studentId)}/enrollment`, "Курс ученика обновлён.");
+    const studentDrafts = collectAdminStudentFormDrafts();
+    submitStaffJsonForm(adminEnrollmentForm, `/api/admin/students/${encodeURIComponent(studentId)}/enrollment`, "Курс ученика обновлён.").then(() => {
+      restoreAdminStudentFormDrafts(studentDrafts);
+    });
     return;
   }
 
@@ -5791,6 +6041,19 @@ document.addEventListener("submit", (event) => {
   if (streamForm) {
     event.preventDefault();
     submitStaffJsonForm(streamForm, "/api/staff/streams", "Трансляция создана.");
+    return;
+  }
+
+  const callForm = event.target.closest("[data-staff-call-form]");
+
+  if (callForm) {
+    event.preventDefault();
+    submitStaffJsonForm(callForm, "/api/staff/calls", "Созвон создан.", (form) => {
+      const formData = new FormData(form);
+      const payload = Object.fromEntries(formData.entries());
+      payload.studentIds = formData.getAll("studentIds");
+      return payload;
+    });
     return;
   }
 

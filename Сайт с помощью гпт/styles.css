@@ -363,7 +363,7 @@ svg {
   position: fixed;
   top: 80px;
   right: 116px;
-  z-index: 9999;
+  z-index: 30000;
   display: grid;
   width: min(440px, calc(100vw - 32px));
   max-height: min(620px, calc(100vh - 110px));
@@ -2627,13 +2627,39 @@ svg {
   grid-template-columns: 1fr;
 }
 
+.stream-list--compact .stream-card {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  padding: 12px;
+}
+
+.stream-list--compact .stream-card h3 {
+  font-size: 15px;
+}
+
+.stream-list--compact .stream-card p {
+  font-size: 13px;
+}
+
+.stream-list--compact .stream-card a,
+.stream-list--compact .stream-card button {
+  min-height: 34px;
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+.stream-list--compact .stream-card svg {
+  width: 18px;
+  height: 18px;
+}
+
 .messages-page {
   padding: 35px 34px 32px 76px;
 }
 
 .messages-panel {
   display: grid;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: minmax(250px, 320px) minmax(0, 1fr);
   min-height: 620px;
   padding: 0;
   overflow: hidden;
@@ -2643,6 +2669,9 @@ svg {
   display: grid;
   align-content: start;
   gap: 8px;
+  min-width: 0;
+  max-height: 620px;
+  overflow-y: auto;
   padding: 18px;
   border-right: 1px solid var(--line);
   background: #f8fbff;
@@ -2651,6 +2680,7 @@ svg {
 .conversation-start-form {
   display: grid;
   gap: 8px;
+  min-width: 0;
   padding: 12px;
   border: 1px solid #d8e6f8;
   border-radius: 8px;
@@ -2667,6 +2697,7 @@ svg {
 
 .conversation-start-form select {
   width: 100%;
+  min-width: 0;
   min-height: 40px;
   padding: 0 10px;
   color: var(--ink);
@@ -2700,7 +2731,7 @@ svg {
 
 .conversation-filters {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
   gap: 6px;
 }
 
@@ -2713,6 +2744,7 @@ svg {
 .conversation-button {
   display: grid;
   gap: 5px;
+  min-width: 0;
   min-height: 76px;
   padding: 13px;
   color: var(--ink);
@@ -2730,14 +2762,18 @@ svg {
 }
 
 .conversation-button strong {
+  min-width: 0;
   font-size: 15px;
   font-weight: 800;
+  overflow-wrap: anywhere;
 }
 
 .conversation-button span {
+  min-width: 0;
   color: var(--muted);
   font-size: 13px;
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .message-thread {
@@ -2751,6 +2787,7 @@ svg {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
+  flex-wrap: wrap;
   padding: 20px 22px;
   border-bottom: 1px solid var(--line);
 }
@@ -2960,17 +2997,19 @@ svg {
 
 .staff-metrics {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 14px;
 }
 
 .staff-metrics article,
 .staff-panel,
 .staff-card {
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
   box-shadow: var(--shadow);
+  overflow-wrap: anywhere;
 }
 
 .staff-metrics article {
@@ -3924,10 +3963,16 @@ svg {
   .messages-page,
   .study-page,
   .course-page {
-    grid-template-columns: minmax(0, 1fr) 360px;
-    gap: 28px;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 340px);
+    gap: 22px;
     padding-right: 28px;
     padding-left: 36px;
+  }
+
+  .application-panel,
+  .home-next-panel,
+  .home-streams-panel {
+    padding: 22px;
   }
 
   .staff-workspace-page {
