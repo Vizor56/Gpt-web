@@ -3125,6 +3125,122 @@ a > svg {
   gap: 12px;
 }
 
+.staff-step-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  min-width: 0;
+}
+
+.staff-step-heading > div {
+  min-width: 0;
+}
+
+.staff-step-heading span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.staff-step-heading h2 {
+  margin-top: 5px;
+  color: var(--ink);
+  font-size: 26px;
+  font-weight: 850;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.staff-step-heading__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.staff-step-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 12px;
+  color: #264c48;
+  border: 1px solid #c7dfdb;
+  border-radius: 8px;
+  background: #f7fcfb;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.staff-step-back svg {
+  width: 16px;
+  height: 16px;
+  margin-right: 5px;
+  transform: rotate(180deg);
+}
+
+.staff-step-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.staff-step-card {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  color: inherit;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: var(--shadow);
+}
+
+.staff-step-card:hover,
+.staff-step-card:focus-visible {
+  border-color: #95d2c7;
+  background: #fbfefd;
+  outline: 0;
+}
+
+.staff-step-card.is-complete,
+.staff-card.is-complete {
+  border-color: #a9dfba;
+  background: linear-gradient(180deg, #f2fbf5, #fff);
+}
+
+.staff-step-card__top {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.staff-step-card__top span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.staff-step-card__top strong {
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 850;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.staff-step-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .staff-lesson-summary {
   display: grid;
   gap: 12px;
@@ -3593,6 +3709,57 @@ a > svg {
 .staff-details .staff-lesson-form {
   margin: 0;
   padding: 0 14px 14px;
+}
+
+.staff-teacher-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 0 14px 14px;
+}
+
+.staff-teacher-details-grid h4 {
+  margin-bottom: 8px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.staff-mini-list {
+  display: grid;
+  gap: 8px;
+}
+
+.staff-mini-row {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px 11px;
+  border: 1px solid #dce9ee;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.staff-mini-row.is-muted {
+  background: #f6f8fb;
+}
+
+.staff-mini-row strong,
+.staff-mini-row span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.staff-mini-row strong {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.staff-mini-row span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 750;
 }
 
 .staff-filterbar {
@@ -4207,6 +4374,8 @@ a > svg {
   .stream-card,
   .shop-item,
   .staff-card-grid,
+  .staff-step-grid,
+  .staff-teacher-details-grid,
   .staff-metrics,
   .staff-info-grid,
   .staff-review-form,
@@ -4232,6 +4401,14 @@ a > svg {
   .staff-workspace-header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .staff-step-heading {
+    display: grid;
+  }
+
+  .staff-step-heading__actions {
+    justify-content: flex-start;
   }
 
   .staff-group-heading {

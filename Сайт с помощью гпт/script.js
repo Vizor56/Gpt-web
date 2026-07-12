@@ -476,6 +476,7 @@ let currentMessageFilter = "all";
 let streamsLoaded = false;
 let currentStaffPage = "messages";
 let staffFilters = {};
+let staffDrilldownState = {};
 let latestNotificationItems = [];
 let notificationPanelOpen = false;
 
@@ -1776,6 +1777,50 @@ function getStaffItems(name) {
   return [];
 }
 
+function getStaffDrilldownKey(pageName) {
+  const role = getStaffProfile().role || "Staff";
+  return `${role}:${pageName}`;
+}
+
+function getStaffDrilldown(pageName) {
+  return staffDrilldownState[getStaffDrilldownKey(pageName)] || {};
+}
+
+function setStaffDrilldown(pageName, nextState = {}) {
+  const key = getStaffDrilldownKey(pageName);
+  staffDrilldownState[key] = { ...(staffDrilldownState[key] || {}), ...nextState };
+  renderStaffPage(pageName);
+}
+
+function resetStaffDrilldown(pageName, nextState = {}) {
+  staffDrilldownState[getStaffDrilldownKey(pageName)] = nextState;
+  renderStaffPage(pageName);
+}
+
+function getCourseSelectionKey(item) {
+  return String(item?.courseId || item?.courseSlug || item?.courseTitle || "course");
+}
+
+function matchesCourseSelection(item, selectedCourseId) {
+  const selected = String(selectedCourseId || "");
+
+  if (!selected) {
+    return true;
+  }
+
+  return [item?.courseId, item?.courseSlug, item?.courseTitle].some((value) => String(value || "") === selected);
+}
+
+function matchesTeacherSelection(item, teacher) {
+  const teacherId = String(teacher?.teacherId || "");
+
+  if (teacherId && String(item?.teacherId || "") === teacherId) {
+    return true;
+  }
+
+  return Boolean(teacher?.teacherName && item?.teacherName === teacher.teacherName);
+}
+
 function getStaffCourseOptions(selectedCourseId = "") {
   return getStaffItems("courses")
     .map((course) => `<option value="${escapeHtml(course.courseId)}" ${String(course.courseId) === String(selectedCourseId) ? "selected" : ""}>${escapeHtml(course.courseTitle)}</option>`)
@@ -1988,6 +2033,168 @@ function renderHomeworkStatsOverview(stats, { curator = false } = {}) {
         )
         .join("")}
     </section>
+  `;
+}
+
+function getHomeworkCourseSummaries(stats = getStaffItems("homeworkStats")) {
+  const grouped = new Map();
+
+  (stats || []).forEach((stat) => {
+    const key = getCourseSelectionKey(stat);
+    const current = grouped.get(key) || {
+      courseId: stat.courseId,
+      courseSlug: stat.courseSlug,
+      courseTitle: stat.courseTitle,
+      teacherId: stat.teacherId,
+      teacherName: stat.teacherName,
+      homeworkTotal: 0,
+      studentsTotal: 0,
+      submittedTotal: 0,
+      checkedTotal: 0,
+      curatorReviewedTotal: 0,
+      lessonKeys: new Set(),
+    };
+
+    current.homeworkTotal += Number(stat.homeworkTotal || 0);
+    current.studentsTotal = Math.max(current.studentsTotal, Number(stat.studentsTotal || 0));
+    current.submittedTotal += Number(stat.submittedTotal || 0);
+    current.checkedTotal += Number(stat.checkedTotal || 0);
+    current.curatorReviewedTotal += Number(stat.curatorReviewedTotal || 0);
+    current.lessonKeys.add(getHomeworkLessonGroupKey(stat));
+    grouped.set(key, current);
+  });
+
+  return [...grouped.values()]
+    .map((summary) => ({
+      ...summary,
+      courseKey: getCourseSelectionKey(summary),
+      lessonsCount: summary.lessonKeys.size,
+      submittedPercent: percentOf(summary.submittedTotal, summary.homeworkTotal),
+      checkedPercent: percentOf(summary.checkedTotal, summary.homeworkTotal),
+      curatorReviewedPercent: percentOf(summary.curatorReviewedTotal, summary.homeworkTotal),
+    }))
+    .sort((left, right) => String(left.courseTitle || "").localeCompare(String(right.courseTitle || ""), "ru"));
+}
+
+function getHomeworkLessonSummariesForCourse(courseId, stats = getStaffItems("homeworkStats")) {
+  return getHomeworkLessonSummariesFromStats(stats).filter((summary) => matchesCourseSelection(summary, courseId));
+}
+
+function isTeacherHomeworkLessonComplete(summary) {
+  return Number(summary?.submittedTotal || 0) > 0 && Number(summary.submittedTotal || 0) === Number(summary.checkedTotal || 0);
+}
+
+function isCuratorHomeworkLessonComplete(summary) {
+  return Number(summary?.checkedTotal || 0) > 0 && Number(summary.checkedTotal || 0) === Number(summary.curatorReviewedTotal || 0);
+}
+
+function isHomeworkLessonComplete(summary, { curator = false } = {}) {
+  return curator ? isCuratorHomeworkLessonComplete(summary) : isTeacherHomeworkLessonComplete(summary);
+}
+
+function renderStaffStepBack(pageName, backTo, courseId = "", label = "Назад") {
+  return `
+    <button class="staff-step-back" type="button" data-staff-back-step="${escapeHtml(pageName)}" data-staff-back-to="${escapeHtml(backTo)}" data-course-id="${escapeHtml(courseId)}">
+      <svg><use href="#icon-chevron" /></svg>${escapeHtml(label)}
+    </button>
+  `;
+}
+
+function renderStaffStepHeading(title, text = "", actions = "") {
+  return `
+    <header class="staff-step-heading">
+      <div>
+        <span>${escapeHtml(text)}</span>
+        <h2>${escapeHtml(title)}</h2>
+      </div>
+      ${actions ? `<div class="staff-step-heading__actions">${actions}</div>` : ""}
+    </header>
+  `;
+}
+
+function renderHomeworkCourseStep(pageName, stats, { curator = false } = {}) {
+  const summaries = getHomeworkCourseSummaries(stats);
+
+  if (summaries.length === 0) {
+    return renderStaffEmpty("По этим курсам пока нет домашних заданий в базе.");
+  }
+
+  return `
+    ${renderStaffStepHeading("Выберите курс", curator ? "Кураторская проверка домашних заданий" : "Проверка домашних заданий")}
+    <div class="staff-step-grid">
+      ${summaries
+        .map((summary) => {
+          const complete = isHomeworkLessonComplete(summary, { curator });
+          return `
+            <button class="staff-step-card ${complete ? "is-complete" : ""}" type="button" data-staff-open-course="${escapeHtml(pageName)}" data-course-id="${escapeHtml(summary.courseKey)}">
+              <div class="staff-step-card__top">
+                <span>${escapeHtml(summary.teacherName || "Преподаватель")}</span>
+                <strong>${escapeHtml(summary.courseTitle || "Курс")}</strong>
+              </div>
+              <div class="staff-step-card__meta">
+                <span class="resource-chip">${formatNumber(summary.lessonsCount)} урок.</span>
+                <span class="resource-chip is-blue">${formatNumber(summary.submittedTotal)} сдано</span>
+                <span class="resource-chip is-green">${formatNumber(summary.checkedTotal)} проверено</span>
+                ${curator ? `<span class="resource-chip is-yellow">${formatNumber(summary.curatorReviewedTotal)} с фидбеком</span>` : ""}
+              </div>
+              ${renderHomeworkStatsBars(summary, { curator })}
+            </button>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
+function renderHomeworkLessonStep(pageName, courseSummary, lessonSummaries, { curator = false } = {}) {
+  if (lessonSummaries.length === 0) {
+    return `
+      ${renderStaffStepHeading(courseSummary?.courseTitle || "Курс", "Уроки", renderStaffStepBack(pageName, "courses", "", "К курсам"))}
+      ${renderStaffEmpty("В выбранном курсе пока нет уроков с домашними заданиями.")}
+    `;
+  }
+
+  return `
+    ${renderStaffStepHeading(
+      courseSummary?.courseTitle || lessonSummaries[0]?.courseTitle || "Курс",
+      curator ? "Выберите урок для кураторской оценки" : "Выберите урок для проверки",
+      renderStaffStepBack(pageName, "courses", "", "К курсам"),
+    )}
+    <div class="staff-step-grid">
+      ${lessonSummaries
+        .map((summary) => {
+          const complete = isHomeworkLessonComplete(summary, { curator });
+          return `
+            <button class="staff-step-card ${complete ? "is-complete" : ""}" type="button" data-staff-open-lesson="${escapeHtml(pageName)}" data-course-id="${escapeHtml(getCourseSelectionKey(summary))}" data-lesson-key="${escapeHtml(summary.key)}">
+              <div class="staff-step-card__top">
+                <span>Урок ${escapeHtml(summary.lessonNumber || "-")}</span>
+                <strong>${escapeHtml(summary.lessonTitle || summary.homeworkTitle || "Домашнее задание")}</strong>
+              </div>
+              ${renderHomeworkStatChips(summary, { curator })}
+              ${renderHomeworkStatsBars(summary, { curator })}
+            </button>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
+function renderHomeworkLessonWorkspace(pageName, courseSummary, lessonSummary, items, renderItem, { curator = false } = {}) {
+  return `
+    ${renderStaffStepHeading(
+      `Урок ${lessonSummary?.lessonNumber || "-"} · ${lessonSummary?.lessonTitle || lessonSummary?.homeworkTitle || "Домашнее задание"}`,
+      courseSummary?.courseTitle || lessonSummary?.courseTitle || "Курс",
+      `${renderStaffStepBack(pageName, "lessons", getCourseSelectionKey(courseSummary || lessonSummary), "К урокам")}${renderStaffStepBack(pageName, "courses", "", "К курсам")}`,
+    )}
+    ${lessonSummary ? renderHomeworkStatsBars(lessonSummary, { curator }) : ""}
+    <div class="staff-card-grid">
+      ${
+        items.length
+          ? items.map(renderItem).join("")
+          : renderStaffEmpty("По этому уроку пока нет работ в базе.")
+      }
+    </div>
   `;
 }
 
@@ -2397,7 +2604,7 @@ function renderGlobalNotifications() {
   }
 }
 
-function renderTeacherHomework() {
+function renderTeacherHomeworkLegacy() {
   const homeworks = getStaffItems("homeworks");
 
   if (homeworks.length === 0) {
@@ -2479,6 +2686,85 @@ function renderTeacherHomework() {
             .join("")
     }
   `;
+}
+
+function renderTeacherHomeworkCard(item) {
+  const status = getHomeworkStaffStatus(item);
+  const isChecked = isStaffHomeworkChecked(item);
+  const isSubmitted = isStaffHomeworkSubmitted(item);
+  const canReview = isSubmitted && !isChecked;
+  const canOpenSubmission = Boolean(item.submissionLink);
+
+  return `
+    <article class="staff-card ${isChecked ? "staff-card--checked is-complete" : isSubmitted ? "staff-card--pending" : "staff-card--muted"}">
+      <div class="staff-card__meta">
+        <span class="resource-chip ${status.className}">${status.label}</span>
+        <span class="resource-chip">${escapeHtml(item.studentName || "Ученик")}</span>
+        ${item.submittedAt ? `<span class="resource-chip">${escapeHtml(formatStreamDate(item.submittedAt))}</span>` : ""}
+      </div>
+      <h3>${escapeHtml(item.homeworkTitle || "Домашнее задание")}</h3>
+      <p>${escapeHtml(item.lessonTitle || item.homeworkDescription || "")}</p>
+      <div class="staff-card__actions">
+        ${createStaffLink(item.taskLink, "Задание", "#icon-file")}
+        ${createStaffLink(item.submissionLink, canOpenSubmission ? "Работа ученика" : "Нет ссылки", "#icon-clipboard")}
+      </div>
+      ${
+        isChecked
+          ? renderTeacherCheckedHomeworkNote(item)
+          : canReview
+            ? `
+              <form class="staff-review-form" data-staff-homework-review-form data-homework-assignment-id="${escapeHtml(item.homeworkAssignmentId)}">
+                <label>
+                  Оценка
+                  <input name="score" type="number" min="1" max="10" value="${escapeHtml(item.score ?? "")}" placeholder="1-10" required />
+                </label>
+                <label>
+                  Комментарий
+                  <textarea name="feedbackText" rows="3" placeholder="Комментарий ученику">${escapeHtml(item.feedbackText || "")}</textarea>
+                </label>
+                <button type="submit"><svg><use href="#icon-clipboard" /></svg>Проверить</button>
+                <p class="staff-form-status" aria-live="polite"></p>
+              </form>
+            `
+            : `
+              <div class="staff-reviewed-note is-muted">
+                <strong>Ждём ссылку от ученика</strong>
+                <span>Форма проверки появится после сдачи домашнего задания.</span>
+              </div>
+            `
+      }
+    </article>
+  `;
+}
+
+function renderTeacherHomework() {
+  const homeworks = getStaffItems("homeworks").sort(sortHomeworkItems);
+  const stats = getStaffItems("homeworkStats");
+
+  if (homeworks.length === 0 && stats.length === 0) {
+    return renderStaffEmpty("Домашние задания по вашим курсам пока не найдены.");
+  }
+
+  const state = getStaffDrilldown("homework");
+  const courseSummaries = getHomeworkCourseSummaries(stats);
+
+  if (!state.courseId) {
+    return renderHomeworkCourseStep("homework", stats);
+  }
+
+  const courseSummary = courseSummaries.find((summary) => matchesCourseSelection(summary, state.courseId));
+  const lessonSummaries = getHomeworkLessonSummariesForCourse(state.courseId, stats);
+
+  if (!state.lessonKey) {
+    return renderHomeworkLessonStep("homework", courseSummary, lessonSummaries);
+  }
+
+  const lessonSummary = lessonSummaries.find((summary) => summary.key === state.lessonKey);
+  const lessonItems = homeworks
+    .filter((item) => matchesCourseSelection(item, state.courseId) && getHomeworkLessonGroupKey(item) === state.lessonKey)
+    .sort(sortHomeworkItems);
+
+  return renderHomeworkLessonWorkspace("homework", courseSummary, lessonSummary, lessonItems, renderTeacherHomeworkCard);
 }
 
 function renderTeacherArchivePage() {
@@ -2704,7 +2990,7 @@ function renderTeacherCourses() {
   `;
 }
 
-function renderCuratorTeachers() {
+function renderCuratorTeachersLegacy() {
   const teachers = getStaffItems("teachers");
 
   if (teachers.length === 0) {
@@ -2728,6 +3014,85 @@ function renderCuratorTeachers() {
             </article>
           `,
         )
+        .join("")}
+    </div>
+  `;
+}
+
+function renderCuratorTeachers() {
+  const teachers = getStaffItems("teachers");
+  const courses = getStaffItems("courses");
+  const students = getStaffItems("students");
+
+  if (teachers.length === 0) {
+    return renderStaffEmpty("Преподаватели для этого куратора пока не найдены.");
+  }
+
+  return `
+    ${renderStaffMetricCards()}
+    <div class="staff-card-grid">
+      ${teachers
+        .map((teacher) => {
+          const teacherCourses = courses.filter((course) => matchesTeacherSelection(course, teacher));
+          const teacherCourseIds = new Set(teacherCourses.map((course) => String(course.courseId)));
+          const teacherStudents = students.filter((student) => matchesTeacherSelection(student, teacher) || teacherCourseIds.has(String(student.courseId)));
+          const studentsByCourse = groupBy(teacherStudents, (student) => student.courseTitle || "Курс не указан");
+
+          return `
+            <article class="staff-card staff-teacher-card">
+              <div class="staff-card__meta">
+                <span class="resource-chip is-blue">${formatNumber(teacherCourses.length || teacher.coursesCount || 0)} курс.</span>
+                <span class="resource-chip is-green">${formatNumber(teacherStudents.length || teacher.studentsCount || 0)} учен.</span>
+                <span class="resource-chip">Рейтинг: ${escapeHtml(teacher.rating || "нет")}</span>
+              </div>
+              <h3>${escapeHtml(teacher.teacherName)}</h3>
+              <p>${escapeHtml(teacher.email || teacher.phone || "Контакты не указаны")}</p>
+              <details class="staff-details staff-teacher-details">
+                <summary>Ученики и курсы преподавателя</summary>
+                <div class="staff-teacher-details-grid">
+                  <section>
+                    <h4>Курсы</h4>
+                    <div class="staff-mini-list">
+                      ${
+                        teacherCourses.length
+                          ? teacherCourses
+                              .map(
+                                (course) => `
+                                  <div class="staff-mini-row">
+                                    <strong>${escapeHtml(course.courseTitle)}</strong>
+                                    <span>${formatNumber(course.lessonsCount || course.totalLessons || 0)} урок. · ${formatNumber(course.studentsCount || 0)} учен.</span>
+                                  </div>
+                                `,
+                              )
+                              .join("")
+                          : `<div class="staff-mini-row is-muted"><strong>Курсы не найдены</strong><span>Проверьте привязку преподавателя к курсам в базе.</span></div>`
+                      }
+                    </div>
+                  </section>
+                  <section>
+                    <h4>Ученики</h4>
+                    <div class="staff-mini-list">
+                      ${
+                        teacherStudents.length
+                          ? Object.entries(studentsByCourse)
+                              .map(
+                                ([courseTitle, courseStudents]) => `
+                                  <div class="staff-mini-row">
+                                    <strong>${escapeHtml(courseTitle)}</strong>
+                                    <span>${courseStudents.map((student) => escapeHtml(student.studentName)).join(" · ")}</span>
+                                  </div>
+                                `,
+                              )
+                              .join("")
+                          : `<div class="staff-mini-row is-muted"><strong>Ученики не закреплены</strong><span>После привязки в админке они появятся здесь.</span></div>`
+                      }
+                    </div>
+                  </section>
+                </div>
+              </details>
+            </article>
+          `;
+        })
         .join("")}
     </div>
   `;
@@ -2961,7 +3326,7 @@ function renderCuratorHomeworkReviewArea(config, item) {
   return renderResourceReviewForm(config, item);
 }
 
-function renderCuratorHomeworkPage(pageName, config, items) {
+function renderCuratorHomeworkPageLegacy(pageName, config, items) {
   const filteredItems = applyCuratorFilters(pageName, items);
   const activeItems = filteredItems.filter((item) => !isCuratorReviewed(item)).sort(sortHomeworkItems);
   const filteredStats = applyCuratorFiltersToStats(pageName, getStaffItems("homeworkStats"));
@@ -3019,6 +3384,69 @@ function renderCuratorHomeworkPage(pageName, config, items) {
   `;
 }
 
+function renderCuratorHomeworkCard(config, item) {
+  const status = getHomeworkStaffStatus(item);
+  const reviewed = isCuratorReviewed(item);
+
+  return `
+    <article class="staff-card ${reviewed ? "staff-card--checked is-complete" : isStaffHomeworkChecked(item) ? "staff-card--pending" : isStaffHomeworkSubmitted(item) ? "staff-card--pending" : "staff-card--muted"}">
+      <div class="staff-card__meta">
+        <span class="resource-chip ${status.className}">${status.label}</span>
+        <span class="resource-chip is-blue">${escapeHtml(item.teacherName || "Преподаватель")}</span>
+        <span class="resource-chip">${escapeHtml(item.studentName || "Ученик")}</span>
+      </div>
+      <h3>${escapeHtml(config.title(item) || "Домашнее задание")}</h3>
+      <p>${escapeHtml(config.text(item) || "")}</p>
+      <div class="staff-card__actions">
+        ${createStaffLink(config.link(item), config.linkLabel)}
+        ${createStaffLink(item.submissionLink, item.submissionLink ? "Работа ученика" : "Нет ссылки", "#icon-clipboard")}
+      </div>
+      ${renderHomeworkTeacherResult(item)}
+      ${renderCuratorHomeworkReviewArea(config, item)}
+    </article>
+  `;
+}
+
+function renderCuratorHomeworkPage(pageName, config, items) {
+  const filteredItems = applyCuratorFilters(pageName, items).sort(sortHomeworkItems);
+  const filteredStats = applyCuratorFiltersToStats(pageName, getStaffItems("homeworkStats"));
+  const state = getStaffDrilldown(pageName);
+
+  if (filteredItems.length === 0 && filteredStats.length === 0) {
+    return `
+      ${renderCuratorFilters(pageName, items)}
+      ${renderStaffEmpty("По выбранным фильтрам нет домашних заданий для кураторской оценки.")}
+    `;
+  }
+
+  if (!state.courseId) {
+    return `
+      ${renderCuratorFilters(pageName, items)}
+      ${renderHomeworkCourseStep(pageName, filteredStats, { curator: true })}
+    `;
+  }
+
+  const courseSummary = getHomeworkCourseSummaries(filteredStats).find((summary) => matchesCourseSelection(summary, state.courseId));
+  const lessonSummaries = getHomeworkLessonSummariesForCourse(state.courseId, filteredStats);
+
+  if (!state.lessonKey) {
+    return `
+      ${renderCuratorFilters(pageName, items)}
+      ${renderHomeworkLessonStep(pageName, courseSummary, lessonSummaries, { curator: true })}
+    `;
+  }
+
+  const lessonSummary = lessonSummaries.find((summary) => summary.key === state.lessonKey);
+  const lessonItems = filteredItems
+    .filter((item) => matchesCourseSelection(item, state.courseId) && getHomeworkLessonGroupKey(item) === state.lessonKey)
+    .sort(sortHomeworkItems);
+
+  return `
+    ${renderCuratorFilters(pageName, items)}
+    ${renderHomeworkLessonWorkspace(pageName, courseSummary, lessonSummary, lessonItems, (item) => renderCuratorHomeworkCard(config, item), { curator: true })}
+  `;
+}
+
 function renderCuratorArchiveCard(config, item, typeLabel) {
   return `
     <article class="staff-card staff-card--archived">
@@ -3071,7 +3499,7 @@ function renderCuratorArchivePage() {
     .join("");
 }
 
-function renderCuratorResourcePage(pageName) {
+function renderCuratorResourcePageLegacy(pageName) {
   const config = getCuratorResourceConfig(pageName);
 
   if (!config) {
@@ -3117,6 +3545,164 @@ function renderCuratorResourcePage(pageName) {
               .join("")
       }
     </div>
+  `;
+}
+
+function getCuratorResourceCourseSummaries(items) {
+  const grouped = new Map();
+
+  (items || []).forEach((item) => {
+    const key = getCourseSelectionKey(item);
+    const current = grouped.get(key) || {
+      courseId: item.courseId,
+      courseSlug: item.courseSlug,
+      courseTitle: item.courseTitle,
+      teacherId: item.teacherId,
+      teacherName: item.teacherName,
+      courseKey: key,
+      total: 0,
+      reviewed: 0,
+      lessonKeys: new Set(),
+    };
+
+    current.total += 1;
+    current.reviewed += isCuratorReviewed(item) ? 1 : 0;
+    current.lessonKeys.add(String(item.lessonId || item.lessonNumber || item.streamId || item.noteId || item.lessonTitle || item.materialTitle || item.streamTitle || current.total));
+    grouped.set(key, current);
+  });
+
+  return [...grouped.values()]
+    .map((summary) => ({
+      ...summary,
+      pending: Math.max(0, summary.total - summary.reviewed),
+      reviewedPercent: percentOf(summary.reviewed, summary.total),
+      lessonsCount: summary.lessonKeys.size,
+    }))
+    .sort((left, right) => String(left.courseTitle || "").localeCompare(String(right.courseTitle || ""), "ru"));
+}
+
+function renderCuratorResourceCourseStep(pageName, items) {
+  const summaries = getCuratorResourceCourseSummaries(items);
+
+  if (summaries.length === 0) {
+    return renderStaffEmpty("По выбранным фильтрам нет материалов.");
+  }
+
+  return `
+    ${renderStaffStepHeading("Выберите курс", "Кураторская оценка материалов")}
+    <div class="staff-step-grid">
+      ${summaries
+        .map((summary) => {
+          const complete = summary.total > 0 && summary.total === summary.reviewed;
+          return `
+            <button class="staff-step-card ${complete ? "is-complete" : ""}" type="button" data-staff-open-course="${escapeHtml(pageName)}" data-course-id="${escapeHtml(summary.courseKey)}">
+              <div class="staff-step-card__top">
+                <span>${escapeHtml(summary.teacherName || "Преподаватель")}</span>
+                <strong>${escapeHtml(summary.courseTitle || "Курс")}</strong>
+              </div>
+              <div class="staff-step-card__meta">
+                <span class="resource-chip">${formatNumber(summary.lessonsCount)} урок.</span>
+                <span class="resource-chip is-green">${formatNumber(summary.reviewed)} оценено</span>
+                <span class="resource-chip is-yellow">${formatNumber(summary.pending)} ждёт</span>
+              </div>
+              <div class="staff-bars">
+                <div class="staff-bar is-curator">
+                  <div>
+                    <strong>Оценено</strong>
+                    <span>${formatNumber(summary.reviewed)} · ${formatPercent(summary.reviewedPercent)}</span>
+                  </div>
+                  <i style="width: ${clampPercent(summary.reviewedPercent)}%"></i>
+                </div>
+              </div>
+            </button>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
+function sortCuratorResourceItems(config, left, right) {
+  return (
+    Number(left.lessonNumber || 0) - Number(right.lessonNumber || 0) ||
+    String(left.startsAt || "").localeCompare(String(right.startsAt || "")) ||
+    String(config.title(left) || "").localeCompare(String(config.title(right) || ""), "ru")
+  );
+}
+
+function renderCuratorResourceItemsStep(pageName, config, courseSummary, items) {
+  const courseItems = items
+    .filter((item) => matchesCourseSelection(item, courseSummary?.courseKey || courseSummary?.courseId))
+    .sort((left, right) => sortCuratorResourceItems(config, left, right));
+
+  return `
+    ${renderStaffStepHeading(
+      courseSummary?.courseTitle || courseItems[0]?.courseTitle || "Курс",
+      "Материалы курса",
+      renderStaffStepBack(pageName, "courses", "", "К курсам"),
+    )}
+    <div class="staff-card-grid">
+      ${
+        courseItems.length
+          ? courseItems
+              .map((item) => {
+                const reviewed = isCuratorReviewed(item);
+                return `
+                  <article class="staff-card ${reviewed ? "is-complete staff-card--checked" : "staff-card--pending"}">
+                    <div class="staff-card__meta">
+                      <span class="resource-chip ${reviewed ? "is-green" : "is-yellow"}">${reviewed ? "Оценено" : "Ждёт оценки"}</span>
+                      <span class="resource-chip is-blue">${escapeHtml(item.teacherName || "Преподаватель")}</span>
+                      <span class="resource-chip">${escapeHtml(item.courseTitle || "Курс")}</span>
+                      ${item.lessonNumber ? `<span class="resource-chip">Урок ${escapeHtml(item.lessonNumber)}</span>` : ""}
+                    </div>
+                    <h3>${escapeHtml(config.title(item) || "Материал")}</h3>
+                    <p>${escapeHtml(config.text(item) || "")}</p>
+                    <div class="staff-card__actions">
+                      ${createStaffLink(config.link(item), config.linkLabel)}
+                    </div>
+                    ${renderResourceReviewForm(config, item)}
+                  </article>
+                `;
+              })
+              .join("")
+          : renderStaffEmpty("В этом курсе пока нет материалов.")
+      }
+    </div>
+  `;
+}
+
+function renderCuratorResourcePage(pageName) {
+  const config = getCuratorResourceConfig(pageName);
+
+  if (!config) {
+    return renderStaffEmpty("Раздел не найден.");
+  }
+
+  const items = config.items;
+
+  if (items.length === 0) {
+    return renderStaffEmpty(config.empty);
+  }
+
+  if (pageName === "homework") {
+    return renderCuratorHomeworkPage(pageName, config, items);
+  }
+
+  const filteredItems = applyCuratorFilters(pageName, items);
+  const state = getStaffDrilldown(pageName);
+
+  if (!state.courseId) {
+    return `
+      ${renderCuratorFilters(pageName, items)}
+      ${renderCuratorResourceCourseStep(pageName, filteredItems)}
+    `;
+  }
+
+  const courseSummary = getCuratorResourceCourseSummaries(filteredItems).find((summary) => matchesCourseSelection(summary, state.courseId));
+
+  return `
+    ${renderCuratorFilters(pageName, items)}
+    ${renderCuratorResourceItemsStep(pageName, config, courseSummary || { courseKey: state.courseId }, filteredItems)}
   `;
 }
 
@@ -3715,7 +4301,7 @@ function renderAdminTeacherForm(teacher = {}) {
   `;
 }
 
-function renderAdminTeacherCard(teacher) {
+function renderAdminTeacherCardLegacy(teacher) {
   const courses = teacher.courses || [];
   const students = teacher.students || [];
   const curators = teacher.curators || [];
@@ -3790,7 +4376,7 @@ function renderAdminCuratorForm(curator = {}) {
   `;
 }
 
-function renderAdminCuratorCard(curator) {
+function renderAdminCuratorCardLegacy(curator) {
   const courses = curator.courses || [];
   const students = curator.students || [];
   const teachers = curator.teachers || [];
@@ -5882,6 +6468,45 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  const openStaffCourseButton = event.target.closest("[data-staff-open-course]");
+
+  if (openStaffCourseButton) {
+    event.preventDefault();
+    const pageName = openStaffCourseButton.dataset.staffOpenCourse || currentStaffPage;
+    setStaffDrilldown(pageName, {
+      courseId: openStaffCourseButton.dataset.courseId || "",
+      lessonKey: "",
+    });
+    return;
+  }
+
+  const openStaffLessonButton = event.target.closest("[data-staff-open-lesson]");
+
+  if (openStaffLessonButton) {
+    event.preventDefault();
+    const pageName = openStaffLessonButton.dataset.staffOpenLesson || currentStaffPage;
+    setStaffDrilldown(pageName, {
+      courseId: openStaffLessonButton.dataset.courseId || "",
+      lessonKey: openStaffLessonButton.dataset.lessonKey || "",
+    });
+    return;
+  }
+
+  const staffStepBackButton = event.target.closest("[data-staff-back-step]");
+
+  if (staffStepBackButton) {
+    event.preventDefault();
+    const pageName = staffStepBackButton.dataset.staffBackStep || currentStaffPage;
+    const backTo = staffStepBackButton.dataset.staffBackTo || "courses";
+
+    if (backTo === "lessons") {
+      resetStaffDrilldown(pageName, { courseId: staffStepBackButton.dataset.courseId || "", lessonKey: "" });
+    } else {
+      resetStaffDrilldown(pageName, {});
+    }
+    return;
+  }
+
   const dynamicLogoutButton = event.target.closest("[data-staff-logout]");
 
   if (dynamicLogoutButton) {
@@ -5920,6 +6545,7 @@ document.addEventListener("change", (event) => {
   }
 
   setFilterValue(scope, filter.dataset.staffFilter, filter.value);
+  staffDrilldownState[getStaffDrilldownKey(scope)] = {};
   renderStaffPage(scope);
 });
 

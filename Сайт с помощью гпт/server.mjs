@@ -3459,6 +3459,8 @@ async function buildStaffWorkspace(staff) {
         c.id AS "courseId",
         c.slug AS "courseSlug",
         c.title AS "courseTitle",
+        c.teacher_id AS "teacherId",
+        c.curator_id AS "curatorId",
         c.short_description AS description,
         c.total_lessons AS "totalLessons",
         CONCAT(t.first_name, ' ', t.last_name) AS "teacherName",
@@ -3475,7 +3477,7 @@ async function buildStaffWorkspace(staff) {
       LEFT JOIN homework_assignments ha ON ha.enrollment_id = ce.id AND ha.status <> 'Cancelled'
       LEFT JOIN live_streams ls ON ls.course_id = c.id AND ls.status IN ('Planned', 'Live')
       WHERE c.status = 'Active' AND ${courseVisibleScope}
-      GROUP BY c.id, t.first_name, t.last_name, cu.first_name, cu.last_name
+      GROUP BY c.id, c.teacher_id, c.curator_id, t.first_name, t.last_name, cu.first_name, cu.last_name
       ORDER BY c.id
     `,
     [scopeId],
@@ -3492,6 +3494,10 @@ async function buildStaffWorkspace(staff) {
         c.id AS "courseId",
         c.slug AS "courseSlug",
         c.title AS "courseTitle",
+        COALESCE(ce.teacher_id, c.teacher_id) AS "teacherId",
+        CONCAT(t.first_name, ' ', t.last_name) AS "teacherName",
+        COALESCE(ce.curator_id, c.curator_id) AS "curatorId",
+        CONCAT(cu.first_name, ' ', cu.last_name) AS "curatorName",
         ce.progress_percent AS "progressPercent",
         ce.status AS "enrollmentStatus",
         COALESCE((SELECT SUM(pt.points) FROM point_transactions pt WHERE pt.student_id = s.id), 0)::integer AS "pointsTotal",
@@ -3500,6 +3506,8 @@ async function buildStaffWorkspace(staff) {
       FROM course_enrollments ce
       JOIN students s ON s.id = ce.student_id
       JOIN courses c ON c.id = ce.course_id
+      LEFT JOIN teachers t ON t.id = COALESCE(ce.teacher_id, c.teacher_id)
+      LEFT JOIN curators cu ON cu.id = COALESCE(ce.curator_id, c.curator_id)
       WHERE ce.status = 'Active' AND c.status = 'Active' AND ${enrollmentScope}
       ORDER BY c.id, s.last_name, s.first_name
     `,
@@ -3534,6 +3542,8 @@ async function buildStaffWorkspace(staff) {
         c.id AS "courseId",
         c.slug AS "courseSlug",
         c.title AS "courseTitle",
+        c.teacher_id AS "teacherId",
+        c.curator_id AS "curatorId",
         CONCAT(t.first_name, ' ', t.last_name) AS "teacherName",
         l.lesson_number AS "lessonNumber",
         l.title AS "lessonTitle",
@@ -3569,6 +3579,8 @@ async function buildStaffWorkspace(staff) {
         c.id AS "courseId",
         c.slug AS "courseSlug",
         c.title AS "courseTitle",
+        c.teacher_id AS "teacherId",
+        c.curator_id AS "curatorId",
         CONCAT(t.first_name, ' ', t.last_name) AS "teacherName",
         l.id AS "lessonId",
         l.lesson_number AS "lessonNumber",
@@ -3604,6 +3616,8 @@ async function buildStaffWorkspace(staff) {
         c.id AS "courseId",
         c.slug AS "courseSlug",
         c.title AS "courseTitle",
+        c.teacher_id AS "teacherId",
+        c.curator_id AS "curatorId",
         CONCAT(t.first_name, ' ', t.last_name) AS "teacherName",
         s.id AS "studentId",
         CONCAT(s.first_name, ' ', s.last_name) AS "studentName",
@@ -3656,6 +3670,8 @@ async function buildStaffWorkspace(staff) {
         c.id AS "courseId",
         c.slug AS "courseSlug",
         c.title AS "courseTitle",
+        c.teacher_id AS "teacherId",
+        c.curator_id AS "curatorId",
         CONCAT(t.first_name, ' ', t.last_name) AS "teacherName",
         l.lesson_number AS "lessonNumber",
         l.title AS "lessonTitle",
@@ -3725,6 +3741,8 @@ async function buildStaffWorkspace(staff) {
         c.id AS "courseId",
         c.slug AS "courseSlug",
         c.title AS "courseTitle",
+        c.teacher_id AS "teacherId",
+        c.curator_id AS "curatorId",
         CONCAT(t.first_name, ' ', t.last_name) AS "teacherName",
         l.id AS "lessonId",
         l.lesson_number AS "lessonNumber",
@@ -3752,7 +3770,7 @@ async function buildStaffWorkspace(staff) {
        AND r.staff_role = $2
        AND r.staff_id = $3
       WHERE ht.active = TRUE AND c.status = 'Active' AND ${homeworkScope}
-      GROUP BY c.id, t.first_name, t.last_name, l.id, ht.id
+      GROUP BY c.id, c.teacher_id, c.curator_id, t.first_name, t.last_name, l.id, ht.id
       ORDER BY c.id, l.lesson_number, ht.id
     `,
     reviewParams,
