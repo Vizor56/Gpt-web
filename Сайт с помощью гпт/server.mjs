@@ -1641,6 +1641,14 @@ app.get(
   }),
 );
 
+app.get(
+  "/api/student/calls",
+  asyncRoute(async (request, response) => {
+    const student = await getStudentByToken(request);
+    response.json(await getStudentCalls(student.studentId));
+  }),
+);
+
 async function getStreams(slug = "") {
   const result = await dbQuery(
     `
@@ -1661,6 +1669,7 @@ async function getStreams(slug = "") {
       LEFT JOIN lessons l ON l.id = ls.lesson_id
       WHERE ls.status IN ('Planned', 'Live')
         AND c.status = 'Active'
+        AND ls.starts_at >= NOW()
         AND ($1 = '' OR c.slug = $1)
       ORDER BY ls.starts_at, ls.id
     `,
@@ -1670,6 +1679,34 @@ async function getStreams(slug = "") {
   return {
     source: "database",
     items: result.rows.map((row) => ({ ...row, startsAt: toDateText(row.startsAt), endsAt: toDateText(row.endsAt) })),
+  };
+}
+
+async function getStudentCalls(studentId) {
+  const result = await dbQuery(
+    `
+      SELECT
+        sc.id AS "callId",
+        sc.title AS "callTitle",
+        sc.call_link AS "callLink",
+        sc.starts_at AS "startsAt",
+        sc.status,
+        cu.id AS "curatorId",
+        CONCAT(cu.first_name, ' ', cu.last_name) AS "curatorName"
+      FROM student_calls sc
+      JOIN student_call_participants scp ON scp.call_id = sc.id
+      LEFT JOIN curators cu ON cu.id = sc.curator_id
+      WHERE scp.student_id = $1
+        AND sc.status = 'Planned'
+        AND sc.starts_at >= NOW()
+      ORDER BY sc.starts_at, sc.id
+    `,
+    [studentId],
+  );
+
+  return {
+    source: "database",
+    items: result.rows.map((row) => ({ ...row, startsAt: toDateText(row.startsAt) })),
   };
 }
 

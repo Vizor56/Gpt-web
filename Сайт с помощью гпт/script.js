@@ -5469,6 +5469,7 @@ function filterNotesForCurrentAccess(notes) {
 
 function normalizeStream(rawStream) {
   return {
+    eventType: "stream",
     streamId: rawStream.streamId ?? rawStream.liveStreamId ?? rawStream.Live_Stream_ID ?? "",
     courseSlug: rawStream.courseSlug ?? rawStream.Course_Slug ?? "",
     courseTitle: rawStream.courseTitle ?? rawStream.Course_Name ?? "Курс",
@@ -5483,6 +5484,30 @@ function normalizeStream(rawStream) {
   };
 }
 
+function normalizeStudentCall(rawCall) {
+  return {
+    eventType: "call",
+    callId: rawCall.callId ?? rawCall.studentCallId ?? rawCall.Student_Call_ID ?? "",
+    callTitle: rawCall.callTitle ?? rawCall.title ?? rawCall.Call_Title ?? "Созвон с куратором",
+    callLink: rawCall.callLink ?? rawCall.link ?? rawCall.Call_Link ?? "",
+    startsAt: rawCall.startsAt ?? rawCall.Starts_At ?? null,
+    status: rawCall.status ?? rawCall.Status ?? "Planned",
+    curatorId: rawCall.curatorId ?? rawCall.Curator_ID ?? "",
+    curatorName: rawCall.curatorName ?? rawCall.Curator_Name ?? "Куратор",
+  };
+}
+
+function isFutureEvent(item) {
+  const date = new Date(item?.startsAt || "");
+  return !Number.isNaN(date.getTime()) && date.getTime() >= Date.now();
+}
+
+function sortUpcomingEvents(items = []) {
+  return [...items]
+    .filter(isFutureEvent)
+    .sort((left, right) => new Date(left.startsAt || 0) - new Date(right.startsAt || 0));
+}
+
 async function loadStreamsFromApi(courseKey = "") {
   const url = courseKey ? `/api/courses/${encodeURIComponent(courseKey)}/streams` : "/api/streams";
   const response = await apiFetch(url, {
@@ -5495,6 +5520,23 @@ async function loadStreamsFromApi(courseKey = "") {
 
   const payload = await response.json();
   return (payload.items || []).map(normalizeStream);
+}
+
+async function loadStudentCallsFromApi() {
+  if (!hasAuthenticatedAccount()) {
+    return [];
+  }
+
+  const response = await apiFetch("/api/student/calls", {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(`Не удалось получить созвоны: ${response.status}`);
+  }
+
+  const payload = await response.json();
+  return (payload.items || []).map(normalizeStudentCall);
 }
 
 function getFallbackStreams(courseKey = "") {
@@ -5536,35 +5578,44 @@ function toDateTimeLocalValue(value) {
   return localDate.toISOString().slice(0, 16);
 }
 
-function renderStreamCards(target, streams, { limit = 0 } = {}) {
+function renderStreamCards(target, streams, { limit = 0, emptyText = "Ближайших трансляций пока нет." } = {}) {
   if (!target) {
     return;
   }
 
-  const visibleStreams = limit > 0 ? streams.slice(0, limit) : streams;
+  const upcomingStreams = sortUpcomingEvents(streams);
+  const visibleStreams = limit > 0 ? upcomingStreams.slice(0, limit) : upcomingStreams;
 
   if (visibleStreams.length === 0) {
-    target.innerHTML = `<div class="resource-empty">Ближайших трансляций пока нет.</div>`;
+    target.innerHTML = `<div class="resource-empty">${escapeHtml(emptyText)}</div>`;
     return;
   }
 
   target.innerHTML = visibleStreams
-    .map((stream) => {
-      const lessonText = stream.lessonNumber ? `Урок ${escapeHtml(stream.lessonNumber)}` : "Общий эфир";
-      const action = stream.streamLink
-        ? `<a href="${escapeHtml(stream.streamLink)}" target="_blank" rel="noopener noreferrer"><svg><use href="#icon-broadcast" /></svg>Открыть</a>`
-        : `<button type="button" disabled><svg><use href="#icon-clock" /></svg>Ссылка скоро</button>`;
+    .map((eventItem) => {
+      const isCall = eventItem.eventType === "call";
+      const lessonText = isCall ? "Созвон" : eventItem.lessonNumber ? `Урок ${escapeHtml(eventItem.lessonNumber)}` : "Общий эфир";
+      const primaryLabel = isCall ? "Куратор" : eventItem.courseTitle;
+      const title = isCall ? eventItem.callTitle : eventItem.streamTitle;
+      const subtitle = isCall ? eventItem.curatorName || "Созвон с куратором" : eventItem.lessonTitle || "Онлайн-разбор с преподавателем";
+      const link = isCall ? eventItem.callLink : eventItem.streamLink;
+      const icon = isCall ? "#icon-user" : "#icon-broadcast";
+      const actionText = isCall ? "Перейти к созвону" : "Открыть";
+      const disabledText = isCall ? "Ссылка скоро" : "Ссылка скоро";
+      const action = link
+        ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer"><svg><use href="${icon}" /></svg>${actionText}</a>`
+        : `<button type="button" disabled><svg><use href="#icon-clock" /></svg>${disabledText}</button>`;
 
       return `
         <article class="stream-card">
           <div>
             <div class="stream-card__meta">
-              <span class="resource-chip is-blue">${escapeHtml(stream.courseTitle)}</span>
+              <span class="resource-chip is-blue">${escapeHtml(primaryLabel)}</span>
               <span class="resource-chip">${lessonText}</span>
-              <span class="resource-chip is-yellow">${escapeHtml(formatStreamDate(stream.startsAt))}</span>
+              <span class="resource-chip is-yellow">${escapeHtml(formatStreamDate(eventItem.startsAt))}</span>
             </div>
-            <h3>${escapeHtml(stream.streamTitle)}</h3>
-            <p>${escapeHtml(stream.lessonTitle || "Онлайн-разбор с преподавателем")}</p>
+            <h3>${escapeHtml(title)}</h3>
+            <p>${escapeHtml(subtitle)}</p>
           </div>
           ${action}
         </article>
@@ -5583,7 +5634,7 @@ async function loadStreams(courseKey = "") {
     console.info("Трансляции из базы не загружены, показано запасное расписание.", error);
   }
 
-  streams = streams.sort((left, right) => new Date(left.startsAt || 0) - new Date(right.startsAt || 0));
+  streams = sortUpcomingEvents(streams);
 
   if (courseKey) {
     renderStreamCards(courseStreamList, streams);
@@ -5597,7 +5648,20 @@ async function loadStreams(courseKey = "") {
 
   streamsLoaded = true;
   renderStreamCards(homeStreamList, streams, { limit: 3 });
-  renderStreamCards(studyStreamList, streams, { limit: 2 });
+
+  let studentCalls = [];
+
+  try {
+    studentCalls = sortUpcomingEvents(await loadStudentCallsFromApi());
+  } catch (error) {
+    studentCalls = [];
+    console.info("Созвоны ученика не загружены.", error);
+  }
+
+  renderStreamCards(studyStreamList, sortUpcomingEvents([...streams, ...studentCalls]), {
+    limit: 4,
+    emptyText: "Ближайших трансляций и созвонов пока нет.",
+  });
   return streams;
 }
 
