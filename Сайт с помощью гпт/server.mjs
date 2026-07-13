@@ -1336,6 +1336,7 @@ async function getCourseLessons(slug, studentId = 0) {
         hs.status AS "submissionStatus",
         hs.feedback_url AS "feedbackUrl",
         hs.feedback_text AS "feedbackText",
+        ha.teacher_comment AS "teacherComment",
         hs.score AS "homeworkScore",
         hs.checked_at AS "checkedAt"
       FROM courses c
@@ -1379,6 +1380,7 @@ async function getCourseLessons(slug, studentId = 0) {
     submissionStatus: row.submissionStatus,
     feedbackUrl: row.feedbackUrl,
     feedbackText: row.feedbackText,
+    teacherComment: row.teacherComment,
     homeworkScore: row.homeworkScore,
     checkedAt: toDateText(row.checkedAt),
   }));
@@ -1404,6 +1406,7 @@ async function getCourseLessons(slug, studentId = 0) {
         submissionStatus: null,
         feedbackUrl: null,
         feedbackText: null,
+        teacherComment: null,
         homeworkScore: null,
         checkedAt: null,
       }));
@@ -1470,6 +1473,7 @@ async function getHomeworks(slug = "", studentId = 0) {
         hs.status AS "submissionStatus",
         hs.feedback_url AS "feedbackUrl",
         hs.feedback_text AS "feedbackText",
+        ha.teacher_comment AS "teacherComment",
         hs.score AS "homeworkScore",
         hs.checked_at AS "checkedAt"
       FROM homework_templates ht

@@ -5398,6 +5398,7 @@ function normalizeLesson(rawLesson) {
     submissionStatus: rawLesson.submissionStatus ?? null,
     feedbackUrl: rawLesson.feedbackUrl ?? null,
     feedbackText: rawLesson.feedbackText ?? null,
+    teacherComment: rawLesson.teacherComment ?? null,
     homeworkScore: rawLesson.homeworkScore ?? null,
     checkedAt: rawLesson.checkedAt ?? null,
   };
@@ -5783,6 +5784,63 @@ function getEffectiveHomeworkStatus(lesson) {
   return lesson?.homeworkStatus || "Assigned";
 }
 
+function getHomeworkScoreValue(lesson) {
+  const rawScore = lesson?.homeworkScore ?? lesson?.score;
+
+  if (rawScore === null || rawScore === undefined || rawScore === "") {
+    return null;
+  }
+
+  const numericScore = Number(rawScore);
+
+  if (!Number.isFinite(numericScore)) {
+    return String(rawScore).trim() || null;
+  }
+
+  return Number.isInteger(numericScore) ? numericScore : Number(numericScore.toFixed(1));
+}
+
+function formatHomeworkScoreText(lesson) {
+  const score = getHomeworkScoreValue(lesson);
+
+  if (score === null) {
+    return "";
+  }
+
+  return `${escapeHtml(score)} / 10 баллов`;
+}
+
+function getCheckedHomeworkScoreText(lesson) {
+  if (getEffectiveHomeworkStatus(lesson) !== "Checked") {
+    return "";
+  }
+
+  return formatHomeworkScoreText(lesson) || "Баллы не указаны";
+}
+
+function getHomeworkTeacherFeedback(lesson) {
+  return lesson?.feedbackText || lesson?.teacherComment || "";
+}
+
+function renderHomeworkReviewResult(lesson) {
+  if (getEffectiveHomeworkStatus(lesson) !== "Checked") {
+    return "";
+  }
+
+  const scoreText = formatHomeworkScoreText(lesson) || "Оценка не указана";
+  const feedbackText = getHomeworkTeacherFeedback(lesson) || "Комментарий преподавателя не оставлен.";
+
+  return `
+    <section class="homework-review-result" aria-label="Результат проверки домашнего задания">
+      <div>
+        <span>Оценка</span>
+        <strong>${scoreText}</strong>
+      </div>
+      <p><strong>Комментарий преподавателя:</strong> ${escapeHtml(feedbackText)}</p>
+    </section>
+  `;
+}
+
 function getHomeworkButtonMeta(lesson) {
   const effectiveStatus = getEffectiveHomeworkStatus(lesson);
 
@@ -5902,6 +5960,7 @@ function renderLessonRow(lesson) {
   }
 
   const homeworkButton = getHomeworkButtonMeta(lesson);
+  const checkedScoreText = getCheckedHomeworkScoreText(lesson);
 
     if (lesson.homeworkAccessLocked) {
       const homeworkLabel = hasAuthenticatedAccount() ? "ДЗ после покупки" : "ДЗ после входа";
@@ -5916,6 +5975,7 @@ function renderLessonRow(lesson) {
         <button class="${homeworkButton.className}" type="button" data-homework-lesson-id="${escapeHtml(getLessonKey(lesson))}" title="${homeworkButton.title}">
           <svg><use href="${homeworkButton.icon}" /></svg>${homeworkButton.label}
         </button>
+        ${checkedScoreText ? `<span class="lesson-score-chip">${checkedScoreText}</span>` : ""}
       `);
     } else {
       actionButtons.push(`
@@ -5961,9 +6021,10 @@ function renderHomeworks(lessons) {
     .map((lesson) => {
       const meta = getHomeworkStatusMeta(getEffectiveHomeworkStatus(lesson));
       const homeworkButton = getHomeworkButtonMeta(lesson);
+      const checkedScoreText = getCheckedHomeworkScoreText(lesson);
       const scoreText =
-        lesson.homeworkScore !== null && lesson.homeworkScore !== undefined
-          ? `${escapeHtml(lesson.homeworkScore)} / 10 баллов`
+        checkedScoreText
+          ? checkedScoreText
           : isHomeworkSubmitted(lesson)
             ? "На проверке"
             : "Ожидает ссылку";
@@ -6192,6 +6253,7 @@ async function submitHomeworkLink(lessonKey, form) {
     lesson.submissionStatus = result.submissionStatus || "Submitted";
     lesson.feedbackUrl = null;
     lesson.feedbackText = null;
+    lesson.teacherComment = null;
     lesson.homeworkScore = null;
     lesson.checkedAt = null;
 
@@ -6221,6 +6283,7 @@ function openHomeworkModal(lessonKey) {
   const meta = getHomeworkStatusMeta(effectiveStatus);
   const isChecked = effectiveStatus === "Checked";
   const currentLink = lesson.submittedHomeworkUrl || "";
+  const checkedScoreText = getCheckedHomeworkScoreText(lesson);
   const statusText = !lesson.homeworkAssignmentId
     ? "Это ДЗ найдено в курсе, но ещё не назначено ученику в базе."
     : isChecked
@@ -6236,10 +6299,12 @@ function openHomeworkModal(lessonKey) {
   homeworkModalMeta.innerHTML = `
     <span class="resource-chip">Урок ${escapeHtml(lesson.lessonNumber)}</span>
     <span class="resource-chip ${meta.className}">${meta.label}</span>
+    ${checkedScoreText ? `<span class="resource-chip is-green">${checkedScoreText}</span>` : ""}
     <span class="resource-chip">до ${escapeHtml(formatDate(lesson.homeworkDueAt))}</span>
   `;
 
   homeworkModalActions.innerHTML = `
+    ${renderHomeworkReviewResult(lesson)}
     ${createActionLink(getLessonHomeworkTaskUrl(lesson), "", "#icon-file", "Открыть задание")}
     ${currentLink ? createActionLink(currentLink, isChecked ? "button-green" : "button-blue", "#icon-clipboard", isChecked ? "Открыть проверенное ДЗ" : "Открыть ДЗ на проверке") : ""}
     ${currentLink ? `<button class="button-yellow" type="button" data-copy-homework-link="${escapeHtml(currentLink)}"><svg><use href="#icon-clipboard" /></svg>Скопировать ссылку</button>` : ""}

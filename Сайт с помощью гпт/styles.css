@@ -1885,6 +1885,23 @@ a > svg {
   background: #fff7e5;
 }
 
+.lesson-actions .lesson-score-chip {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 9px;
+  color: var(--green);
+  border: 1px solid #addfc1;
+  border-radius: 7px;
+  background: #ecf8f0;
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.15;
+  text-align: center;
+}
+
 .resource-list {
   display: grid;
   gap: 12px;
@@ -4822,6 +4839,48 @@ button:disabled {
   display: grid;
   gap: 10px;
   margin-top: 22px;
+}
+
+.homework-review-result {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #addfc1;
+  border-radius: 8px;
+  background: #f2fbf5;
+}
+
+.homework-review-result div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.homework-review-result span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.homework-review-result strong {
+  color: var(--green);
+  font-size: 17px;
+  font-weight: 850;
+}
+
+.homework-review-result p {
+  margin: 0;
+  color: #31405f;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.homework-review-result p strong {
+  color: var(--ink);
+  font-size: inherit;
 }
 
 .homework-modal__actions button,
