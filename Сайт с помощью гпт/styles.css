@@ -575,9 +575,9 @@ a > svg {
 .avatar-pet.capybara {
   position: absolute;
   left: 50%;
-  bottom: -2px;
+  bottom: 3px;
   z-index: 1;
-  transform: translateX(-50%) scale(0.28);
+  transform: translateX(-50%) scale(0.22);
   transform-origin: bottom center;
 }
 
@@ -2739,10 +2739,31 @@ a > svg {
   height: 62px;
   border: 4px solid var(--pet-dark);
   background: var(--pet-main);
-  box-shadow:
-    inset 0 10px 0 rgba(255, 255, 255, 0.12),
-    16px 58px 0 -22px var(--pet-dark),
-    88px 58px 0 -22px var(--pet-dark);
+  box-shadow: inset 0 10px 0 rgba(255, 255, 255, 0.12);
+}
+
+.capybara__body::before,
+.capybara__body::after {
+  position: absolute;
+  content: "";
+}
+
+.capybara__body::before {
+  left: 18px;
+  bottom: -23px;
+  width: 18px;
+  height: 25px;
+  background: var(--pet-dark);
+  box-shadow: 72px 0 0 var(--pet-dark);
+}
+
+.capybara__body::after {
+  left: 15px;
+  bottom: -28px;
+  width: 25px;
+  height: 8px;
+  background: var(--pet-dark);
+  box-shadow: 72px 0 0 var(--pet-dark);
 }
 
 .capybara__head {
@@ -2843,6 +2864,16 @@ a > svg {
   left: 45px;
   width: 110px;
   height: 58px;
+}
+
+.capybara[data-animal="cat"] .capybara__body::before {
+  left: 15px;
+  box-shadow: 64px 0 0 var(--pet-dark);
+}
+
+.capybara[data-animal="cat"] .capybara__body::after {
+  left: 12px;
+  box-shadow: 64px 0 0 var(--pet-dark);
 }
 
 .capybara[data-animal="cat"] .capybara__head {
