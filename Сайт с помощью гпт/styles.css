@@ -2441,7 +2441,7 @@ a > svg {
   display: grid;
   grid-template-columns: minmax(210px, 280px) 1fr;
   gap: 18px;
-  align-items: stretch;
+  align-items: start;
 }
 
 .capybara-stage {
@@ -2578,6 +2578,8 @@ a > svg {
 
 .capybara-stage {
   position: relative;
+  align-self: start;
+  height: 288px;
   min-height: 288px;
   image-rendering: pixelated;
   background:
