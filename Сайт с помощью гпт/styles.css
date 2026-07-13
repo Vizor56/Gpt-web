@@ -4821,6 +4821,26 @@ button:disabled {
     font-size: 14px;
   }
 
+  .side-nav,
+  .staff-side-nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+  }
+
+  .side-link {
+    grid-template-columns: 24px minmax(0, 1fr);
+    min-height: 46px;
+    padding: 0 10px;
+    font-size: 15px;
+    white-space: normal;
+  }
+
+  .side-link svg {
+    width: 22px;
+    height: 22px;
+  }
+
   .profile-button span:not(.avatar) {
     display: none;
   }
@@ -4851,6 +4871,10 @@ button:disabled {
 
   .home-summary {
     padding: 24px 20px;
+  }
+
+  .home-summary__button {
+    width: 100%;
   }
 
   .home-summary h2 {
