@@ -597,10 +597,30 @@ async function seedDatabase() {
     }
 
     const shopItems = [
-      [1, "blue_scarf", "Голубой шарф", "Одежда", 120, "blue-scarf", "Мягкий шарф для капибары после первой серии ДЗ."],
-      [2, "green_hoodie", "Зеленая худи", "Одежда", 240, "green-hoodie", "Уютная худи для марафона по задачам."],
-      [3, "round_glasses", "Круглые очки", "Аксессуар", 180, "round-glasses", "Очки для мудрой 2D-капибары."],
-      [4, "gold_crown", "Золотая корона", "Аксессуар", 420, "gold-crown", "Награда за стабильную работу."],
+      [1, "blue_scarf", "Голубой шарф", "neck", 120, "blue-scarf", "Мягкий пиксельный шарф для учебных марафонов."],
+      [2, "green_hoodie", "Зелёная худи", "outfit", 240, "green-hoodie", "Уютная худи для длинных разборов задач."],
+      [3, "round_glasses", "Круглые очки", "face", 180, "round-glasses", "Очки для мудрого пиксельного питомца."],
+      [4, "gold_crown", "Золотая корона", "head", 420, "gold-crown", "Награда за стабильную работу."],
+      [5, "pet_cat", "Пиксельный кот", "animal", 160, "cat", "Можно заменить капибару на кота с серьёзным учебным взглядом."],
+      [6, "pet_fox", "Пиксельная лиса", "animal", 220, "fox", "Лиса для тех, кто быстро щёлкает варианты."],
+      [7, "pet_panda", "Пиксельная панда", "animal", 260, "panda", "Спокойная панда для аккуратного прогресса."],
+      [8, "fur_choco", "Шоколадная шерсть", "fur", 90, "fur-choco", "Глубокий тёплый цвет шерсти."],
+      [9, "fur_cream", "Кремовая шерсть", "fur", 110, "fur-cream", "Светлая шерсть в мягком пиксельном стиле."],
+      [10, "fur_gray", "Серая шерсть", "fur", 130, "fur-gray", "Строгий серый цвет для рабочего настроя."],
+      [11, "eyes_green", "Зелёные глаза", "eyes", 80, "eyes-green", "Яркий взгляд перед контрольной."],
+      [12, "eyes_blue", "Синие глаза", "eyes", 80, "eyes-blue", "Синие глаза для спокойного фокуса."],
+      [13, "eyes_star", "Звёздные глаза", "eyes", 180, "eyes-star", "Глаза, когда задача наконец сошлась."],
+      [14, "scene_room", "Учебная комната", "scene", 100, "scene-room", "Фон с полкой, столом и уютным светом."],
+      [15, "scene_night", "Ночной город", "scene", 140, "scene-night", "Фон для поздних повторений."],
+      [16, "scene_space", "Космос", "scene", 220, "scene-space", "Пиксельный космос для больших целей."],
+      [17, "wizard_hat", "Шляпа мага", "head", 260, "wizard-hat", "Для заклинаний над сложными темами."],
+      [18, "red_cap", "Красная кепка", "head", 150, "red-cap", "Простая кепка для ежедневной практики."],
+      [19, "lab_coat", "Белый халат", "outfit", 280, "lab-coat", "Для экспериментов с формулами и графиками."],
+      [20, "purple_cape", "Фиолетовый плащ", "outfit", 320, "purple-cape", "Плащ героя домашек."],
+      [21, "notebook", "Блокнот", "hand", 130, "notebook", "Мини-блокнот для важных идей."],
+      [22, "pencil", "Карандаш", "hand", 90, "pencil", "Карандаш для быстрых заметок."],
+      [23, "medal", "Медаль", "neck", 300, "medal", "Медаль за регулярность."],
+      [24, "pixel_headphones", "Наушники", "face", 210, "headphones", "Для трансляций и разборов."],
     ];
 
     for (const item of shopItems) {
@@ -1768,7 +1788,8 @@ app.post(
   asyncRoute(async (request, response) => {
     const student = await getStudentByToken(request);
     const itemCode = cleanText(request.body.itemCode, 80);
-    const item = await dbOne("SELECT id FROM shop_items WHERE item_code = $1 AND active = TRUE", [itemCode]);
+    const unequip = Boolean(request.body.unequip);
+    const item = await dbOne("SELECT id, item_type AS \"itemType\" FROM shop_items WHERE item_code = $1 AND active = TRUE", [itemCode]);
 
     if (!item) {
       throw createHttpError(404, "Предмет не найден.");
@@ -1779,14 +1800,29 @@ app.post(
       throw createHttpError(400, "Сначала купите предмет.");
     }
 
-    await dbQuery(
-      `
-        UPDATE student_shop_items
-        SET is_equipped = CASE WHEN item_id = $2 THEN TRUE ELSE FALSE END
-        WHERE student_id = $1
-      `,
-      [student.studentId, item.id],
-    );
+    if (unequip) {
+      await dbQuery(
+        `
+          UPDATE student_shop_items
+          SET is_equipped = FALSE
+          WHERE student_id = $1
+            AND item_id = $2
+        `,
+        [student.studentId, item.id],
+      );
+    } else {
+      await dbQuery(
+        `
+          UPDATE student_shop_items ssi
+          SET is_equipped = CASE WHEN ssi.item_id = $2 THEN TRUE ELSE FALSE END
+          FROM shop_items i
+          WHERE ssi.item_id = i.id
+            AND ssi.student_id = $1
+            AND i.item_type = $3
+        `,
+        [student.studentId, item.id, item.itemType],
+      );
+    }
 
     response.json(await getShopPayload(student.studentId));
   }),
@@ -3673,6 +3709,7 @@ async function buildStaffWorkspace(staff) {
         c.teacher_id AS "teacherId",
         c.curator_id AS "curatorId",
         CONCAT(t.first_name, ' ', t.last_name) AS "teacherName",
+        l.id AS "lessonId",
         l.lesson_number AS "lessonNumber",
         l.title AS "lessonTitle",
         ls.title AS "streamTitle",
@@ -4115,9 +4152,12 @@ app.post(
     }
 
     const courseId = toInt(request.body.courseId, 0);
+    const streamId = toInt(request.body.streamId, 0);
     const lessonId = toInt(request.body.lessonId, null);
     const streamTitle = cleanText(request.body.streamTitle, 200);
     const streamLink = normalizeLink(request.body.streamLink);
+    const requestedStatus = cleanText(request.body.status, 30) || "Planned";
+    const status = ["Planned", "Live", "Done", "Cancelled"].includes(requestedStatus) ? requestedStatus : "Planned";
     const startsAt = request.body.startsAt ? new Date(request.body.startsAt) : new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     if (!courseId || !streamTitle || !streamLink) {
@@ -4128,21 +4168,41 @@ app.post(
       throw createHttpError(400, "Некорректная дата трансляции.");
     }
 
-    const result = await dbQuery(
-      `
-        INSERT INTO live_streams (course_id, lesson_id, title, starts_at, ends_at, stream_link, status)
-        SELECT $1, $2, $3, $4, $4::timestamptz + INTERVAL '2 hours', $5, 'Planned'
-        WHERE EXISTS (SELECT 1 FROM courses WHERE id = $1 AND teacher_id = $6 AND status = 'Active')
-        RETURNING id
-      `,
-      [courseId, lessonId, streamTitle, startsAt.toISOString(), streamLink, staff.teacherId],
-    );
+    const result = streamId
+      ? await dbQuery(
+          `
+            UPDATE live_streams ls
+            SET lesson_id = $2,
+                title = $3,
+                starts_at = $4,
+                ends_at = $4::timestamptz + INTERVAL '2 hours',
+                stream_link = $5,
+                status = $6
+            FROM courses c
+            WHERE ls.id = $7
+              AND ls.course_id = c.id
+              AND c.id = $1
+              AND c.teacher_id = $8
+              AND c.status = 'Active'
+            RETURNING ls.id
+          `,
+          [courseId, lessonId, streamTitle, startsAt.toISOString(), streamLink, status, streamId, staff.teacherId],
+        )
+      : await dbQuery(
+          `
+            INSERT INTO live_streams (course_id, lesson_id, title, starts_at, ends_at, stream_link, status)
+            SELECT $1, $2, $3, $4, $4::timestamptz + INTERVAL '2 hours', $5, $6
+            WHERE EXISTS (SELECT 1 FROM courses WHERE id = $1 AND teacher_id = $7 AND status = 'Active')
+            RETURNING id
+          `,
+          [courseId, lessonId, streamTitle, startsAt.toISOString(), streamLink, status, staff.teacherId],
+        );
 
     if (result.rowCount === 0) {
       throw createHttpError(403, "Курс недоступен этому преподавателю.");
     }
 
-    response.status(201).json({ ok: true, source: "database", streamId: result.rows[0].id });
+    response.status(streamId ? 200 : 201).json({ ok: true, source: "database", streamId: result.rows[0].id });
   }),
 );
 
@@ -4154,10 +4214,13 @@ app.post(
       throw createHttpError(403, "Созвоны с учениками может создавать только куратор.");
     }
 
+    const callId = toInt(request.body.callId, 0);
     const callTitle = cleanText(request.body.callTitle || request.body.title, 200);
     const callLink = normalizeLink(request.body.callLink);
     const startsAt = request.body.startsAt ? new Date(request.body.startsAt) : null;
     const studentIds = parseIdList(request.body.studentIds);
+    const requestedStatus = cleanText(request.body.status, 30) || "Planned";
+    const status = ["Planned", "Done", "Cancelled"].includes(requestedStatus) ? requestedStatus : "Planned";
 
     if (!callTitle || !startsAt || Number.isNaN(startsAt.getTime()) || studentIds.length === 0) {
       throw createHttpError(400, "Укажите название, дату и хотя бы одного ученика для созвона.");
@@ -4186,15 +4249,38 @@ app.post(
         throw createHttpError(403, "Один или несколько учеников не закреплены за этим куратором.");
       }
 
-      const call = await client.query(
-        `
-          INSERT INTO student_calls (curator_id, title, call_link, starts_at, status)
-          VALUES ($1, $2, $3, $4, 'Planned')
-          RETURNING id
-        `,
-        [staff.curatorId, callTitle, callLink || null, startsAt.toISOString()],
-      );
-      const callId = call.rows[0].id;
+      const call = callId
+        ? await client.query(
+            `
+              UPDATE student_calls
+              SET title = $2,
+                  call_link = $3,
+                  starts_at = $4,
+                  status = $5,
+                  updated_at = NOW()
+              WHERE id = $1
+                AND curator_id = $6
+              RETURNING id
+            `,
+            [callId, callTitle, callLink || null, startsAt.toISOString(), status, staff.curatorId],
+          )
+        : await client.query(
+            `
+              INSERT INTO student_calls (curator_id, title, call_link, starts_at, status)
+              VALUES ($1, $2, $3, $4, $5)
+              RETURNING id
+            `,
+            [staff.curatorId, callTitle, callLink || null, startsAt.toISOString(), status],
+          );
+      const savedCallId = call.rows[0]?.id;
+
+      if (!savedCallId) {
+        throw createHttpError(404, "Созвон не найден.");
+      }
+
+      if (callId) {
+        await client.query("DELETE FROM student_call_participants WHERE call_id = $1", [savedCallId]);
+      }
 
       for (const studentId of studentIds) {
         await client.query(
@@ -4203,12 +4289,12 @@ app.post(
             VALUES ($1, $2)
             ON CONFLICT (call_id, student_id) DO NOTHING
           `,
-          [callId, studentId],
+          [savedCallId, studentId],
         );
       }
 
       await client.query("COMMIT");
-      response.status(201).json({ ok: true, source: "database", callId });
+      response.status(callId ? 200 : 201).json({ ok: true, source: "database", callId: savedCallId });
     } catch (error) {
       await client.query("ROLLBACK");
       throw error;

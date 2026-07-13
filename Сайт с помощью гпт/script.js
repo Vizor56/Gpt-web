@@ -1224,8 +1224,55 @@ function renderShopEmpty(message) {
   }
 
   if (capybaraPreview) {
-    capybaraPreview.removeAttribute("data-outfit");
+    clearPixelPetPreview();
   }
+}
+
+function getShopSlot(type = "") {
+  const normalized = String(type || "").trim().toLowerCase();
+  const aliases = {
+    "одежда": "outfit",
+    "аксессуар": "face",
+    background: "scene",
+    environment: "scene",
+    color: "fur",
+  };
+
+  return aliases[normalized] || normalized || "outfit";
+}
+
+function getShopTypeLabel(type = "") {
+  const labels = {
+    animal: "Питомец",
+    fur: "Шерсть",
+    eyes: "Глаза",
+    scene: "Окружение",
+    outfit: "Одежда",
+    head: "Голова",
+    face: "Лицо",
+    neck: "Шея",
+    hand: "Предмет",
+  };
+
+  return labels[getShopSlot(type)] || type || "Предмет";
+}
+
+function getShopSectionOrder(slot = "") {
+  const order = ["animal", "fur", "eyes", "scene", "outfit", "head", "face", "neck", "hand"];
+  const index = order.indexOf(getShopSlot(slot));
+  return index === -1 ? order.length : index;
+}
+
+function clearPixelPetPreview() {
+  if (!capybaraPreview) {
+    return;
+  }
+
+  ["animal", "fur", "eyes", "outfit", "head", "face", "neck", "hand"].forEach((key) => {
+    delete capybaraPreview.dataset[key];
+  });
+  delete capybaraPreview.dataset.outfit;
+  capybaraPreview.closest(".capybara-stage")?.removeAttribute("data-scene");
 }
 
 function applyCapybaraOutfit(items = []) {
@@ -1233,13 +1280,20 @@ function applyCapybaraOutfit(items = []) {
     return;
   }
 
-  const equipped = items.find((item) => item.isEquipped);
+  clearPixelPetPreview();
 
-  if (equipped?.cssClass) {
-    capybaraPreview.dataset.outfit = equipped.cssClass;
-  } else {
-    capybaraPreview.removeAttribute("data-outfit");
-  }
+  items
+    .filter((item) => item.isEquipped && item.cssClass)
+    .forEach((item) => {
+      const slot = getShopSlot(item.itemType);
+
+      if (slot === "scene") {
+        capybaraPreview.closest(".capybara-stage")?.setAttribute("data-scene", item.cssClass);
+        return;
+      }
+
+      capybaraPreview.dataset[slot] = item.cssClass;
+    });
 }
 
 function renderShop(shop) {
@@ -1262,30 +1316,45 @@ function renderShop(shop) {
     return;
   }
 
-  shopItemsList.innerHTML = items
-    .map((item) => {
-      const canBuy = !item.isOwned && Number(shop.pointsTotal) >= Number(item.pricePoints);
-      const action = item.isOwned
-        ? item.isEquipped
-          ? `<button type="button" disabled>Надето</button>`
-          : `<button type="button" data-shop-equip="${escapeHtml(item.itemCode)}">Надеть</button>`
-        : `<button type="button" data-shop-buy="${escapeHtml(item.itemCode)}" ${canBuy ? "" : "disabled"}>Купить</button>`;
+  const groupedItems = groupBy(
+    [...items].sort((left, right) => getShopSectionOrder(left.itemType) - getShopSectionOrder(right.itemType) || Number(left.pricePoints || 0) - Number(right.pricePoints || 0)),
+    (item) => getShopSlot(item.itemType),
+  );
 
+  shopItemsList.innerHTML = Object.entries(groupedItems)
+    .sort(([left], [right]) => getShopSectionOrder(left) - getShopSectionOrder(right))
+    .map(([slot, sectionItems]) => {
       return `
-        <article class="shop-item">
-          <div>
-            <h3>${escapeHtml(item.itemName)}</h3>
-            <p>${escapeHtml(item.description || "Одежда для 2D-капибары")}</p>
-            <div class="shop-item__meta">
-              <span class="resource-chip is-blue">${escapeHtml(item.itemType || "Одежда")}</span>
-              <span class="resource-chip is-yellow">${escapeHtml(formatNumber(item.pricePoints))} баллов</span>
-              ${item.isOwned ? `<span class="resource-chip is-green">Куплено</span>` : ""}
-            </div>
-          </div>
-          <div class="shop-item__actions">
-            ${action}
-          </div>
-        </article>
+        <section class="shop-section">
+          <h3>${escapeHtml(getShopTypeLabel(slot))}</h3>
+          ${sectionItems
+            .map((item) => {
+              const canBuy = !item.isOwned && Number(shop.pointsTotal) >= Number(item.pricePoints);
+              const action = item.isOwned
+                ? item.isEquipped
+                  ? `<button type="button" data-shop-unequip="${escapeHtml(item.itemCode)}">Снять</button>`
+                  : `<button type="button" data-shop-equip="${escapeHtml(item.itemCode)}">Надеть</button>`
+                : `<button type="button" data-shop-buy="${escapeHtml(item.itemCode)}" ${canBuy ? "" : "disabled"}>Купить</button>`;
+
+              return `
+                <article class="shop-item">
+                  <div>
+                    <h3>${escapeHtml(item.itemName)}</h3>
+                    <p>${escapeHtml(item.description || "Пиксельный предмет для питомца")}</p>
+                    <div class="shop-item__meta">
+                      <span class="resource-chip is-blue">${escapeHtml(getShopTypeLabel(item.itemType))}</span>
+                      <span class="resource-chip is-yellow">${escapeHtml(formatNumber(item.pricePoints))} баллов</span>
+                      ${item.isOwned ? `<span class="resource-chip is-green">${item.isEquipped ? "Надето" : "Куплено"}</span>` : ""}
+                    </div>
+                  </div>
+                  <div class="shop-item__actions">
+                    ${action}
+                  </div>
+                </article>
+              `;
+            })
+            .join("")}
+        </section>
       `;
     })
     .join("");
@@ -1315,7 +1384,7 @@ async function loadShop() {
   }
 }
 
-async function sendShopAction(endpoint, itemCode) {
+async function sendShopAction(endpoint, itemCode, extraPayload = {}) {
   if (!hasAuthenticatedAccount()) {
     renderShopEmpty("Войдите в аккаунт, чтобы покупать одежду для капибары.");
     return;
@@ -1327,7 +1396,7 @@ async function sendShopAction(endpoint, itemCode) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ itemCode }),
+      body: JSON.stringify({ itemCode, ...extraPayload }),
     });
     const shop = await response.json().catch(() => ({}));
 
@@ -2860,30 +2929,50 @@ function renderLessonForm(course, lesson = {}) {
   `;
 }
 
-function renderStreamForm(course) {
+function renderStreamStatusOptions(selectedStatus = "Planned") {
+  const labels = {
+    Planned: "Запланирована",
+    Live: "Идёт сейчас",
+    Done: "Завершена",
+    Cancelled: "Отменена",
+  };
+
+  return Object.entries(labels)
+    .map(([value, label]) => `<option value="${escapeHtml(value)}" ${String(selectedStatus || "Planned") === value ? "selected" : ""}>${escapeHtml(label)}</option>`)
+    .join("");
+}
+
+function renderStreamForm(course, stream = {}) {
+  const isEdit = Boolean(stream.streamId);
+
   return `
     <form class="staff-stream-form" data-staff-stream-form>
       <input type="hidden" name="courseId" value="${escapeHtml(course.courseId)}" />
+      <input type="hidden" name="streamId" value="${escapeHtml(stream.streamId || "")}" />
       <label>
         Урок
         <select name="lessonId">
           <option value="">Без привязки</option>
-          ${getStaffLessonOptions(course.courseId)}
+          ${getStaffLessonOptions(course.courseId, stream.lessonId || "")}
         </select>
       </label>
       <label>
         Название
-        <input name="streamTitle" type="text" placeholder="Разбор задач" required />
+        <input name="streamTitle" type="text" value="${escapeHtml(stream.streamTitle || "")}" placeholder="Разбор задач" required />
       </label>
       <label>
         Дата и время
-        <input name="startsAt" type="datetime-local" required />
+        <input name="startsAt" type="datetime-local" value="${escapeHtml(toDateTimeLocalValue(stream.startsAt))}" required />
       </label>
       <label>
         Ссылка
-        <input name="streamLink" type="url" placeholder="https://meet.google.com/..." required />
+        <input name="streamLink" type="url" value="${escapeHtml(stream.streamLink || "")}" placeholder="https://meet.google.com/..." required />
       </label>
-      <button type="submit"><svg><use href="#icon-broadcast" /></svg>Создать трансляцию</button>
+      <label>
+        Статус
+        <select name="status">${renderStreamStatusOptions(stream.status || "Planned")}</select>
+      </label>
+      <button type="submit"><svg><use href="#icon-broadcast" /></svg>${isEdit ? "Сохранить трансляцию" : "Создать трансляцию"}</button>
       <p class="staff-form-status" aria-live="polite"></p>
     </form>
   `;
@@ -2922,6 +3011,36 @@ function renderTeacherLessonRow(course, lesson) {
   `;
 }
 
+function renderTeacherStreamCard(course, stream) {
+  const statusLabel =
+    stream.status === "Live"
+      ? "Идёт сейчас"
+      : stream.status === "Done"
+        ? "Завершена"
+        : stream.status === "Cancelled"
+          ? "Отменена"
+          : "Запланирована";
+
+  return `
+    <article class="staff-card staff-stream-card">
+      <div class="staff-card__meta">
+        <span class="resource-chip is-blue">${escapeHtml(statusLabel)}</span>
+        ${stream.startsAt ? `<span class="resource-chip">${escapeHtml(formatStreamDate(stream.startsAt))}</span>` : ""}
+        <span class="resource-chip">${stream.lessonNumber ? `Урок ${escapeHtml(stream.lessonNumber)}` : "Общий эфир"}</span>
+      </div>
+      <h3>${escapeHtml(stream.streamTitle || "Трансляция")}</h3>
+      <p>${escapeHtml(stream.lessonTitle || course.courseTitle || "Трансляция курса")}</p>
+      <div class="staff-card__actions">
+        ${createStaffLink(stream.streamLink, "Открыть трансляцию", "#icon-broadcast")}
+      </div>
+      <details class="staff-details">
+        <summary>Редактировать трансляцию</summary>
+        ${renderStreamForm(course, stream)}
+      </details>
+    </article>
+  `;
+}
+
 function renderTeacherCourseStepCard(course, lessons) {
   const visual = getTeacherCourseVisual(course);
 
@@ -2950,6 +3069,7 @@ function renderTeacherCourseStepCard(course, lessons) {
 function renderTeacherCourses() {
   const courses = getStaffItems("courses");
   const lessonsByCourse = groupBy(getStaffItems("lessons"), (lesson) => lesson.courseId);
+  const streamsByCourse = groupBy(getStaffItems("streams"), (stream) => stream.courseId);
 
   if (courses.length === 0) {
     return renderStaffEmpty("Курсы преподавателя пока не найдены.");
@@ -2981,6 +3101,7 @@ function renderTeacherCourses() {
   }
 
   const lessons = (lessonsByCourse[selectedCourse.courseId] || []).sort((a, b) => Number(a.lessonNumber || 0) - Number(b.lessonNumber || 0));
+  const courseStreams = (streamsByCourse[selectedCourse.courseId] || []).sort((a, b) => new Date(b.startsAt || 0) - new Date(a.startsAt || 0));
   const visual = getTeacherCourseVisual(selectedCourse);
 
   return `
@@ -3020,7 +3141,7 @@ function renderTeacherCourses() {
           }
         </div>
       </section>
-      <div class="staff-course-tools">
+      <div class="staff-course-tools staff-course-tools--wide">
         <section class="staff-panel" id="teacher-course-create-${escapeHtml(selectedCourse.courseId)}">
           <h3>Создать урок, конспект и ДЗ</h3>
           <p>Если заполнить ссылки на конспект и домашнее задание, сайт автоматически создаст связанные записи в базе и выдаст ДЗ ученикам курса.</p>
@@ -3032,6 +3153,19 @@ function renderTeacherCourses() {
           ${renderStreamForm(selectedCourse)}
         </section>
       </div>
+      <section class="staff-panel">
+        <header class="staff-panel-heading">
+          <h3>Трансляции курса</h3>
+          <span>${formatNumber(courseStreams.length)} шт.</span>
+        </header>
+        <div class="staff-card-grid">
+          ${
+            courseStreams.length
+              ? courseStreams.map((stream) => renderTeacherStreamCard(selectedCourse, stream)).join("")
+              : renderStaffEmpty("Трансляций по этому курсу пока нет. Создайте первую выше.")
+          }
+        </div>
+      </section>
     </section>
   `;
 }
@@ -3156,32 +3290,54 @@ function getCuratorCallStudents() {
   return [...unique.values()].sort((left, right) => String(left.studentName || "").localeCompare(String(right.studentName || ""), "ru"));
 }
 
-function renderCuratorCallForm() {
+function renderCallStatusOptions(selectedStatus = "Planned") {
+  const labels = {
+    Planned: "Запланирован",
+    Done: "Завершён",
+    Cancelled: "Отменён",
+  };
+
+  return Object.entries(labels)
+    .map(([value, label]) => `<option value="${escapeHtml(value)}" ${String(selectedStatus || "Planned") === value ? "selected" : ""}>${escapeHtml(label)}</option>`)
+    .join("");
+}
+
+function renderCuratorCallForm(call = {}) {
   const students = getCuratorCallStudents();
+  const selectedIds = new Set((call.students || []).map((student) => String(student.studentId)));
+  const isEdit = Boolean(call.callId);
 
   return `
     <form class="staff-lesson-form staff-call-form" data-staff-call-form>
+      <input type="hidden" name="callId" value="${escapeHtml(call.callId || "")}" />
       <label>
         Название
-        <input name="callTitle" type="text" placeholder="Созвон по прогрессу" required />
+        <input name="callTitle" type="text" value="${escapeHtml(call.callTitle || "")}" placeholder="Созвон по прогрессу" required />
       </label>
       <label>
         Дата и время
-        <input name="startsAt" type="datetime-local" required />
+        <input name="startsAt" type="datetime-local" value="${escapeHtml(toDateTimeLocalValue(call.startsAt))}" required />
       </label>
       <label>
         Ссылка
-        <input name="callLink" type="url" placeholder="https://meet.google.com/..." />
+        <input name="callLink" type="url" value="${escapeHtml(call.callLink || "")}" placeholder="https://meet.google.com/..." />
+      </label>
+      <label>
+        Статус
+        <select name="status">${renderCallStatusOptions(call.status || "Planned")}</select>
       </label>
       <label>
         Ученики
         <select name="studentIds" multiple size="6" required>
           ${students
-            .map((student) => `<option value="${escapeHtml(student.studentId)}">${escapeHtml(student.studentName)}${student.courseTitle ? ` · ${escapeHtml(student.courseTitle)}` : ""}</option>`)
+            .map(
+              (student) =>
+                `<option value="${escapeHtml(student.studentId)}" ${selectedIds.has(String(student.studentId)) ? "selected" : ""}>${escapeHtml(student.studentName)}${student.courseTitle ? ` · ${escapeHtml(student.courseTitle)}` : ""}</option>`,
+            )
             .join("")}
         </select>
       </label>
-      <button type="submit" ${students.length ? "" : "disabled"}><svg><use href="#icon-clock" /></svg>Создать созвон</button>
+      <button type="submit" ${students.length ? "" : "disabled"}><svg><use href="#icon-clock" /></svg>${isEdit ? "Сохранить созвон" : "Создать созвон"}</button>
       <p class="staff-form-status" aria-live="polite"></p>
     </form>
   `;
@@ -3219,6 +3375,10 @@ function renderCuratorCalls() {
                       <div class="staff-card__actions">
                         ${createStaffLink(call.callLink, "Открыть созвон", "#icon-clock")}
                       </div>
+                      <details class="staff-details">
+                        <summary>Редактировать созвон</summary>
+                        ${renderCuratorCallForm(call)}
+                      </details>
                     </article>
                   `,
                 )
@@ -5331,6 +5491,21 @@ function formatStreamDate(value) {
   }).format(date);
 }
 
+function toDateTimeLocalValue(value) {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60 * 1000);
+  return localDate.toISOString().slice(0, 16);
+}
+
 function renderStreamCards(target, streams, { limit = 0 } = {}) {
   if (!target) {
     return;
@@ -6445,6 +6620,7 @@ if (shopItemsList) {
   shopItemsList.addEventListener("click", (event) => {
     const buyButton = event.target.closest("[data-shop-buy]");
     const equipButton = event.target.closest("[data-shop-equip]");
+    const unequipButton = event.target.closest("[data-shop-unequip]");
 
     if (buyButton && !buyButton.disabled) {
       sendShopAction("/api/shop/purchase", buyButton.dataset.shopBuy);
@@ -6453,6 +6629,11 @@ if (shopItemsList) {
 
     if (equipButton && !equipButton.disabled) {
       sendShopAction("/api/shop/equip", equipButton.dataset.shopEquip);
+      return;
+    }
+
+    if (unequipButton && !unequipButton.disabled) {
+      sendShopAction("/api/shop/equip", unequipButton.dataset.shopUnequip, { unequip: true });
     }
   });
 }
@@ -6732,7 +6913,8 @@ document.addEventListener("submit", (event) => {
 
   if (streamForm) {
     event.preventDefault();
-    submitStaffJsonForm(streamForm, "/api/staff/streams", "Трансляция создана.");
+    const isEdit = Boolean(new FormData(streamForm).get("streamId"));
+    submitStaffJsonForm(streamForm, "/api/staff/streams", isEdit ? "Трансляция сохранена." : "Трансляция создана.");
     return;
   }
 
@@ -6740,7 +6922,8 @@ document.addEventListener("submit", (event) => {
 
   if (callForm) {
     event.preventDefault();
-    submitStaffJsonForm(callForm, "/api/staff/calls", "Созвон создан.", (form) => {
+    const isEdit = Boolean(new FormData(callForm).get("callId"));
+    submitStaffJsonForm(callForm, "/api/staff/calls", isEdit ? "Созвон сохранён." : "Созвон создан.", (form) => {
       const formData = new FormData(form);
       const payload = Object.fromEntries(formData.entries());
       payload.studentIds = formData.getAll("studentIds");
