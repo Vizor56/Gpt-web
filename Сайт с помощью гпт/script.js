@@ -404,6 +404,8 @@ const coursePanels = document.querySelectorAll("[data-course-panel]");
 const tabs = document.querySelectorAll(".tab");
 const sideLinks = document.querySelectorAll(".side-link");
 const profileName = document.querySelector("#profile-name");
+const profileAvatar = document.querySelector(".profile-button .avatar--student");
+const profilePetPreview = document.querySelector("#profile-pet-preview");
 const notificationButton = document.querySelector(".notification-button");
 const detailIcon = document.querySelector("#detail-icon");
 const detailTitle = document.querySelector("#detail-title");
@@ -895,6 +897,10 @@ function updateProfileSummary(account = latestAccount) {
     profileName.textContent = name;
   }
 
+  if (profileAvatar && hasSession && !isStaffMode()) {
+    profileAvatar.classList.add("has-pet-avatar");
+  }
+
   if (accountStudentName) {
     accountStudentName.textContent = name;
   }
@@ -959,6 +965,8 @@ function applyGuestUi(message = "Войдите или создайте акка
   if (profileName && !isStaffMode()) {
     profileName.textContent = "Гость";
   }
+
+  resetProfilePetAvatar();
 
   if (accountStudentName) {
     accountStudentName.textContent = "Войдите в аккаунт";
@@ -1263,24 +1271,27 @@ function getShopSectionOrder(slot = "") {
   return index === -1 ? order.length : index;
 }
 
-function clearPixelPetPreview() {
-  if (!capybaraPreview) {
+function getPixelPetSceneTarget(petElement) {
+  return petElement?.closest(".capybara-stage") || petElement?.closest(".avatar--student") || null;
+}
+
+function clearPixelPetElement(petElement) {
+  if (!petElement) {
     return;
   }
 
   ["animal", "fur", "eyes", "outfit", "head", "face", "neck", "hand"].forEach((key) => {
-    delete capybaraPreview.dataset[key];
+    delete petElement.dataset[key];
   });
-  delete capybaraPreview.dataset.outfit;
-  capybaraPreview.closest(".capybara-stage")?.removeAttribute("data-scene");
+  getPixelPetSceneTarget(petElement)?.removeAttribute("data-scene");
 }
 
-function applyCapybaraOutfit(items = []) {
-  if (!capybaraPreview) {
+function applyPixelPetOutfit(petElement, items = []) {
+  if (!petElement) {
     return;
   }
 
-  clearPixelPetPreview();
+  clearPixelPetElement(petElement);
 
   items
     .filter((item) => item.isEquipped && item.cssClass)
@@ -1288,12 +1299,30 @@ function applyCapybaraOutfit(items = []) {
       const slot = getShopSlot(item.itemType);
 
       if (slot === "scene") {
-        capybaraPreview.closest(".capybara-stage")?.setAttribute("data-scene", item.cssClass);
+        getPixelPetSceneTarget(petElement)?.setAttribute("data-scene", item.cssClass);
         return;
       }
 
-      capybaraPreview.dataset[slot] = item.cssClass;
+      petElement.dataset[slot] = item.cssClass;
     });
+}
+
+function clearPixelPetPreview() {
+  clearPixelPetElement(capybaraPreview);
+}
+
+function resetProfilePetAvatar() {
+  clearPixelPetElement(profilePetPreview);
+  profileAvatar?.classList.remove("has-pet-avatar");
+}
+
+function applyCapybaraOutfit(items = []) {
+  applyPixelPetOutfit(capybaraPreview, items);
+  applyPixelPetOutfit(profilePetPreview, items);
+
+  if (profileAvatar && hasAuthenticatedAccount() && !isStaffMode()) {
+    profileAvatar.classList.add("has-pet-avatar");
+  }
 }
 
 function renderShop(shop) {
@@ -1744,6 +1773,7 @@ function enterStaffMode(staff = currentStaff, pageName = "") {
     profileName.textContent = staffProfile.name || staffProfile.login || "Команда";
   }
 
+  resetProfilePetAvatar();
   renderGlobalNotifications();
   const hashPage = location.hash.startsWith("#staff-") ? location.hash.replace("#staff-", "") : "";
   const fallbackPage = "messages";
@@ -7032,6 +7062,7 @@ if (hasAuthenticatedAccount(currentAccount)) {
 
 if (hasAuthenticatedAccount(currentAccount)) {
   loadAccount({ silent: true });
+  loadShop();
 }
 
 updateStaffSessionUi(currentStaff);
