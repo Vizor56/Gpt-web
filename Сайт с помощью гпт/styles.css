@@ -5668,6 +5668,655 @@ button:disabled {
   color: var(--green);
 }
 
+.staff-workspace-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.staff-header-profile {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 6px 9px;
+  border: 1px solid #d9e6f5;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.staff-header-profile span:last-child {
+  max-width: 180px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.staff-shop-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  margin-top: 18px;
+}
+
+.staff-capybara-stage {
+  min-height: 300px;
+}
+
+.staff-account-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.staff-account-hero h2 {
+  margin: 0;
+}
+
+.staff-account-hero p {
+  margin-top: 6px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.profile-pet-card {
+  display: grid;
+  place-items: center;
+  width: 126px;
+  height: 106px;
+  border: 1px solid #d9e6f5;
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
+.profile-pet-chip,
+.message-profile-pet,
+.stream-chat-avatar {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  overflow: hidden;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 2px solid #1f365c;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #dff1ff 0 62%, #bde7bd 63% 100%);
+  image-rendering: pixelated;
+}
+
+button.stream-chat-avatar {
+  cursor: pointer;
+}
+
+.profile-pet-chip--header {
+  width: 42px;
+  height: 42px;
+}
+
+.profile-pet-chip--account {
+  width: 112px;
+  height: 92px;
+}
+
+.message-profile-pet {
+  width: 36px;
+  height: 36px;
+  border-width: 1px;
+}
+
+.profile-pet-chip .capybara,
+.message-profile-pet .capybara,
+.stream-chat-avatar .capybara {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%) scale(0.18);
+  transform-origin: bottom center;
+}
+
+.message-profile-pet .capybara {
+  transform: translateX(-50%) scale(0.145);
+}
+
+.profile-pet-chip--account .capybara {
+  transform: translateX(-50%) scale(0.42);
+}
+
+.staff-shop-pet {
+  display: grid;
+  place-items: center;
+}
+
+.staff-shop-pet .capybara {
+  transform: scale(1.05);
+}
+
+.message-bubble__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.message-bubble__head strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.profile-pet-chip[data-scene="scene-room"],
+.message-profile-pet[data-scene="scene-room"],
+.stream-chat-avatar[data-scene="scene-room"],
+.avatar--student[data-scene="scene-room"] {
+  background: linear-gradient(180deg, #eaf2ff 0 60%, #d6ebd2 61% 100%);
+}
+
+.profile-pet-chip[data-scene="scene-night"],
+.message-profile-pet[data-scene="scene-night"],
+.stream-chat-avatar[data-scene="scene-night"],
+.avatar--student[data-scene="scene-night"] {
+  background: linear-gradient(180deg, #17223f 0 60%, #29314d 61% 100%);
+}
+
+.profile-pet-chip[data-scene="scene-space"],
+.message-profile-pet[data-scene="scene-space"],
+.stream-chat-avatar[data-scene="scene-space"],
+.avatar--student[data-scene="scene-space"] {
+  background: linear-gradient(180deg, #120d2b 0 60%, #30235f 61% 100%);
+}
+
+.profile-pet-chip[data-scene="scene-beach"],
+.message-profile-pet[data-scene="scene-beach"],
+.stream-chat-avatar[data-scene="scene-beach"],
+.avatar--student[data-scene="scene-beach"] {
+  background: linear-gradient(180deg, #9ddcff 0 56%, #f4d58d 57% 100%);
+}
+
+.profile-pet-chip[data-scene="scene-classroom"],
+.message-profile-pet[data-scene="scene-classroom"],
+.stream-chat-avatar[data-scene="scene-classroom"],
+.avatar--student[data-scene="scene-classroom"] {
+  background: linear-gradient(180deg, #dfeaff 0 58%, #d6e2c7 59% 100%);
+}
+
+.profile-pet-chip[data-scene="scene-stadium"],
+.message-profile-pet[data-scene="scene-stadium"],
+.stream-chat-avatar[data-scene="scene-stadium"],
+.avatar--student[data-scene="scene-stadium"] {
+  background: linear-gradient(180deg, #c7e8ff 0 54%, #8bd47f 55% 100%);
+}
+
+.profile-pet-chip[data-scene="scene-teacher-board"],
+.message-profile-pet[data-scene="scene-teacher-board"],
+.stream-chat-avatar[data-scene="scene-teacher-board"],
+.avatar--student[data-scene="scene-teacher-board"],
+.capybara-stage[data-scene="scene-teacher-board"] {
+  background: linear-gradient(180deg, #eaf2ff 0 58%, #cfe2d1 59% 100%);
+}
+
+.capybara-stage[data-scene="scene-teacher-board"]::before {
+  top: 24px;
+  right: auto;
+  left: 24px;
+  width: 118px;
+  height: 58px;
+  background:
+    linear-gradient(90deg, transparent 0 16px, rgba(255, 255, 255, 0.42) 16px 18px, transparent 18px 36px),
+    #2f855a;
+  box-shadow: 0 0 0 4px #1f365c, 136px 6px 0 -24px #ffffff;
+}
+
+.profile-pet-chip[data-scene="scene-teacher-library"],
+.message-profile-pet[data-scene="scene-teacher-library"],
+.stream-chat-avatar[data-scene="scene-teacher-library"],
+.avatar--student[data-scene="scene-teacher-library"],
+.capybara-stage[data-scene="scene-teacher-library"] {
+  background: linear-gradient(180deg, #f1e4d3 0 58%, #d8b98a 59% 100%);
+}
+
+.capybara-stage[data-scene="scene-teacher-library"]::before {
+  top: 25px;
+  right: auto;
+  left: 22px;
+  width: 122px;
+  height: 58px;
+  background:
+    linear-gradient(#8b5e3c 0 8px, transparent 8px 50px, #8b5e3c 50px),
+    linear-gradient(90deg, #3b82f6 0 14px, #ef4444 14px 26px, #facc15 26px 38px, #10b981 38px 54px, transparent 54px 64px, #7c3aed 64px 78px),
+    #fff7ed;
+}
+
+.profile-pet-chip[data-scene="scene-curator-lounge"],
+.message-profile-pet[data-scene="scene-curator-lounge"],
+.stream-chat-avatar[data-scene="scene-curator-lounge"],
+.avatar--student[data-scene="scene-curator-lounge"],
+.capybara-stage[data-scene="scene-curator-lounge"] {
+  background: linear-gradient(180deg, #e8fff6 0 58%, #bfead5 59% 100%);
+}
+
+.capybara-stage[data-scene="scene-curator-lounge"]::before {
+  top: 30px;
+  right: 30px;
+  width: 78px;
+  height: 48px;
+  background: linear-gradient(180deg, #ffffff 0 62%, #94a3b8 63%);
+  box-shadow: -112px 40px 0 -16px #63c59a;
+}
+
+.profile-pet-chip[data-scene="scene-curator-calendar"],
+.message-profile-pet[data-scene="scene-curator-calendar"],
+.stream-chat-avatar[data-scene="scene-curator-calendar"],
+.avatar--student[data-scene="scene-curator-calendar"],
+.capybara-stage[data-scene="scene-curator-calendar"] {
+  background: linear-gradient(180deg, #f6f0ff 0 58%, #d9c8ff 59% 100%);
+}
+
+.capybara-stage[data-scene="scene-curator-calendar"]::before {
+  top: 24px;
+  right: auto;
+  left: 28px;
+  width: 92px;
+  height: 66px;
+  background:
+    linear-gradient(#7c3aed 0 10px, transparent 10px),
+    linear-gradient(90deg, rgba(124, 58, 237, 0.35) 0 2px, transparent 2px 18px),
+    linear-gradient(0deg, rgba(124, 58, 237, 0.28) 0 2px, transparent 2px 18px),
+    #ffffff;
+}
+
+.profile-pet-chip[data-scene="scene-admin-server"],
+.message-profile-pet[data-scene="scene-admin-server"],
+.stream-chat-avatar[data-scene="scene-admin-server"],
+.avatar--student[data-scene="scene-admin-server"],
+.capybara-stage[data-scene="scene-admin-server"] {
+  background: linear-gradient(180deg, #182235 0 58%, #26344d 59% 100%);
+}
+
+.capybara-stage[data-scene="scene-admin-server"]::before {
+  top: 22px;
+  right: auto;
+  left: 24px;
+  width: 76px;
+  height: 84px;
+  background:
+    linear-gradient(90deg, #22c55e 0 6px, transparent 6px 16px, #60a5fa 16px 22px, transparent 22px),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.18) 0 2px, transparent 2px 20px),
+    #0f172a;
+  box-shadow: 104px 12px 0 -8px #0f172a;
+}
+
+.profile-pet-chip[data-scene="scene-admin-dashboard"],
+.message-profile-pet[data-scene="scene-admin-dashboard"],
+.stream-chat-avatar[data-scene="scene-admin-dashboard"],
+.avatar--student[data-scene="scene-admin-dashboard"],
+.capybara-stage[data-scene="scene-admin-dashboard"] {
+  background: linear-gradient(180deg, #eef6ff 0 58%, #dbeafe 59% 100%);
+}
+
+.capybara-stage[data-scene="scene-admin-dashboard"]::before {
+  top: 24px;
+  right: 24px;
+  width: 112px;
+  height: 66px;
+  background:
+    linear-gradient(90deg, #3b82f6 0 26px, transparent 26px 34px, #22c55e 34px 64px, transparent 64px 72px, #f59e0b 72px),
+    linear-gradient(0deg, #ffffff 0 8px, transparent 8px),
+    #ffffff;
+  box-shadow: 0 0 0 4px #cfe2ff;
+}
+
+.capybara {
+  width: 222px;
+  height: 170px;
+}
+
+.capybara__body {
+  left: 34px;
+  bottom: 34px;
+  width: 128px;
+  height: 64px;
+  border-width: 2px;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.16) 0 8px, transparent 8px 16px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent 44%),
+    var(--pet-main);
+}
+
+.capybara__head {
+  right: 18px;
+  bottom: 58px;
+  width: 72px;
+  height: 56px;
+  border-width: 2px;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.14) 0 6px, transparent 6px 12px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent 50%),
+    var(--pet-light);
+}
+
+.capybara__ear,
+.capybara__tail {
+  border-width: 2px;
+}
+
+.capybara__body::before {
+  bottom: -20px;
+  width: 15px;
+  height: 22px;
+  box-shadow: 74px 0 0 var(--pet-dark);
+}
+
+.capybara__body::after {
+  bottom: -24px;
+  width: 22px;
+  height: 7px;
+  box-shadow: 74px 0 0 var(--pet-dark);
+}
+
+.capybara__eye {
+  width: 6px;
+  height: 6px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+.capybara__nose {
+  width: 17px;
+  height: 10px;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.16) 0 4px, transparent 4px),
+    #3f2517;
+}
+
+.capybara[data-fur="fur-teacher-graphite"] {
+  --pet-main: #526070;
+  --pet-light: #788698;
+  --pet-dark: #263342;
+}
+
+.capybara[data-fur="fur-curator-mint"] {
+  --pet-main: #78cdb1;
+  --pet-light: #a2ead2;
+  --pet-dark: #2f705b;
+}
+
+.capybara[data-fur="fur-admin-steel"] {
+  --pet-main: #7f8ea3;
+  --pet-light: #a7b4c6;
+  --pet-dark: #334155;
+}
+
+.capybara[data-eyes="eyes-teacher-amber"] {
+  --pet-eye: #f59e0b;
+}
+
+.capybara[data-eyes="eyes-curator-violet"] {
+  --pet-eye: #8b5cf6;
+}
+
+.capybara[data-eyes="eyes-admin-cyan"] {
+  --pet-eye: #06b6d4;
+}
+
+.capybara[data-eyes="eyes-teacher-amber"] .capybara__eye,
+.capybara[data-eyes="eyes-curator-violet"] .capybara__eye,
+.capybara[data-eyes="eyes-admin-cyan"] .capybara__eye {
+  box-shadow: 0 0 0 1px #111827, 0 0 8px var(--pet-eye);
+}
+
+.capybara[data-animal="teacher-owl"] {
+  --pet-main: #8b6f47;
+  --pet-light: #d2b57b;
+  --pet-dark: #4b371f;
+}
+
+.capybara[data-animal="teacher-owl"] .capybara__body {
+  left: 50px;
+  width: 102px;
+  height: 78px;
+  background:
+    radial-gradient(circle at 34% 24%, #fff8db 0 9px, transparent 10px),
+    radial-gradient(circle at 66% 24%, #fff8db 0 9px, transparent 10px),
+    linear-gradient(90deg, #6f542f 0 18%, var(--pet-main) 19% 81%, #6f542f 82%);
+}
+
+.capybara[data-animal="teacher-owl"] .capybara__head {
+  right: 37px;
+  bottom: 80px;
+  width: 82px;
+  height: 44px;
+}
+
+.capybara[data-animal="teacher-owl"] .capybara__ear {
+  width: 18px;
+  height: 24px;
+  transform: rotate(45deg);
+}
+
+.capybara[data-animal="teacher-lion"] {
+  --pet-main: #c78337;
+  --pet-light: #f0b45f;
+  --pet-dark: #6b3f16;
+}
+
+.capybara[data-animal="teacher-lion"] .capybara__head {
+  box-shadow: 0 0 0 8px #8a4e1e, inset 0 8px 0 rgba(255, 255, 255, 0.12);
+}
+
+.capybara[data-animal="curator-deer"] {
+  --pet-main: #b88955;
+  --pet-light: #d4aa72;
+  --pet-dark: #5f3b22;
+}
+
+.capybara[data-animal="curator-deer"] .capybara__ear::before,
+.capybara[data-animal="curator-deer"] .capybara__ear::after {
+  position: absolute;
+  content: "";
+  top: -13px;
+  width: 4px;
+  height: 18px;
+  background: #5f3b22;
+}
+
+.capybara[data-animal="curator-deer"] .capybara__ear::before {
+  left: -6px;
+  transform: rotate(-28deg);
+}
+
+.capybara[data-animal="curator-deer"] .capybara__ear::after {
+  right: -6px;
+  transform: rotate(28deg);
+}
+
+.capybara[data-animal="curator-otter"] {
+  --pet-main: #8a5c3b;
+  --pet-light: #c08a5c;
+  --pet-dark: #43291a;
+}
+
+.capybara[data-animal="curator-otter"] .capybara__tail {
+  opacity: 1;
+  left: 13px;
+  bottom: 51px;
+  width: 36px;
+  height: 18px;
+  transform: rotate(-10deg);
+}
+
+.capybara[data-animal="admin-robot"] {
+  --pet-main: #94a3b8;
+  --pet-light: #cbd5e1;
+  --pet-dark: #334155;
+  --pet-eye: #22d3ee;
+}
+
+.capybara[data-animal="admin-robot"] .capybara__body,
+.capybara[data-animal="admin-robot"] .capybara__head {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.3) 0 6px, transparent 6px 14px),
+    linear-gradient(0deg, rgba(15, 23, 42, 0.16) 0 4px, transparent 4px 16px),
+    var(--pet-main);
+}
+
+.capybara[data-animal="admin-raven"] {
+  --pet-main: #1f2937;
+  --pet-light: #374151;
+  --pet-dark: #0f172a;
+  --pet-eye: #facc15;
+}
+
+.capybara[data-animal="admin-raven"] .capybara__body {
+  background: linear-gradient(90deg, #0f172a 0 22%, var(--pet-main) 23% 100%);
+}
+
+.capybara[data-animal="admin-raven"] .capybara__nose {
+  background: #f59e0b;
+}
+
+.capybara[data-outfit="teacher-blazer"] .capybara__clothes,
+.capybara[data-outfit="teacher-cardigan"] .capybara__clothes,
+.capybara[data-outfit="curator-vest"] .capybara__clothes,
+.capybara[data-outfit="curator-hoodie"] .capybara__clothes,
+.capybara[data-outfit="admin-jacket"] .capybara__clothes,
+.capybara[data-outfit="admin-suit"] .capybara__clothes {
+  left: 39px;
+  bottom: 39px;
+  width: 112px;
+  height: 43px;
+  border: 2px solid #1f365c;
+}
+
+.capybara[data-outfit="teacher-blazer"] .capybara__clothes {
+  background: linear-gradient(90deg, #1f365c 0 43%, #ffffff 44% 56%, #1f365c 57%);
+}
+
+.capybara[data-outfit="teacher-cardigan"] .capybara__clothes {
+  border-color: #7c2d12;
+  background: linear-gradient(90deg, #b45309 0 44%, #fef3c7 45% 55%, #b45309 56%);
+}
+
+.capybara[data-outfit="curator-vest"] .capybara__clothes {
+  border-color: #047857;
+  background: linear-gradient(90deg, #10b981 0 44%, #ecfdf5 45% 55%, #10b981 56%);
+}
+
+.capybara[data-outfit="curator-hoodie"] .capybara__clothes {
+  border-color: #5b21b6;
+  background: linear-gradient(90deg, #a78bfa 0 44%, #ffffff 45% 55%, #a78bfa 56%);
+}
+
+.capybara[data-outfit="admin-jacket"] .capybara__clothes {
+  border-color: #111827;
+  background: linear-gradient(90deg, #111827 0 44%, #38bdf8 45% 55%, #111827 56%);
+}
+
+.capybara[data-outfit="admin-suit"] .capybara__clothes {
+  border-color: #1e293b;
+  background: linear-gradient(90deg, #334155 0 42%, #f8fafc 43% 57%, #334155 58%);
+}
+
+.capybara[data-hand="teacher-pointer"] .capybara__hand-item {
+  right: 4px;
+  bottom: 51px;
+  width: 56px;
+  height: 5px;
+  background: #6b4f1d;
+  transform: rotate(-18deg);
+  box-shadow: 48px -10px 0 -1px #facc15;
+}
+
+.capybara[data-hand="teacher-book"] .capybara__hand-item,
+.capybara[data-hand="curator-planner"] .capybara__hand-item,
+.capybara[data-hand="admin-laptop"] .capybara__hand-item {
+  right: 5px;
+  bottom: 32px;
+  width: 36px;
+  height: 30px;
+  border: 2px solid #1f365c;
+  background:
+    linear-gradient(0deg, rgba(31, 54, 92, 0.16) 0 2px, transparent 2px 8px),
+    #ffffff;
+}
+
+.capybara[data-hand="curator-planner"] .capybara__hand-item {
+  border-color: #7c3aed;
+  background:
+    linear-gradient(#7c3aed 0 7px, transparent 7px),
+    linear-gradient(0deg, rgba(124, 58, 237, 0.16) 0 2px, transparent 2px 8px),
+    #ffffff;
+}
+
+.capybara[data-hand="admin-laptop"] .capybara__hand-item {
+  width: 42px;
+  height: 26px;
+  border-color: #0f172a;
+  background:
+    linear-gradient(90deg, #22d3ee 0 6px, transparent 6px 13px, #22c55e 13px 19px, transparent 19px),
+    #111827;
+}
+
+.capybara[data-face="curator-headset"] .capybara__face-item {
+  right: 20px;
+  bottom: 82px;
+  width: 70px;
+  height: 34px;
+  border-top: 4px solid #5b21b6;
+  background:
+    linear-gradient(90deg, #5b21b6 0 9px, transparent 9px 59px, #5b21b6 59px);
+}
+
+.capybara[data-neck="admin-keycard"] .capybara__neckwear {
+  right: 48px;
+  bottom: 43px;
+  width: 18px;
+  height: 34px;
+  background:
+    linear-gradient(#38bdf8 0 36%, #ffffff 37% 100%);
+  box-shadow: 0 -16px 0 -6px #1f365c;
+}
+
+@keyframes pet-point {
+  50% {
+    transform: rotate(-18deg) translate(8px, -4px);
+  }
+}
+
+@keyframes pet-grade {
+  50% {
+    transform: translateY(-7px) scale(1.03);
+  }
+}
+
+@keyframes pet-scan {
+  50% {
+    filter: drop-shadow(0 0 8px #22d3ee);
+  }
+}
+
+.capybara[data-animation="point"] .capybara__hand-item,
+.capybara[data-animation="checklist"] .capybara__hand-item,
+.capybara[data-animation="deploy"] .capybara__hand-item {
+  animation: pet-point 1.1s steps(3) infinite;
+}
+
+.capybara[data-animation="grade"] .capybara__body,
+.capybara[data-animation="call"] .capybara__head {
+  animation: pet-grade 1s steps(3) infinite;
+}
+
+.capybara[data-animation="scan"] .capybara__body,
+.capybara[data-animation="scan"] .capybara__head {
+  animation: pet-scan 1.2s steps(2) infinite;
+}
+
 @media (max-width: 1600px) {
   :root {
     --sidebar-width: 292px;
@@ -5861,6 +6510,7 @@ button:disabled {
   }
 
   .capybara-shop-layout,
+  .staff-shop-layout,
   .messages-panel {
     grid-template-columns: 1fr;
   }

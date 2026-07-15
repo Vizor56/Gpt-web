@@ -372,6 +372,7 @@ CREATE TABLE IF NOT EXISTS shop_items (
   item_code TEXT NOT NULL UNIQUE,
   item_name TEXT NOT NULL,
   item_type TEXT NOT NULL,
+  audience TEXT NOT NULL DEFAULT 'All' CHECK (audience IN ('All', 'Teacher', 'Curator', 'Admin')),
   price_points INTEGER NOT NULL CHECK (price_points >= 0),
   css_class TEXT,
   description TEXT,

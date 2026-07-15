@@ -489,6 +489,7 @@ let latestNotificationItems = [];
 let notificationPanelOpen = false;
 let currentAccountTab = "progress";
 let currentShopSection = "all";
+let currentStaffShopSection = "all";
 
 function readAccountCookie() {
   let cookie = "";
@@ -1410,13 +1411,14 @@ function getShopSectionTabs() {
   ];
 }
 
-function renderShopSectionTabs() {
+function renderShopSectionTabs(activeSection = currentShopSection, dataAttribute = "data-shop-section", { includeBadges = true } = {}) {
   return `
     <div class="shop-section-tabs" role="tablist" aria-label="Разделы магазина">
       ${getShopSectionTabs()
+        .filter(([section]) => includeBadges || section !== "badge")
         .map(([section, label]) => {
-          const active = currentShopSection === section;
-          return `<button class="${active ? "is-active" : ""}" type="button" data-shop-section="${escapeHtml(section)}" aria-selected="${String(active)}">${escapeHtml(label)}</button>`;
+          const active = activeSection === section;
+          return `<button class="${active ? "is-active" : ""}" type="button" ${dataAttribute}="${escapeHtml(section)}" aria-selected="${String(active)}">${escapeHtml(label)}</button>`;
         })
         .join("")}
     </div>
@@ -1455,6 +1457,56 @@ function renderProfileStatusForm(selected = "focused") {
 
 function getPixelPetSceneTarget(petElement) {
   return petElement?.closest(".capybara-stage") || petElement?.closest(".avatar--student") || null;
+}
+
+function getPixelPetAttributes(items = []) {
+  const attrs = {};
+  let scene = "";
+
+  (items || [])
+    .filter((item) => item?.isEquipped !== false && item?.cssClass)
+    .forEach((item) => {
+      const slot = getShopSlot(item.itemType);
+
+      if (slot === "scene") {
+        scene = item.cssClass;
+        return;
+      }
+
+      attrs[slot] = item.cssClass;
+    });
+
+  return { attrs, scene };
+}
+
+function renderPixelPetMarkup(items = [], { wrapperClass = "profile-pet-chip", petClass = "profile-pet-chip__pet", asButton = false, buttonAttrs = "" } = {}) {
+  const { attrs, scene } = getPixelPetAttributes(items);
+  const attrsText = Object.entries(attrs)
+    .map(([key, value]) => `data-${escapeHtml(key)}="${escapeHtml(value)}"`)
+    .join(" ");
+  const tag = asButton ? "button" : "span";
+  const typeAttr = asButton ? "type=\"button\"" : "";
+
+  return `
+    <${tag} class="${escapeHtml(wrapperClass)}" ${typeAttr} ${buttonAttrs} data-scene="${escapeHtml(scene)}" aria-label="Профильный питомец">
+      <span class="capybara ${escapeHtml(petClass)}" ${attrsText}>
+        <span class="capybara__shadow"></span>
+        <span class="capybara__tail"></span>
+        <span class="capybara__body"></span>
+        <span class="capybara__head"></span>
+        <span class="capybara__ear capybara__ear--left"></span>
+        <span class="capybara__ear capybara__ear--right"></span>
+        <span class="capybara__eye capybara__eye--left"></span>
+        <span class="capybara__eye capybara__eye--right"></span>
+        <span class="capybara__nose"></span>
+        <span class="capybara__clothes"></span>
+        <span class="capybara__neckwear"></span>
+        <span class="capybara__face-item"></span>
+        <span class="capybara__headwear"></span>
+        <span class="capybara__hand-item"></span>
+      </span>
+    </${tag}>
+  `;
 }
 
 function clearPixelPetElement(petElement) {
@@ -1912,10 +1964,13 @@ function ensureStaffShell() {
               <span id="staff-workspace-eyebrow">Рабочий кабинет</span>
               <h1 id="staff-workspace-title">Команда</h1>
             </div>
-            <button class="staff-refresh-button" type="button" data-staff-refresh>
-              <svg><use href="#icon-clock" /></svg>
-              Обновить
-            </button>
+            <div class="staff-workspace-actions">
+              <div class="staff-header-profile" id="staff-header-profile"></div>
+              <button class="staff-refresh-button" type="button" data-staff-refresh>
+                <svg><use href="#icon-clock" /></svg>
+                Обновить
+              </button>
+            </div>
           </header>
           <p class="application-status" id="staff-workspace-status" aria-live="polite"></p>
           <div class="staff-workspace-content" id="staff-workspace-content"></div>
@@ -1931,6 +1986,7 @@ function getStaffNavItems() {
   if (role === "Admin") {
     return [
       { page: "messages", label: "Сообщения", icon: "#icon-message" },
+      { page: "points", label: "Баллы", icon: "#icon-star" },
       { page: "applications", label: "Заявки", icon: "#icon-clipboard" },
       { page: "support", label: "Обращения", icon: "#icon-message" },
       { page: "students", label: "Ученики", icon: "#icon-book" },
@@ -2034,6 +2090,9 @@ function updateStaffWorkspaceHeader(pageName) {
   const staff = getStaffProfile();
   const title = document.querySelector("#staff-workspace-title");
   const eyebrow = document.querySelector("#staff-workspace-eyebrow");
+  const staffHeaderProfile = document.querySelector("#staff-header-profile");
+  const staffShopItems = latestStaffWorkspace?.staffShop?.items || [];
+  const staffEquippedItems = staffShopItems.filter((item) => item.isEquipped);
 
   if (title) {
     title.textContent = getStaffPageTitle(pageName);
@@ -2041,6 +2100,18 @@ function updateStaffWorkspaceHeader(pageName) {
 
   if (eyebrow) {
     eyebrow.textContent = `${getStaffRoleLabel(staff.role)} · ${staff.name || staff.login || "команда"}`;
+  }
+
+  if (staffHeaderProfile) {
+    staffHeaderProfile.innerHTML = `
+      ${renderPixelPetMarkup(staffEquippedItems, { wrapperClass: "profile-pet-chip profile-pet-chip--header" })}
+      <span>${escapeHtml(staff.name || staff.login || "Команда")}</span>
+    `;
+  }
+
+  if (isStaffMode() && profileAvatar) {
+    profileAvatar.classList.add("has-pet-avatar");
+    applyPixelPetOutfit(profilePetPreview, staffEquippedItems);
   }
 }
 
@@ -2135,6 +2206,7 @@ async function loadStaffWorkspace({ silent = false } = {}) {
 
     latestStaffWorkspace = payload;
     setStaffWorkspaceStatus("", "");
+    updateStaffWorkspaceHeader(currentStaffPage);
     renderGlobalNotifications();
     renderStaffPage(currentStaffPage);
     return payload;
@@ -2677,10 +2749,48 @@ function renderStaffMetricCards() {
 function renderStaffPoints() {
   const shop = latestStaffWorkspace?.staffShop || { pointsTotal: 0, items: [] };
   const items = shop.items || [];
+  const equippedItems = items.filter((item) => item.isEquipped);
+  const staffPetScene = getPixelPetAttributes(equippedItems).scene;
+  const filteredItems = currentStaffShopSection === "all" ? items : items.filter((item) => getShopDisplaySection(item.itemType) === currentStaffShopSection);
   const groupedItems = groupBy(
-    [...items].sort((left, right) => getShopSectionOrder(left.itemType) - getShopSectionOrder(right.itemType) || Number(left.pricePoints || 0) - Number(right.pricePoints || 0)),
+    [...filteredItems].sort((left, right) => getShopSectionOrder(left.itemType) - getShopSectionOrder(right.itemType) || Number(left.pricePoints || 0) - Number(right.pricePoints || 0)),
     (item) => getShopSlot(item.itemType),
   );
+  const sections = Object.entries(groupedItems)
+    .sort(([left], [right]) => getShopSectionOrder(left) - getShopSectionOrder(right))
+    .map(
+      ([slot, sectionItems]) => `
+        <section class="shop-section">
+          <h3>${escapeHtml(getShopTypeLabel(slot))}</h3>
+          ${sectionItems
+            .map((item) => {
+              const canBuy = !item.isOwned && Number(shop.pointsTotal || 0) >= Number(item.pricePoints || 0);
+              const action = item.isOwned
+                ? item.isEquipped
+                  ? `<button type="button" data-staff-shop-unequip="${escapeHtml(item.itemCode)}">Снять</button>`
+                  : `<button type="button" data-staff-shop-equip="${escapeHtml(item.itemCode)}">Надеть</button>`
+                : `<button type="button" data-staff-shop-buy="${escapeHtml(item.itemCode)}" ${canBuy ? "" : "disabled"}>Купить</button>`;
+              return `
+                <article class="shop-item">
+                  <div>
+                    <h3>${escapeHtml(item.itemName)}</h3>
+                    <p>${escapeHtml(item.description || "Пиксельный предмет профиля команды.")}</p>
+                    <div class="shop-item__meta">
+                      <span class="resource-chip is-blue">${escapeHtml(getShopTypeLabel(item.itemType))}</span>
+                      ${item.audience && item.audience !== "All" ? `<span class="resource-chip is-green">${escapeHtml(getStaffRoleLabel(item.audience))}</span>` : ""}
+                      <span class="resource-chip is-yellow">${escapeHtml(formatNumber(item.pricePoints))} баллов</span>
+                      ${item.isOwned ? `<span class="resource-chip is-green">${item.isEquipped ? "Надето" : "Куплено"}</span>` : ""}
+                    </div>
+                  </div>
+                  <div class="shop-item__actions">${action}</div>
+                </article>
+              `;
+            })
+            .join("")}
+        </section>
+      `,
+    )
+    .join("");
 
   return `
     ${renderStaffMetricCards()}
@@ -2691,45 +2801,14 @@ function renderStaffPoints() {
         <span>Баланс</span>
         <strong>${escapeHtml(formatNumber(shop.pointsTotal || 0))}</strong>
       </div>
-      <div class="shop-items-list staff-shop-list">
-        ${
-          items.length
-            ? Object.entries(groupedItems)
-                .sort(([left], [right]) => getShopSectionOrder(left) - getShopSectionOrder(right))
-                .map(
-                  ([slot, sectionItems]) => `
-                    <section class="shop-section">
-                      <h3>${escapeHtml(getShopTypeLabel(slot))}</h3>
-                      ${sectionItems
-                        .map((item) => {
-                          const canBuy = !item.isOwned && Number(shop.pointsTotal || 0) >= Number(item.pricePoints || 0);
-                          const action = item.isOwned
-                            ? item.isEquipped
-                              ? `<button type="button" data-staff-shop-unequip="${escapeHtml(item.itemCode)}">Снять</button>`
-                              : `<button type="button" data-staff-shop-equip="${escapeHtml(item.itemCode)}">Надеть</button>`
-                            : `<button type="button" data-staff-shop-buy="${escapeHtml(item.itemCode)}" ${canBuy ? "" : "disabled"}>Купить</button>`;
-                          return `
-                            <article class="shop-item">
-                              <div>
-                                <h3>${escapeHtml(item.itemName)}</h3>
-                                <p>${escapeHtml(item.description || "Пиксельный предмет профиля команды.")}</p>
-                                <div class="shop-item__meta">
-                                  <span class="resource-chip is-blue">${escapeHtml(getShopTypeLabel(item.itemType))}</span>
-                                  <span class="resource-chip is-yellow">${escapeHtml(formatNumber(item.pricePoints))} баллов</span>
-                                  ${item.isOwned ? `<span class="resource-chip is-green">${item.isEquipped ? "Надето" : "Куплено"}</span>` : ""}
-                                </div>
-                              </div>
-                              <div class="shop-item__actions">${action}</div>
-                            </article>
-                          `;
-                        })
-                        .join("")}
-                    </section>
-                  `,
-                )
-                .join("")
-            : renderStaffEmpty("Предметы магазина пока не загрузились.")
-        }
+      <div class="staff-shop-layout">
+        <div class="capybara-stage staff-capybara-stage" data-scene="${escapeHtml(staffPetScene)}" aria-label="Пиксельный питомец команды">
+          ${renderPixelPetMarkup(equippedItems, { wrapperClass: "staff-shop-pet", petClass: "staff-shop-pet__pet" })}
+        </div>
+        <div class="shop-items-list staff-shop-list">
+          ${renderShopSectionTabs(currentStaffShopSection, "data-staff-shop-section", { includeBadges: false })}
+          ${items.length ? sections || `<div class="resource-empty">В этом разделе пока нет предметов.</div>` : renderStaffEmpty("Предметы магазина пока не загрузились.")}
+        </div>
       </div>
     </section>
   `;
@@ -2737,15 +2816,29 @@ function renderStaffPoints() {
 
 function renderStaffAccount() {
   const staff = getStaffProfile();
+  const shop = latestStaffWorkspace?.staffShop || { pointsTotal: 0, items: [] };
+  const equippedItems = (shop.items || []).filter((item) => item.isEquipped);
 
   return `
     <section class="staff-panel staff-account-card">
-      <h2>${escapeHtml(staff.name || "Аккаунт команды")}</h2>
+      <div class="staff-account-hero">
+        <div class="profile-pet-card">
+          ${renderPixelPetMarkup(equippedItems, { wrapperClass: "profile-pet-chip profile-pet-chip--account" })}
+        </div>
+        <div>
+          <h2>${escapeHtml(staff.name || "Аккаунт команды")}</h2>
+          <p>${escapeHtml(getStaffRoleLabel(staff.role))} · ${escapeHtml(formatNumber(shop.pointsTotal || 0))} баллов</p>
+        </div>
+      </div>
       <div class="staff-info-grid">
         <span>Роль<strong>${escapeHtml(getStaffRoleLabel(staff.role))}</strong></span>
         <span>Логин<strong>${escapeHtml(staff.login || "-")}</strong></span>
         <span>ID<strong>${escapeHtml(staff.staffId || "-")}</strong></span>
       </div>
+      <button class="submit-button" type="button" data-staff-page="points">
+        <svg><use href="#icon-star" /></svg>
+        Открыть магазин профиля
+      </button>
       <button class="submit-button" type="button" data-staff-logout>
         <svg><use href="#icon-user" /></svg>
         Выйти из кабинета команды
@@ -5767,10 +5860,17 @@ function renderMessages(payload) {
 
   messageList.innerHTML = messages
     .map((message) => {
-      const isOwn = Boolean(message.isOwn) || message.senderRole === actor.role;
+      const isOwn = Boolean(message.isOwn);
+      const avatar = renderPixelPetMarkup(message.profileItems || [], {
+        wrapperClass: "message-profile-pet",
+        petClass: "message-profile-pet__pet",
+      });
       return `
         <article class="message-bubble ${isOwn ? "is-own" : ""}">
-          <strong>${escapeHtml(message.senderName || message.senderRole)}</strong>
+          <div class="message-bubble__head">
+            ${avatar}
+            <strong>${escapeHtml(message.senderName || message.senderRole)}</strong>
+          </div>
           <p>${escapeHtml(message.messageText)}</p>
           <time>${escapeHtml(formatStreamDate(message.sentAt))}</time>
         </article>
@@ -6303,13 +6403,16 @@ function renderStreamChat(payload) {
     messageBox.innerHTML = messages.length
       ? messages
           .map(
-            (message) => `
+            (message) => {
+              const avatar = renderPixelPetMarkup(message.profileItems || [], {
+                wrapperClass: `stream-chat-avatar ${message.isOwn ? "is-own" : ""}`,
+                asButton: !message.isOwn,
+                buttonAttrs: !message.isOwn ? `data-friend-request="${escapeHtml(message.studentId)}" title="Добавить в друзья"` : "",
+              });
+
+              return `
               <article class="stream-chat-message ${message.isOwn ? "is-own" : ""}">
-                ${
-                  message.isOwn
-                    ? `<span class="stream-chat-avatar">${escapeHtml(String(message.studentName || "У").trim().slice(0, 1).toUpperCase() || "У")}</span>`
-                    : `<button type="button" class="stream-chat-avatar" data-friend-request="${escapeHtml(message.studentId)}" title="Добавить в друзья">${escapeHtml(String(message.studentName || "У").trim().slice(0, 1).toUpperCase() || "У")}</button>`
-                }
+                ${avatar}
                 <div>
                   <strong>${escapeHtml(message.studentName || "Ученик")}</strong>
                   ${message.badgeName ? `<span class="profile-badge ${escapeHtml(message.badgeClass || "")}">${escapeHtml(message.badgeName)}</span>` : ""}
@@ -6317,7 +6420,8 @@ function renderStreamChat(payload) {
                   <time>${escapeHtml(formatStreamDate(message.createdAt))}</time>
                 </div>
               </article>
-            `,
+            `;
+            },
           )
           .join("")
       : `<div class="resource-empty">В чате пока нет сообщений. Можно задать первый вопрос.</div>`;
@@ -7878,6 +7982,14 @@ document.addEventListener("click", (event) => {
   }
 
   const staffShopBuyButton = event.target.closest("[data-staff-shop-buy]");
+  const staffShopSectionButton = event.target.closest("[data-staff-shop-section]");
+
+  if (staffShopSectionButton) {
+    event.preventDefault();
+    currentStaffShopSection = staffShopSectionButton.dataset.staffShopSection || "all";
+    renderStaffPage(currentStaffPage);
+    return;
+  }
 
   if (staffShopBuyButton && !staffShopBuyButton.disabled) {
     event.preventDefault();
