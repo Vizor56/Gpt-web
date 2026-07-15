@@ -441,6 +441,11 @@ const accountProgressSummary = document.querySelector("#account-progress-summary
 const accountCourseProgressList = document.querySelector("#account-course-progress-list");
 const authStatus = document.querySelector("#auth-status");
 const accountSessionStatus = document.querySelector("#account-session-status");
+const accountProfileStatus = document.querySelector("#account-profile-status");
+const accountTabs = document.querySelectorAll("[data-account-tab]");
+const accountPanels = document.querySelectorAll("[data-account-panel]");
+const accountAchievementsSummary = document.querySelector("#account-achievements-summary");
+const accountAchievementsList = document.querySelector("#account-achievements-list");
 const loginForm = document.querySelector("#login-form");
 const registerForm = document.querySelector("#register-form");
 const authDivider = document.querySelector(".auth-divider");
@@ -482,6 +487,8 @@ let staffFilters = {};
 let staffDrilldownState = {};
 let latestNotificationItems = [];
 let notificationPanelOpen = false;
+let currentAccountTab = "progress";
+let currentShopSection = "all";
 
 function readAccountCookie() {
   let cookie = "";
@@ -834,6 +841,22 @@ function setStudyTab(tabName = "owned") {
   });
 }
 
+function setAccountTab(tabName = "progress") {
+  currentAccountTab = tabName;
+
+  accountTabs.forEach((item) => {
+    const isActive = item.dataset.accountTab === tabName;
+    item.classList.toggle("is-active", isActive);
+    item.setAttribute("aria-selected", String(isActive));
+  });
+
+  accountPanels.forEach((panel) => {
+    const isActive = panel.dataset.accountPanel === tabName;
+    panel.classList.toggle("is-hidden", !isActive);
+    panel.setAttribute("aria-hidden", String(!isActive));
+  });
+}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -916,8 +939,14 @@ function updateProfileSummary(account = latestAccount) {
   if (accountSessionStatus) {
     accountSessionStatus.classList.toggle("is-active", hasSession);
     accountSessionStatus.innerHTML = hasSession
-      ? `<span>Вы вошли как <strong>${escapeHtml(login || name)}</strong> · ${escapeHtml(getProfileStatusLabel(account?.student?.profileStatus))}</span>${renderProfileStatusForm(account?.student?.profileStatus || "focused")}`
+      ? `<span>Вы вошли как <strong>${escapeHtml(login || name)}</strong></span>`
       : `<span>Вы пока не вошли. Первый урок каждого курса открыт для просмотра.</span>`;
+  }
+
+  if (accountProfileStatus) {
+    accountProfileStatus.innerHTML = hasSession
+      ? `<span>Статус: <strong>${escapeHtml(getProfileStatusLabel(account?.student?.profileStatus))}</strong></span>${renderProfileStatusForm(account?.student?.profileStatus || "focused")}`
+      : "";
   }
 
   if (logoutButton) {
@@ -1004,6 +1033,10 @@ function applyGuestUi(message = "Войдите или создайте акка
   if (accountSessionStatus) {
     accountSessionStatus.classList.remove("is-active");
     accountSessionStatus.innerHTML = `<span>Вы пока не вошли. Первый урок каждого курса открыт для просмотра.</span>`;
+  }
+
+  if (accountProfileStatus) {
+    accountProfileStatus.innerHTML = "";
   }
 
   if (logoutButton) {
@@ -1207,6 +1240,80 @@ function renderAccountProgress(account = latestAccount) {
     .join("");
 }
 
+function getBestCourseProgress(account = latestAccount) {
+  const courses = getAccountCourses(account).filter((course) => course.isOwned);
+  return courses.reduce((best, course) => Math.max(best, Number(course.progressPercent || 0)), 0);
+}
+
+function getAchievementBadges(shop = latestShop) {
+  return (shop?.badges || [])
+    .filter((badge) => badge.badgeType === "achievement")
+    .sort((left, right) => Number(left.unlockPercent || 0) - Number(right.unlockPercent || 0));
+}
+
+function renderAccountAchievementsEmpty(message) {
+  if (accountAchievementsSummary) {
+    accountAchievementsSummary.textContent = message;
+  }
+
+  if (accountAchievementsList) {
+    accountAchievementsList.innerHTML = `<div class="resource-empty">${escapeHtml(message)}</div>`;
+  }
+}
+
+function renderAccountAchievements(shop = latestShop) {
+  if (!accountAchievementsList) {
+    return;
+  }
+
+  if (!hasAuthenticatedAccount()) {
+    renderAccountAchievementsEmpty("Достижения появятся после входа.");
+    return;
+  }
+
+  const badges = getAchievementBadges(shop);
+  const bestProgress = getBestCourseProgress();
+
+  if (!badges.length) {
+    renderAccountAchievementsEmpty("Список достижений загрузится вместе с магазином.");
+    return;
+  }
+
+  const opened = badges.filter((badge) => badge.isOwned).length;
+
+  if (accountAchievementsSummary) {
+    accountAchievementsSummary.textContent = `Открыто ${opened} из ${badges.length}. Лучший прогресс курса: ${formatPercent(bestProgress)}.`;
+  }
+
+  accountAchievementsList.innerHTML = badges
+    .map((badge) => {
+      const requiredPercent = Number(badge.unlockPercent || 0);
+      const currentPercent = Math.min(100, Math.max(0, bestProgress));
+      const progress = badge.isOwned ? 100 : Math.min(100, requiredPercent > 0 ? Math.round((currentPercent / requiredPercent) * 100) : 0);
+      const statusText = badge.isOwned ? "Открыто" : `Нужно ${formatPercent(requiredPercent)} курса`;
+
+      return `
+        <article class="achievement-card ${badge.isOwned ? "is-owned" : ""}">
+          <div class="achievement-card__badge">
+            <span class="profile-badge ${escapeHtml(badge.cssClass || "")}">${escapeHtml(badge.badgeName)}</span>
+          </div>
+          <div class="achievement-card__body">
+            <div class="achievement-card__title">
+              <h3>${escapeHtml(badge.badgeName)}</h3>
+              <span class="resource-chip ${badge.isOwned ? "is-green" : "is-yellow"}">${escapeHtml(statusText)}</span>
+            </div>
+            <p>${escapeHtml(badge.description || "Достижение за прогресс по курсу.")}</p>
+            <div class="account-progress-meter" aria-label="Прогресс достижения">
+              <span style="width: ${progress}%"></span>
+            </div>
+            <small>Сейчас: ${escapeHtml(formatPercent(currentPercent))}${badge.isOwned ? " · можно надеть как плашку" : ""}</small>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
 function applyAccountToUi(account = latestAccount) {
   if (!account) {
     return;
@@ -1217,6 +1324,7 @@ function applyAccountToUi(account = latestAccount) {
   updatePointsPanels(account);
   applyAccountToCourseCards(account);
   renderAccountProgress(account);
+  renderAccountAchievements(latestShop);
   applyCourseDetailProgress(currentCourseKey, getAccountCourse(currentCourseKey));
   renderGlobalNotifications();
 }
@@ -1231,6 +1339,8 @@ function renderShopEmpty(message) {
   if (shopItemsList) {
     shopItemsList.innerHTML = `<div class="resource-empty">${escapeHtml(message)}</div>`;
   }
+
+  renderAccountAchievementsEmpty(hasAuthenticatedAccount() ? "Достижения загрузятся вместе с магазином." : "Достижения появятся после входа.");
 
   if (capybaraPreview) {
     clearPixelPetPreview();
@@ -1271,6 +1381,46 @@ function getShopSectionOrder(slot = "") {
   const order = ["animal", "fur", "eyes", "scene", "animation", "outfit", "head", "face", "neck", "hand"];
   const index = order.indexOf(getShopSlot(slot));
   return index === -1 ? order.length : index;
+}
+
+function getShopDisplaySection(type = "") {
+  const slot = getShopSlot(type);
+
+  if (slot === "fur" || slot === "eyes") {
+    return "appearance";
+  }
+
+  if (slot === "head" || slot === "face" || slot === "neck" || slot === "hand") {
+    return "accessory";
+  }
+
+  return slot;
+}
+
+function getShopSectionTabs() {
+  return [
+    ["all", "Все"],
+    ["animal", "Питомцы"],
+    ["appearance", "Внешность"],
+    ["scene", "Окружение"],
+    ["animation", "Анимации"],
+    ["outfit", "Одежда"],
+    ["accessory", "Аксессуары"],
+    ["badge", "Плашки"],
+  ];
+}
+
+function renderShopSectionTabs() {
+  return `
+    <div class="shop-section-tabs" role="tablist" aria-label="Разделы магазина">
+      ${getShopSectionTabs()
+        .map(([section, label]) => {
+          const active = currentShopSection === section;
+          return `<button class="${active ? "is-active" : ""}" type="button" data-shop-section="${escapeHtml(section)}" aria-selected="${String(active)}">${escapeHtml(label)}</button>`;
+        })
+        .join("")}
+    </div>
+  `;
 }
 
 function getProfileStatusLabel(value = "") {
@@ -1414,18 +1564,16 @@ function renderShop(shop) {
   }
 
   const items = shop.items || [];
-
-  if (items.length === 0) {
-    shopItemsList.innerHTML = `<div class="resource-empty">В магазине пока нет предметов.</div>`;
-    return;
-  }
-
+  const filteredItems = currentShopSection === "all" ? items : items.filter((item) => getShopDisplaySection(item.itemType) === currentShopSection);
   const groupedItems = groupBy(
-    [...items].sort((left, right) => getShopSectionOrder(left.itemType) - getShopSectionOrder(right.itemType) || Number(left.pricePoints || 0) - Number(right.pricePoints || 0)),
+    [...filteredItems].sort((left, right) => getShopSectionOrder(left.itemType) - getShopSectionOrder(right.itemType) || Number(left.pricePoints || 0) - Number(right.pricePoints || 0)),
     (item) => getShopSlot(item.itemType),
   );
 
-  const itemSections = Object.entries(groupedItems)
+  const itemSections =
+    currentShopSection === "badge"
+      ? ""
+      : Object.entries(groupedItems)
     .sort(([left], [right]) => getShopSectionOrder(left) - getShopSectionOrder(right))
     .map(([slot, sectionItems]) => {
       return `
@@ -1462,7 +1610,12 @@ function renderShop(shop) {
       `;
     })
     .join("");
-  shopItemsList.innerHTML = `${itemSections}${renderBadgeShopSection(shop)}`;
+
+  const badgeSection = currentShopSection === "all" || currentShopSection === "badge" ? renderBadgeShopSection(shop) : "";
+  const emptyText = currentShopSection === "badge" ? "Плашки пока не найдены." : "В этом разделе пока нет предметов.";
+  const content = itemSections || badgeSection ? `${itemSections}${badgeSection}` : `<div class="resource-empty">${escapeHtml(emptyText)}</div>`;
+  shopItemsList.innerHTML = `${renderShopSectionTabs()}${content}`;
+  renderAccountAchievements(shop);
 }
 
 async function loadShop() {
@@ -7421,6 +7574,8 @@ tabs.forEach((tab) => {
   });
 });
 
+setAccountTab(currentAccountTab);
+
 openStudyControls.forEach((control) => {
   control.addEventListener("click", (event) => {
     event.preventDefault();
@@ -7601,14 +7756,29 @@ if (supportForm) {
   supportForm.addEventListener("submit", submitSupportRequest);
 }
 
+accountTabs.forEach((button) => {
+  button.addEventListener("click", () => {
+    setAccountTab(button.dataset.accountTab || "progress");
+  });
+});
+
 if (shopItemsList) {
   shopItemsList.addEventListener("click", (event) => {
+    const sectionButton = event.target.closest("[data-shop-section]");
     const buyButton = event.target.closest("[data-shop-buy]");
     const equipButton = event.target.closest("[data-shop-equip]");
     const unequipButton = event.target.closest("[data-shop-unequip]");
     const badgeBuyButton = event.target.closest("[data-badge-buy]");
     const badgeEquipButton = event.target.closest("[data-badge-equip]");
     const badgeUnequipButton = event.target.closest("[data-badge-unequip]");
+
+    if (sectionButton) {
+      currentShopSection = sectionButton.dataset.shopSection || "all";
+      if (latestShop) {
+        renderShop(latestShop);
+      }
+      return;
+    }
 
     if (buyButton && !buyButton.disabled) {
       sendShopAction("/api/shop/purchase", buyButton.dataset.shopBuy);

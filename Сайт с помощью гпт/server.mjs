@@ -924,6 +924,25 @@ async function seedDatabase() {
       [studentPassword],
     );
 
+    await client.query(
+      `
+        INSERT INTO point_transactions (student_id, points, reason)
+        SELECT DISTINCT s.id, 100000, 'Тестовый баланс Ярослава'
+        FROM students s
+        LEFT JOIN student_accounts sa ON sa.student_id = s.id
+        WHERE (
+            LOWER(COALESCE(sa.login, '')) IN ('yaroslav', 'yaroslav56', 'student')
+            OR LOWER(COALESCE(s.first_name, '')) = LOWER('Ярослав')
+          )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM point_transactions pt
+            WHERE pt.student_id = s.id
+              AND pt.reason = 'Тестовый баланс Ярослава'
+          )
+      `,
+    );
+
     await enrollStudentInActiveCourses(client, 1);
     await assignHomeworksForStudent(client, 1);
     await createDemoSubmissions(client, 1);

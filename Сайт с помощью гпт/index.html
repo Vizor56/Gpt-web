@@ -735,6 +735,7 @@
                   <span class="account-kicker">Ученик</span>
                   <h2 id="account-student-name">Войдите в аккаунт</h2>
                   <p id="account-student-meta">После входа здесь появятся имя, класс, курсы и баллы.</p>
+                  <div class="account-profile-status" id="account-profile-status" aria-live="polite"></div>
                 </div>
                 <div class="account-points">
                   <svg><use href="#icon-star" /></svg>
@@ -743,7 +744,13 @@
                 </div>
               </section>
 
-              <section class="account-progress-section">
+              <div class="account-tabs" role="tablist" aria-label="Разделы аккаунта">
+                <button class="is-active" type="button" data-account-tab="progress" aria-selected="true">Прогресс</button>
+                <button type="button" data-account-tab="achievements" aria-selected="false">Достижения</button>
+                <button type="button" data-account-tab="shop" aria-selected="false">Магазин</button>
+              </div>
+
+              <section class="account-progress-section" data-account-panel="progress">
                 <div class="account-section-heading">
                   <h2>Прогресс курсов</h2>
                   <span id="account-progress-summary">Личный прогресс доступен после входа.</span>
@@ -751,7 +758,15 @@
                 <div class="account-course-list" id="account-course-progress-list" aria-live="polite"></div>
               </section>
 
-              <section class="panel capybara-shop-panel">
+              <section class="account-achievements-section is-hidden" data-account-panel="achievements" aria-hidden="true">
+                <div class="account-section-heading">
+                  <h2>Достижения</h2>
+                  <span id="account-achievements-summary">Достижения появятся после входа.</span>
+                </div>
+                <div class="account-achievements-list" id="account-achievements-list" aria-live="polite"></div>
+              </section>
+
+              <section class="panel capybara-shop-panel is-hidden" data-account-panel="shop" aria-hidden="true">
                 <div class="account-section-heading">
                   <h2>Магазин за баллы</h2>
                   <span id="shop-balance">Баланс появится после входа</span>
