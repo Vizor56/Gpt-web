@@ -127,12 +127,9 @@
       <aside class="sidebar" aria-label="Основная навигация">
         <a class="brand" href="#home" data-open-home>
           <span class="brand__mark">
-            <svg viewBox="0 0 64 48" aria-hidden="true">
-              <path d="M4 17 32 4l28 13-28 13z" />
-              <path d="M15 25v11c8 7 26 7 34 0V25L32 33z" />
-            </svg>
+            <span aria-hidden="true">YT</span>
           </span>
-          <span class="brand__text">Онлайн-школа<br />ЕГЭ на максимум</span>
+          <span class="brand__text">Yaroslav Tutor<br /><small>Academy</small></span>
         </a>
 
         <nav class="side-nav">
@@ -165,8 +162,8 @@
         <section class="goal-card" aria-label="Цель обучения">
           <svg><use href="#icon-trophy" /></svg>
           <div>
-            <strong>Цель — результат!</strong>
-            <span>Ты на верном пути<br />к высоким баллам на ЕГЭ.</span>
+            <strong>Понять, а не заучить</strong>
+            <span>Идём от непонимания<br />к самостоятельному решению.</span>
           </div>
         </section>
       </aside>
@@ -1042,9 +1039,9 @@
                 <h2>Куратор</h2>
                 <div class="curator-person">
                   <span class="avatar avatar--curator" aria-hidden="true"></span>
-                  <strong>Анна Сергеевна</strong>
+                  <strong id="detail-curator-name">Куратор курса</strong>
                 </div>
-                <button type="button"><svg><use href="#icon-telegram" /></svg>Написать</button>
+                <button type="button" id="detail-curator-message"><svg><use href="#icon-message" /></svg>Написать куратору</button>
               </section>
 
               <section class="panel compact-events">

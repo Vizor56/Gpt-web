@@ -421,6 +421,8 @@ const courseStreamList = document.querySelector("#course-stream-list");
 const homeStreamList = document.querySelector("#home-stream-list");
 const studyStreamList = document.querySelector("#study-stream-list");
 const detailNextStream = document.querySelector("#detail-next-stream");
+const detailCuratorName = document.querySelector("#detail-curator-name");
+const detailCuratorButton = document.querySelector("#detail-curator-message");
 const libraryNotesList = document.querySelector("#library-notes-list");
 const libraryCount = document.querySelector("#library-count");
 const applicationForm = document.querySelector("#application-form");
@@ -469,6 +471,7 @@ const messageThreadRole = document.querySelector("#message-thread-role");
 
 let currentCourseKey = "math";
 let currentCourseView = "lessons";
+let currentCourseAccess = null;
 let currentLessons = getFallbackLessons("math");
 let libraryLoaded = false;
 let libraryAccessKey = "";
@@ -892,6 +895,8 @@ function normalizeAccountCourse(course) {
     ...course,
     courseSlug,
     courseTitle: course.courseTitle || course.courseName || fallback.title || "Курс",
+    curatorId: course.curatorId ?? course.courseCuratorId ?? null,
+    curatorName: course.curatorName ?? course.courseCuratorName ?? "",
     totalLessons: Number(course.totalLessons ?? fallback.totalLessons ?? lessonsTotal),
     lessonsTotal,
     lessonsCompleted,
@@ -1259,6 +1264,39 @@ function renderAccountAchievementsEmpty(message) {
 
   if (accountAchievementsList) {
     accountAchievementsList.innerHTML = `<div class="resource-empty">${escapeHtml(message)}</div>`;
+  }
+}
+
+function getCurrentCourseCurator() {
+  const accountCourse = getAccountCourse(currentCourseKey);
+  const source = currentCourseAccess || accountCourse || {};
+
+  return {
+    curatorId: source.curatorId ?? accountCourse?.curatorId ?? "",
+    curatorName: source.curatorName || accountCourse?.curatorName || "Куратор курса",
+  };
+}
+
+function updateCourseCuratorPanel(courseAccess = currentCourseAccess) {
+  if (courseAccess) {
+    currentCourseAccess = courseAccess;
+  }
+
+  const accountCourse = getAccountCourse(currentCourseKey);
+  const curator = getCurrentCourseCurator();
+  const hasCourseAccess = Boolean(currentCourseAccess?.isOwned || accountCourse?.isOwned);
+
+  if (detailCuratorName) {
+    detailCuratorName.textContent = curator.curatorName || "Куратор курса";
+  }
+
+  if (detailCuratorButton) {
+    detailCuratorButton.disabled = !curator.curatorId || !hasCourseAccess;
+    detailCuratorButton.title = !hasCourseAccess
+      ? "Чат с куратором откроется после покупки курса"
+      : curator.curatorId
+        ? "Открыть чат с куратором курса"
+        : "Куратор курса пока не указан в базе";
   }
 }
 
@@ -1713,6 +1751,22 @@ async function loadShop() {
   }
 }
 
+async function refreshVisibleProfileSurfaces() {
+  const tasks = [];
+
+  if (currentConversationId) {
+    tasks.push(loadMessages(currentConversationId));
+  }
+
+  if (activeStreamChatId) {
+    tasks.push(openStreamChat(activeStreamChatId));
+  }
+
+  if (tasks.length) {
+    await Promise.allSettled(tasks);
+  }
+}
+
 async function sendShopAction(endpoint, itemCode, extraPayload = {}) {
   if (!hasAuthenticatedAccount()) {
     renderShopEmpty("Войдите в аккаунт, чтобы покупать одежду для капибары.");
@@ -1735,6 +1789,7 @@ async function sendShopAction(endpoint, itemCode, extraPayload = {}) {
 
     renderShop(shop);
     await loadAccount({ silent: true });
+    await refreshVisibleProfileSurfaces();
   } catch (error) {
     if (shopItemsList) {
       shopItemsList.insertAdjacentHTML("afterbegin", `<div class="resource-empty">${escapeHtml(error.message || "Действие не выполнено.")}</div>`);
@@ -1764,6 +1819,7 @@ async function sendBadgeAction(endpoint, badgeCode, extraPayload = {}) {
 
     renderShop(shop);
     await loadAccount({ silent: true });
+    await refreshVisibleProfileSurfaces();
   } catch (error) {
     if (shopItemsList) {
       shopItemsList.insertAdjacentHTML("afterbegin", `<div class="resource-empty">${escapeHtml(error.message || "Действие с плашкой не выполнено.")}</div>`);
@@ -1794,6 +1850,7 @@ async function sendStaffShopAction(endpoint, itemCode, extraPayload = {}) {
     }
 
     await loadStaffWorkspace();
+    await refreshVisibleProfileSurfaces();
     setStaffWorkspaceStatus("Магазин команды обновлен.", "success");
   } catch (error) {
     setStaffWorkspaceStatus(error.message || "Не удалось обновить магазин команды.", "error");
@@ -6004,6 +6061,55 @@ async function startStudentFriendChat(friendId) {
   }
 }
 
+async function startCurrentCourseCuratorChat() {
+  if (!hasAuthenticatedAccount()) {
+    openAccount();
+    setAuthStatus("Войдите или создайте аккаунт, чтобы написать куратору.", "error");
+    return;
+  }
+
+  const curator = getCurrentCourseCurator();
+  const accountCourse = getAccountCourse(currentCourseKey);
+
+  if (!currentCourseAccess?.isOwned && !accountCourse?.isOwned) {
+    setAuthStatus("Чат с куратором откроется после покупки курса.", "error");
+    return;
+  }
+
+  if (!curator.curatorId) {
+    setAuthStatus("Куратор для этого курса пока не указан в базе.", "error");
+    return;
+  }
+
+  if (detailCuratorButton) {
+    detailCuratorButton.disabled = true;
+  }
+
+  try {
+    const response = await apiFetch("/api/messages/start", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ targetRole: "Curator", targetId: curator.curatorId }),
+    });
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(result.message || result.error || "Не удалось открыть чат с куратором.");
+    }
+
+    currentConversationId = result.activeConversationId;
+    openMessages();
+    await loadMessages(currentConversationId);
+    setMessageStatus(`Чат с куратором ${curator.curatorName || ""} открыт.`, "success");
+  } catch (error) {
+    setAuthStatus(error.message || "Не удалось открыть чат с куратором.", "error");
+  } finally {
+    updateCourseCuratorPanel();
+  }
+}
+
 async function sendFriendAction(endpoint, payload = {}) {
   setMessageStatus("Обновляю друзей...", "pending");
 
@@ -6434,8 +6540,10 @@ function renderStreamChat(payload) {
               <article class="stream-chat-message ${message.isOwn ? "is-own" : ""}">
                 ${avatar}
                 <div>
-                  <strong>${escapeHtml(message.studentName || "Ученик")}</strong>
-                  ${message.badgeName ? `<span class="profile-badge ${escapeHtml(message.badgeClass || "")}">${escapeHtml(message.badgeName)}</span>` : ""}
+                  <div class="stream-chat-author ${message.badgeName ? "has-badge" : ""} ${escapeHtml(message.badgeClass || "")}">
+                    <strong>${escapeHtml(message.studentName || "Ученик")}</strong>
+                    ${message.badgeName ? `<span>${escapeHtml(message.badgeName)}</span>` : ""}
+                  </div>
                   <p>${escapeHtml(message.messageText)}</p>
                   <time>${escapeHtml(formatStreamDate(message.createdAt))}</time>
                 </div>
@@ -7046,6 +7154,11 @@ function renderCourseNotes(lessons) {
 }
 
 function renderCourseData(lessons, courseAccess = null) {
+  if (courseAccess) {
+    currentCourseAccess = courseAccess;
+    updateCourseCuratorPanel(courseAccess);
+  }
+
   const visibleLessons = applyLessonAccessRules(lessons, courseAccess);
   currentLessons = visibleLessons;
   renderLessons(visibleLessons);
@@ -7543,6 +7656,7 @@ async function openCourse(courseKey, viewName = "lessons") {
   const accountCourse = getAccountCourse(courseKey);
   const hasFullCourseAccess = Boolean(accountCourse?.isOwned);
   const isPreviewAccess = !hasFullCourseAccess;
+  currentCourseAccess = accountCourse || null;
 
   detailTitle.textContent = course.title;
   detailDescription.textContent = course.description;
@@ -7556,11 +7670,12 @@ async function openCourse(courseKey, viewName = "lessons") {
 
   detailIcon.className = `course-illustration course-hero__icon ${course.iconClass}`;
   detailIcon.querySelector("use").setAttribute("href", course.iconSymbol);
+  updateCourseCuratorPanel(accountCourse || { curatorName: "Загружаю куратора..." });
   const guestPercent = fallbackLessonCount > 0 ? Math.round(100 / fallbackLessonCount) : 0;
   donut.style.setProperty("--value", String(isPreviewAccess ? guestPercent : course.donut));
   donut.querySelector("span").textContent = isPreviewAccess ? `${guestPercent}%` : `${course.donut}%`;
 
-  renderCourseData(getFallbackLessons(courseKey), { isOwned: hasFullCourseAccess });
+  renderCourseData(getFallbackLessons(courseKey), { ...(accountCourse || {}), isOwned: hasFullCourseAccess });
   renderStreamCards(courseStreamList, getFallbackStreams(courseKey));
   showPage("course");
   setActiveStudyNav();
@@ -7727,6 +7842,14 @@ openMessagesControls.forEach((control) => {
     openMessages();
   });
 });
+
+if (detailCuratorButton) {
+  detailCuratorButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    startCurrentCourseCuratorChat();
+  });
+}
 
 openAccountControls.forEach((control) => {
   control.addEventListener("click", (event) => {

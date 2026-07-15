@@ -356,6 +356,12 @@ async function runRuntimeMigrations() {
         CHECK (sender_role IN ('Student', 'Teacher', 'Curator', 'Admin', 'System'));
     END $$;
 
+    ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS sender_student_id INTEGER REFERENCES students(id) ON DELETE SET NULL;
+    ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS sender_staff_role TEXT;
+    ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS sender_staff_id INTEGER;
+    CREATE INDEX IF NOT EXISTS idx_chat_messages_sender_student ON chat_messages(sender_student_id);
+    CREATE INDEX IF NOT EXISTS idx_chat_messages_sender_staff ON chat_messages(sender_staff_role, sender_staff_id);
+
     ALTER TABLE students ADD COLUMN IF NOT EXISTS profile_status TEXT NOT NULL DEFAULT 'focused';
     ALTER TABLE students ADD COLUMN IF NOT EXISTS active_badge_id INTEGER;
     ALTER TABLE shop_items ADD COLUMN IF NOT EXISTS audience TEXT NOT NULL DEFAULT 'All';
@@ -1361,6 +1367,8 @@ async function buildAccountPayload(studentId, authToken = "") {
         COUNT(DISTINCT CASE WHEN ha.status = 'Checked' THEN l.id END)::integer AS "lessonsCompleted",
         ce.id AS "enrollmentId",
         ce.status AS "enrollmentStatus",
+        COALESCE(ce.curator_id, c.curator_id) AS "curatorId",
+        CONCAT(cu.first_name, ' ', cu.last_name) AS "curatorName",
         (ce.id IS NOT NULL) AS "isOwned",
         COUNT(DISTINCT ha.id)::integer AS "homeworkTotal",
         COUNT(DISTINCT CASE WHEN ha.status IN ('Submitted', 'Checked') THEN ha.id END)::integer AS "homeworkSubmitted",
@@ -1375,9 +1383,10 @@ async function buildAccountPayload(studentId, authToken = "") {
       FROM courses c
       LEFT JOIN lessons l ON l.course_id = c.id
       LEFT JOIN course_enrollments ce ON ce.course_id = c.id AND ce.student_id = $1 AND ce.status = 'Active'
+      LEFT JOIN curators cu ON cu.id = COALESCE(ce.curator_id, c.curator_id)
       LEFT JOIN homework_assignments ha ON ha.enrollment_id = ce.id AND ha.status <> 'Cancelled'
       WHERE c.status = 'Active'
-      GROUP BY c.id, ce.id
+      GROUP BY c.id, ce.id, cu.id
       ORDER BY c.id
     `,
     [studentId],
@@ -1655,6 +1664,8 @@ async function getCourseLessons(slug, studentId = 0) {
         c.total_lessons AS "totalLessons",
         COUNT(l.id) OVER (PARTITION BY c.id)::integer AS "lessonsTotal",
         ce.id AS "enrollmentId",
+        COALESCE(ce.curator_id, c.curator_id) AS "curatorId",
+        CONCAT(cu.first_name, ' ', cu.last_name) AS "curatorName",
         ce.progress_percent AS "progressPercent",
         l.id AS "lessonId",
         l.lesson_number AS "lessonNumber",
@@ -1690,6 +1701,7 @@ async function getCourseLessons(slug, studentId = 0) {
       FROM courses c
       JOIN lessons l ON l.course_id = c.id
       LEFT JOIN course_enrollments ce ON ce.course_id = c.id AND ce.student_id = $2 AND ce.status = 'Active'
+      LEFT JOIN curators cu ON cu.id = COALESCE(ce.curator_id, c.curator_id)
       LEFT JOIN homework_templates ht ON ht.lesson_id = l.id AND ht.course_id = c.id AND ht.active = TRUE
       LEFT JOIN homework_assignments ha ON ha.template_id = ht.id AND ha.student_id = $2 AND ha.enrollment_id = ce.id
       LEFT JOIN homework_submissions hs ON hs.assignment_id = ha.id
@@ -1788,6 +1800,8 @@ async function getCourseLessons(slug, studentId = 0) {
       totalLessons: first.totalLessons,
       lessonsTotal: first.lessonsTotal,
       isOwned,
+      curatorId: first.curatorId,
+      curatorName: first.curatorName,
       progressPercent: homeworkTotal > 0 ? Math.round((homeworkChecked * 10000) / homeworkTotal) / 100 : 0,
       homeworkTotal,
       homeworkSubmitted,
@@ -5819,10 +5833,10 @@ app.post(
     await assertConversationAllowed(actor, conversationId);
     await dbQuery(
       `
-        INSERT INTO chat_messages (chat_id, sender_role, sender_name, message_text)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO chat_messages (chat_id, sender_role, sender_name, message_text, sender_student_id, sender_staff_role, sender_staff_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
       `,
-      [conversationId, actor.role, actor.name, messageText],
+      [conversationId, actor.role, actor.name, messageText, actor.senderStudentId || null, actor.senderStaffRole || null, actor.senderStaffId || null],
     );
 
     response.status(201).json({ ok: true, source: "database", activeConversationId: conversationId });
@@ -5832,11 +5846,19 @@ app.post(
 async function getMessageActorFromRequest(request) {
   const staff = await getStaffByToken(request, { required: false });
   if (staff) {
-    return { role: staff.role, id: staff.staffId, name: staff.name, staff };
+    return { role: staff.role, id: staff.staffId, name: staff.name, staff, senderStaffRole: staff.role, senderStaffId: staff.staffId, senderStudentId: null };
   }
 
   const student = await getStudentByToken(request, { required: true });
-  return { role: "Student", id: student.studentId, name: `${student.firstName} ${student.lastName}`.trim() || student.login, student };
+  return {
+    role: "Student",
+    id: student.studentId,
+    name: `${student.firstName} ${student.lastName}`.trim() || student.login,
+    student,
+    senderStudentId: student.studentId,
+    senderStaffRole: null,
+    senderStaffId: null,
+  };
 }
 
 async function getStudentFriendsPayload(studentId) {
@@ -6205,6 +6227,9 @@ async function getMessagesPayload(actor, requestedConversationId = 0) {
             id AS "messageId",
             sender_role AS "senderRole",
             sender_name AS "senderName",
+            sender_student_id AS "senderStudentId",
+            sender_staff_role AS "senderStaffRole",
+            sender_staff_id AS "senderStaffId",
             message_text AS "messageText",
             sent_at AS "sentAt"
           FROM chat_messages
@@ -6215,11 +6240,18 @@ async function getMessagesPayload(actor, requestedConversationId = 0) {
       )
     : { rows: [] };
   const activeConversation = conversations.rows.find((row) => Number(row.conversationId) === Number(activeConversationId));
-  const studentProfileItems = await getStudentProfileItemsMap([activeConversation?.studentId, activeConversation?.friendStudentId]);
+  const messageStudentIds = messages.rows
+    .filter((row) => row.senderRole === "Student" && row.senderStudentId)
+    .map((row) => row.senderStudentId);
+  const messageStaffRefs = messages.rows
+    .filter((row) => row.senderStaffRole && row.senderStaffId)
+    .map((row) => ({ role: row.senderStaffRole, staffId: row.senderStaffId }));
+  const studentProfileItems = await getStudentProfileItemsMap([activeConversation?.studentId, activeConversation?.friendStudentId, ...messageStudentIds]);
   const staffProfileItems = await getStaffProfileItemsMap([
     activeConversation?.teacherId ? { role: "Teacher", staffId: activeConversation.teacherId } : null,
     activeConversation?.curatorId ? { role: "Curator", staffId: activeConversation.curatorId } : null,
     activeConversation?.adminId ? { role: "Admin", staffId: activeConversation.adminId } : null,
+    ...messageStaffRefs,
   ].filter(Boolean));
   const friendState = actor.role === "Student" ? await getStudentFriendsPayload(actor.id) : null;
   const getMessageProfileItems = (message) => {
@@ -6228,6 +6260,10 @@ async function getMessagesPayload(actor, requestedConversationId = 0) {
     }
 
     if (message.senderRole === "Student") {
+      if (message.senderStudentId) {
+        return studentProfileItems.get(Number(message.senderStudentId)) || [];
+      }
+
       const senderName = String(message.senderName || "").trim().toLowerCase();
       const friendName = String(activeConversation.friendStudentName || "").trim().toLowerCase();
       const primaryName = String(activeConversation.studentName || "").trim().toLowerCase();
@@ -6242,27 +6278,29 @@ async function getMessagesPayload(actor, requestedConversationId = 0) {
       return studentProfileItems.get(Number(studentId)) || [];
     }
 
+    const staffRole = message.senderStaffRole || message.senderRole;
     const staffId =
-      message.senderRole === "Teacher"
+      message.senderStaffId ||
+      (message.senderRole === "Teacher"
         ? activeConversation.teacherId
         : message.senderRole === "Curator"
           ? activeConversation.curatorId
           : message.senderRole === "Admin"
             ? activeConversation.adminId
-            : null;
+            : null);
 
-    return staffId ? staffProfileItems.get(`${message.senderRole}:${Number(staffId)}`) || [] : [];
+    return staffId ? staffProfileItems.get(`${staffRole}:${Number(staffId)}`) || [] : [];
   };
   const isOwnMessage = (message) => {
     if (message.senderRole !== actor.role) {
       return false;
     }
 
-    if (actor.role !== "Student" || activeConversation?.chatType !== "StudentFriend") {
-      return true;
+    if (actor.role === "Student") {
+      return message.senderStudentId ? Number(message.senderStudentId) === Number(actor.id) : String(message.senderName || "").trim().toLowerCase() === String(actor.name || "").trim().toLowerCase();
     }
 
-    return String(message.senderName || "").trim().toLowerCase() === String(actor.name || "").trim().toLowerCase();
+    return message.senderStaffId ? Number(message.senderStaffId) === Number(actor.id) && (message.senderStaffRole || message.senderRole) === actor.role : true;
   };
 
   return {
