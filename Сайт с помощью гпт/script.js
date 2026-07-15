@@ -1509,6 +1509,23 @@ function renderPixelPetMarkup(items = [], { wrapperClass = "profile-pet-chip", p
   `;
 }
 
+function getShopPreviewItems(item, equippedItems = []) {
+  const previewSlot = getShopSlot(item?.itemType);
+  const baseItems = (equippedItems || []).filter((equippedItem) => getShopSlot(equippedItem?.itemType) !== previewSlot);
+  return [...baseItems, { ...item, isEquipped: true }];
+}
+
+function renderShopItemPreview(item, equippedItems = []) {
+  return `
+    <div class="shop-item__preview" aria-hidden="true">
+      ${renderPixelPetMarkup(getShopPreviewItems(item, equippedItems), {
+        wrapperClass: "shop-preview-pet",
+        petClass: "shop-preview-pet__pet",
+      })}
+    </div>
+  `;
+}
+
 function clearPixelPetElement(petElement) {
   if (!petElement) {
     return;
@@ -1616,6 +1633,7 @@ function renderShop(shop) {
   }
 
   const items = shop.items || [];
+  const equippedItems = items.filter((item) => item.isEquipped);
   const filteredItems = currentShopSection === "all" ? items : items.filter((item) => getShopDisplaySection(item.itemType) === currentShopSection);
   const groupedItems = groupBy(
     [...filteredItems].sort((left, right) => getShopSectionOrder(left.itemType) - getShopSectionOrder(right.itemType) || Number(left.pricePoints || 0) - Number(right.pricePoints || 0)),
@@ -1642,6 +1660,7 @@ function renderShop(shop) {
 
               return `
                 <article class="shop-item">
+                  ${renderShopItemPreview(item, equippedItems)}
                   <div>
                     <h3>${escapeHtml(item.itemName)}</h3>
                     <p>${escapeHtml(item.description || "Пиксельный предмет для питомца")}</p>
@@ -2772,6 +2791,7 @@ function renderStaffPoints() {
                 : `<button type="button" data-staff-shop-buy="${escapeHtml(item.itemCode)}" ${canBuy ? "" : "disabled"}>Купить</button>`;
               return `
                 <article class="shop-item">
+                  ${renderShopItemPreview(item, equippedItems)}
                   <div>
                     <h3>${escapeHtml(item.itemName)}</h3>
                     <p>${escapeHtml(item.description || "Пиксельный предмет профиля команды.")}</p>
