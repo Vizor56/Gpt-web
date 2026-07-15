@@ -475,6 +475,7 @@ let latestMessages = null;
 let latestStaffWorkspace = null;
 let currentConversationId = null;
 let currentMessageFilter = "all";
+let activeStreamChatId = null;
 let streamsLoaded = false;
 let currentStaffPage = "messages";
 let staffFilters = {};
@@ -915,7 +916,7 @@ function updateProfileSummary(account = latestAccount) {
   if (accountSessionStatus) {
     accountSessionStatus.classList.toggle("is-active", hasSession);
     accountSessionStatus.innerHTML = hasSession
-      ? `<span>Вы вошли как <strong>${escapeHtml(login || name)}</strong></span>`
+      ? `<span>Вы вошли как <strong>${escapeHtml(login || name)}</strong> · ${escapeHtml(getProfileStatusLabel(account?.student?.profileStatus))}</span>${renderProfileStatusForm(account?.student?.profileStatus || "focused")}`
       : `<span>Вы пока не вошли. Первый урок каждого курса открыт для просмотра.</span>`;
   }
 
@@ -1255,6 +1256,7 @@ function getShopTypeLabel(type = "") {
     fur: "Шерсть",
     eyes: "Глаза",
     scene: "Окружение",
+    animation: "Анимация",
     outfit: "Одежда",
     head: "Голова",
     face: "Лицо",
@@ -1266,9 +1268,39 @@ function getShopTypeLabel(type = "") {
 }
 
 function getShopSectionOrder(slot = "") {
-  const order = ["animal", "fur", "eyes", "scene", "outfit", "head", "face", "neck", "hand"];
+  const order = ["animal", "fur", "eyes", "scene", "animation", "outfit", "head", "face", "neck", "hand"];
   const index = order.indexOf(getShopSlot(slot));
   return index === -1 ? order.length : index;
+}
+
+function getProfileStatusLabel(value = "") {
+  return (
+    {
+      focused: "В фокусе",
+      chill: "Спокойный режим",
+      grinding: "Учусь без пауз",
+      on_fire: "Горю учебой",
+      need_coffee: "Нужен чай",
+      ready_exam: "Готов к экзамену",
+      resting: "Восстанавливаюсь",
+    }[value] || "В фокусе"
+  );
+}
+
+function renderProfileStatusForm(selected = "focused") {
+  const options = ["focused", "chill", "grinding", "on_fire", "need_coffee", "ready_exam", "resting"];
+  return `
+    <form class="profile-status-form" data-profile-status-form>
+      <label>
+        Статус
+        <select name="profileStatus">
+          ${options.map((option) => `<option value="${option}" ${option === selected ? "selected" : ""}>${escapeHtml(getProfileStatusLabel(option))}</option>`).join("")}
+        </select>
+      </label>
+      <button type="submit">Сохранить</button>
+      <p class="staff-form-status" aria-live="polite"></p>
+    </form>
+  `;
 }
 
 function getPixelPetSceneTarget(petElement) {
@@ -1280,7 +1312,7 @@ function clearPixelPetElement(petElement) {
     return;
   }
 
-  ["animal", "fur", "eyes", "outfit", "head", "face", "neck", "hand"].forEach((key) => {
+  ["animal", "fur", "eyes", "animation", "outfit", "head", "face", "neck", "hand"].forEach((key) => {
     delete petElement.dataset[key];
   });
   getPixelPetSceneTarget(petElement)?.removeAttribute("data-scene");
@@ -1325,6 +1357,49 @@ function applyCapybaraOutfit(items = []) {
   }
 }
 
+function renderBadgeShopSection(shop) {
+  const badges = shop.badges || [];
+
+  if (!badges.length) {
+    return "";
+  }
+
+  return `
+    <section class="shop-section badge-shop-section">
+      <h3>Плашки профиля</h3>
+      ${badges
+        .map((badge) => {
+          const canBuy = badge.badgeType === "shop" && !badge.isOwned && Number(shop.pointsTotal) >= Number(badge.pricePoints || 0);
+          const action = badge.isOwned
+            ? badge.isEquipped
+              ? `<button type="button" data-badge-unequip="${escapeHtml(badge.badgeCode)}">Снять</button>`
+              : `<button type="button" data-badge-equip="${escapeHtml(badge.badgeCode)}">Надеть</button>`
+            : badge.badgeType === "shop"
+              ? `<button type="button" data-badge-buy="${escapeHtml(badge.badgeCode)}" ${canBuy ? "" : "disabled"}>Купить</button>`
+              : `<button type="button" disabled>Откроется</button>`;
+          const lockText = badge.badgeType === "achievement" && !badge.isOwned ? `Нужно ${formatNumber(badge.unlockPercent || 0)}% курса` : "";
+
+          return `
+            <article class="shop-item badge-shop-item">
+              <div>
+                <h3><span class="profile-badge ${escapeHtml(badge.cssClass || "")}">${escapeHtml(badge.badgeName)}</span></h3>
+                <p>${escapeHtml(badge.description || lockText || "Плашка для профиля и чата трансляций.")}</p>
+                <div class="shop-item__meta">
+                  <span class="resource-chip ${badge.badgeType === "achievement" ? "is-green" : "is-blue"}">${badge.badgeType === "achievement" ? "Достижение" : "Покупная"}</span>
+                  ${badge.badgeType === "shop" ? `<span class="resource-chip is-yellow">${escapeHtml(formatNumber(badge.pricePoints))} баллов</span>` : ""}
+                  ${lockText ? `<span class="resource-chip is-yellow">${escapeHtml(lockText)}</span>` : ""}
+                  ${badge.isEquipped ? `<span class="resource-chip is-green">Активна</span>` : badge.isOwned ? `<span class="resource-chip is-green">Открыта</span>` : ""}
+                </div>
+              </div>
+              <div class="shop-item__actions">${action}</div>
+            </article>
+          `;
+        })
+        .join("")}
+    </section>
+  `;
+}
+
 function renderShop(shop) {
   latestShop = shop;
 
@@ -1350,7 +1425,7 @@ function renderShop(shop) {
     (item) => getShopSlot(item.itemType),
   );
 
-  shopItemsList.innerHTML = Object.entries(groupedItems)
+  const itemSections = Object.entries(groupedItems)
     .sort(([left], [right]) => getShopSectionOrder(left) - getShopSectionOrder(right))
     .map(([slot, sectionItems]) => {
       return `
@@ -1387,6 +1462,7 @@ function renderShop(shop) {
       `;
     })
     .join("");
+  shopItemsList.innerHTML = `${itemSections}${renderBadgeShopSection(shop)}`;
 }
 
 async function loadShop() {
@@ -1439,6 +1515,64 @@ async function sendShopAction(endpoint, itemCode, extraPayload = {}) {
     if (shopItemsList) {
       shopItemsList.insertAdjacentHTML("afterbegin", `<div class="resource-empty">${escapeHtml(error.message || "Действие не выполнено.")}</div>`);
     }
+  }
+}
+
+async function sendBadgeAction(endpoint, badgeCode, extraPayload = {}) {
+  if (!hasAuthenticatedAccount()) {
+    renderShopEmpty("Войдите в аккаунт, чтобы управлять плашками.");
+    return;
+  }
+
+  try {
+    const response = await apiFetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ badgeCode, ...extraPayload }),
+    });
+    const shop = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(shop.message || shop.error || "Не удалось обновить плашку");
+    }
+
+    renderShop(shop);
+    await loadAccount({ silent: true });
+  } catch (error) {
+    if (shopItemsList) {
+      shopItemsList.insertAdjacentHTML("afterbegin", `<div class="resource-empty">${escapeHtml(error.message || "Действие с плашкой не выполнено.")}</div>`);
+    }
+  }
+}
+
+async function sendStaffShopAction(endpoint, itemCode, extraPayload = {}) {
+  if (!hasAuthenticatedStaff()) {
+    setStaffWorkspaceStatus("Войдите в аккаунт команды.", "error");
+    return;
+  }
+
+  setStaffWorkspaceStatus("Обновляю магазин команды...", "pending");
+
+  try {
+    const response = await apiFetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ itemCode, ...extraPayload }),
+    });
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(result.message || result.error || "Не удалось обновить магазин команды.");
+    }
+
+    await loadStaffWorkspace();
+    setStaffWorkspaceStatus("Магазин команды обновлен.", "success");
+  } catch (error) {
+    setStaffWorkspaceStatus(error.message || "Не удалось обновить магазин команды.", "error");
   }
 }
 
@@ -2388,11 +2522,62 @@ function renderStaffMetricCards() {
 }
 
 function renderStaffPoints() {
+  const shop = latestStaffWorkspace?.staffShop || { pointsTotal: 0, items: [] };
+  const items = shop.items || [];
+  const groupedItems = groupBy(
+    [...items].sort((left, right) => getShopSectionOrder(left.itemType) - getShopSectionOrder(right.itemType) || Number(left.pricePoints || 0) - Number(right.pricePoints || 0)),
+    (item) => getShopSlot(item.itemType),
+  );
+
   return `
     ${renderStaffMetricCards()}
     <section class="staff-panel">
       <h2>Баллы</h2>
-      <p>Раздел готов как рабочая вкладка. Начисление ученических баллов уже работает при сдаче ДЗ, расширенную аналитику добавим отдельно.</p>
+      <p>Баллы начисляются за проверки и кураторские оценки. На них можно покупать пиксельные элементы профиля команды.</p>
+      <div class="staff-points-total">
+        <span>Баланс</span>
+        <strong>${escapeHtml(formatNumber(shop.pointsTotal || 0))}</strong>
+      </div>
+      <div class="shop-items-list staff-shop-list">
+        ${
+          items.length
+            ? Object.entries(groupedItems)
+                .sort(([left], [right]) => getShopSectionOrder(left) - getShopSectionOrder(right))
+                .map(
+                  ([slot, sectionItems]) => `
+                    <section class="shop-section">
+                      <h3>${escapeHtml(getShopTypeLabel(slot))}</h3>
+                      ${sectionItems
+                        .map((item) => {
+                          const canBuy = !item.isOwned && Number(shop.pointsTotal || 0) >= Number(item.pricePoints || 0);
+                          const action = item.isOwned
+                            ? item.isEquipped
+                              ? `<button type="button" data-staff-shop-unequip="${escapeHtml(item.itemCode)}">Снять</button>`
+                              : `<button type="button" data-staff-shop-equip="${escapeHtml(item.itemCode)}">Надеть</button>`
+                            : `<button type="button" data-staff-shop-buy="${escapeHtml(item.itemCode)}" ${canBuy ? "" : "disabled"}>Купить</button>`;
+                          return `
+                            <article class="shop-item">
+                              <div>
+                                <h3>${escapeHtml(item.itemName)}</h3>
+                                <p>${escapeHtml(item.description || "Пиксельный предмет профиля команды.")}</p>
+                                <div class="shop-item__meta">
+                                  <span class="resource-chip is-blue">${escapeHtml(getShopTypeLabel(item.itemType))}</span>
+                                  <span class="resource-chip is-yellow">${escapeHtml(formatNumber(item.pricePoints))} баллов</span>
+                                  ${item.isOwned ? `<span class="resource-chip is-green">${item.isEquipped ? "Надето" : "Куплено"}</span>` : ""}
+                                </div>
+                              </div>
+                              <div class="shop-item__actions">${action}</div>
+                            </article>
+                          `;
+                        })
+                        .join("")}
+                    </section>
+                  `,
+                )
+                .join("")
+            : renderStaffEmpty("Предметы магазина пока не загрузились.")
+        }
+      </div>
     </section>
   `;
 }
@@ -2864,6 +3049,101 @@ function renderTeacherHomework() {
     .sort(sortHomeworkItems);
 
   return renderHomeworkLessonWorkspace("homework", courseSummary, lessonSummary, lessonItems, renderTeacherHomeworkCard);
+}
+
+function renderTeacherCorrectionCard(item) {
+  const status = getHomeworkStaffStatus(item);
+  const isChecked = isStaffHomeworkChecked(item);
+  const isSubmitted = isStaffHomeworkSubmitted(item);
+  const canReview = isSubmitted && !isChecked;
+  const canOpenSubmission = Boolean(item.submissionLink);
+
+  return `
+    <article class="staff-card ${isChecked ? "staff-card--checked is-complete" : isSubmitted ? "staff-card--pending" : "staff-card--muted"}">
+      <div class="staff-card__meta">
+        <span class="resource-chip ${status.className}">${status.label}</span>
+        <span class="resource-chip is-yellow">Работа над ошибками</span>
+        <span class="resource-chip">${escapeHtml(item.studentName || "Ученик")}</span>
+        ${item.submittedAt ? `<span class="resource-chip">${escapeHtml(formatStreamDate(item.submittedAt))}</span>` : ""}
+      </div>
+      <h3>${escapeHtml(item.homeworkTitle || "Работа над ошибками")}</h3>
+      <p>${escapeHtml(item.lessonTitle || item.homeworkDescription || "")}</p>
+      <div class="staff-card__actions">
+        ${createStaffLink(item.taskLink, "Задание", "#icon-file")}
+        ${createStaffLink(item.submissionLink, canOpenSubmission ? "Работа ученика" : "Нет ссылки", "#icon-clipboard")}
+      </div>
+      ${
+        isChecked
+          ? renderTeacherCheckedHomeworkNote(item)
+          : canReview
+            ? `
+              <form class="staff-review-form" data-staff-correction-review-form data-correction-id="${escapeHtml(item.correctionId)}">
+                <label>
+                  Оценка
+                  <input name="score" type="number" min="1" max="10" value="${escapeHtml(item.score ?? "")}" placeholder="1-10" required />
+                </label>
+                <label>
+                  Комментарий
+                  <textarea name="feedbackText" rows="3" placeholder="Комментарий ученику">${escapeHtml(item.feedbackText || "")}</textarea>
+                </label>
+                <button type="submit"><svg><use href="#icon-clipboard" /></svg>Проверить исправление</button>
+                <p class="staff-form-status" aria-live="polite"></p>
+              </form>
+            `
+            : `
+              <div class="staff-reviewed-note is-muted">
+                <strong>Ждём работу над ошибками</strong>
+                <span>Форма проверки появится после того, как ученик прикрепит ссылку.</span>
+              </div>
+            `
+      }
+    </article>
+  `;
+}
+
+function renderHomeworkModeTabs(mode = "homeworks") {
+  return `
+    <div class="course-section-tabs staff-subtabs" data-staff-homework-mode-tabs>
+      <button type="button" class="${mode === "homeworks" ? "is-active" : ""}" data-staff-homework-mode="homeworks">
+        <svg><use href="#icon-clipboard" /></svg>Обычные ДЗ
+      </button>
+      <button type="button" class="${mode === "corrections" ? "is-active" : ""}" data-staff-homework-mode="corrections">
+        <svg><use href="#icon-clock" /></svg>Работа над ошибками
+      </button>
+    </div>
+  `;
+}
+
+function renderTeacherHomeworkEnhanced() {
+  const state = getStaffDrilldown("homework");
+  const mode = state.mode === "corrections" ? "corrections" : "homeworks";
+  const items = getStaffItems(mode === "corrections" ? "corrections" : "homeworks").sort(sortHomeworkItems);
+  const stats = getStaffItems(mode === "corrections" ? "correctionStats" : "homeworkStats");
+  const modeTabs = renderHomeworkModeTabs(mode);
+
+  if (items.length === 0 && stats.length === 0) {
+    return `${modeTabs}${renderStaffEmpty(mode === "corrections" ? "Работ над ошибками по вашим курсам пока нет." : "Домашние задания по вашим курсам пока не найдены.")}`;
+  }
+
+  const courseSummaries = getHomeworkCourseSummaries(stats);
+
+  if (!state.courseId) {
+    return `${modeTabs}${renderHomeworkCourseStep("homework", stats)}`;
+  }
+
+  const courseSummary = courseSummaries.find((summary) => matchesCourseSelection(summary, state.courseId));
+  const lessonSummaries = getHomeworkLessonSummariesForCourse(state.courseId, stats);
+
+  if (!state.lessonKey) {
+    return `${modeTabs}${renderHomeworkLessonStep("homework", courseSummary, lessonSummaries)}`;
+  }
+
+  const lessonSummary = lessonSummaries.find((summary) => summary.key === state.lessonKey);
+  const lessonItems = items
+    .filter((item) => matchesCourseSelection(item, state.courseId) && getHomeworkLessonGroupKey(item) === state.lessonKey)
+    .sort(sortHomeworkItems);
+
+  return `${modeTabs}${renderHomeworkLessonWorkspace("homework", courseSummary, lessonSummary, lessonItems, mode === "corrections" ? renderTeacherCorrectionCard : renderTeacherHomeworkCard)}`;
 }
 
 function renderTeacherArchivePage() {
@@ -3421,6 +3701,8 @@ function renderCuratorCalls() {
 }
 
 function getCuratorResourceConfig(pageName) {
+  const homeworkState = getStaffDrilldown("homework");
+  const homeworkMode = homeworkState.mode === "corrections" ? "corrections" : "homeworks";
   const configs = {
     lessons: {
       items: getStaffItems("lessons"),
@@ -3443,9 +3725,9 @@ function getCuratorResourceConfig(pageName) {
       empty: "Конспекты по закрепленным преподавателям не найдены.",
     },
     homework: {
-      items: getStaffItems("homeworks"),
-      resourceType: "Homework",
-      idField: "homeworkAssignmentId",
+      items: getStaffItems(homeworkMode === "corrections" ? "corrections" : "homeworks"),
+      resourceType: homeworkMode === "corrections" ? "Correction" : "Homework",
+      idField: homeworkMode === "corrections" ? "correctionId" : "homeworkAssignmentId",
       title: (item) => item.homeworkTitle,
       text: (item) => `${item.studentName || "Ученик"} · ${item.lessonTitle || item.courseTitle}`,
       link: (item) => item.taskLink,
@@ -3644,13 +3926,16 @@ function renderCuratorHomeworkCard(config, item) {
 }
 
 function renderCuratorHomeworkPage(pageName, config, items) {
-  const filteredItems = applyCuratorFilters(pageName, items).sort(sortHomeworkItems);
-  const filteredStats = applyCuratorFiltersToStats(pageName, getStaffItems("homeworkStats"));
   const state = getStaffDrilldown(pageName);
+  const mode = state.mode === "corrections" ? "corrections" : "homeworks";
+  const modeTabs = renderHomeworkModeTabs(mode);
+  const filteredItems = applyCuratorFilters(pageName, items).sort(sortHomeworkItems);
+  const filteredStats = applyCuratorFiltersToStats(pageName, getStaffItems(mode === "corrections" ? "correctionStats" : "homeworkStats"));
 
   if (filteredItems.length === 0 && filteredStats.length === 0) {
     return `
       ${renderCuratorFilters(pageName, items)}
+      ${modeTabs}
       ${renderStaffEmpty("По выбранным фильтрам нет домашних заданий для кураторской оценки.")}
     `;
   }
@@ -3658,6 +3943,7 @@ function renderCuratorHomeworkPage(pageName, config, items) {
   if (!state.courseId) {
     return `
       ${renderCuratorFilters(pageName, items)}
+      ${modeTabs}
       ${renderHomeworkCourseStep(pageName, filteredStats, { curator: true })}
     `;
   }
@@ -3668,6 +3954,7 @@ function renderCuratorHomeworkPage(pageName, config, items) {
   if (!state.lessonKey) {
     return `
       ${renderCuratorFilters(pageName, items)}
+      ${modeTabs}
       ${renderHomeworkLessonStep(pageName, courseSummary, lessonSummaries, { curator: true })}
     `;
   }
@@ -3679,6 +3966,7 @@ function renderCuratorHomeworkPage(pageName, config, items) {
 
   return `
     ${renderCuratorFilters(pageName, items)}
+    ${modeTabs}
     ${renderHomeworkLessonWorkspace(pageName, courseSummary, lessonSummary, lessonItems, (item) => renderCuratorHomeworkCard(config, item), { curator: true })}
   `;
 }
@@ -4913,7 +5201,7 @@ function renderStaffPage(pageName = currentStaffPage) {
 
   if (role === "Teacher") {
     if (pageName === "homework") {
-      content.innerHTML = renderTeacherHomework();
+      content.innerHTML = renderTeacherHomeworkEnhanced();
       return;
     }
 
@@ -5176,6 +5464,96 @@ function renderMessageStartPanel(recipients = [], actor = getMessageActor()) {
   `;
 }
 
+function renderStudentFriendsPanel(friendState = null, actor = getMessageActor()) {
+  if (actor?.role !== "Student") {
+    return "";
+  }
+
+  const friends = friendState?.friends || [];
+  const incoming = friendState?.incomingRequests || [];
+  const outgoing = friendState?.outgoingRequests || [];
+  const suggestions = friendState?.suggestions || [];
+  const renderPerson = (person, actions = "") => `
+    <article class="friend-card">
+      <div>
+        <strong>${escapeHtml(person.studentName || "Ученик")}</strong>
+        <span>${escapeHtml(person.subtitle || person.profileStatus || "Профиль ученика")}</span>
+      </div>
+      <div class="friend-card__actions">${actions}</div>
+    </article>
+  `;
+
+  return `
+    <section class="friends-panel">
+      <details>
+        <summary>Друзья и заявки</summary>
+        <div class="friends-panel__grid">
+          <section>
+            <h3>Друзья</h3>
+            ${
+              friends.length
+                ? friends
+                    .map((friend) =>
+                      renderPerson(
+                        friend,
+                        `
+                          <button type="button" data-start-friend-chat="${escapeHtml(friend.studentId)}"><svg><use href="#icon-message" /></svg>Написать</button>
+                          <button type="button" data-friend-remove="${escapeHtml(friend.studentId)}">Удалить</button>
+                        `,
+                      ),
+                    )
+                    .join("")
+                : `<p class="resource-empty">Друзей пока нет.</p>`
+            }
+          </section>
+          <section>
+            <h3>Входящие</h3>
+            ${
+              incoming.length
+                ? incoming
+                    .map((request) =>
+                      renderPerson(
+                        request,
+                        `
+                          <button type="button" data-friend-respond="${escapeHtml(request.requestId)}" data-friend-action="accept">Принять</button>
+                          <button type="button" data-friend-respond="${escapeHtml(request.requestId)}" data-friend-action="decline">Отклонить</button>
+                        `,
+                      ),
+                    )
+                    .join("")
+                : `<p class="resource-empty">Новых заявок нет.</p>`
+            }
+          </section>
+          <section>
+            <h3>Исходящие</h3>
+            ${
+              outgoing.length
+                ? outgoing
+                    .map((request) =>
+                      renderPerson(request, `<button type="button" data-friend-cancel="${escapeHtml(request.requestId)}">Отозвать</button>`),
+                    )
+                    .join("")
+                : `<p class="resource-empty">Исходящих заявок нет.</p>`
+            }
+          </section>
+          <section>
+            <h3>Найти друзей</h3>
+            ${
+              suggestions.length
+                ? suggestions
+                    .map((student) =>
+                      renderPerson(student, `<button type="button" data-friend-request="${escapeHtml(student.studentId)}">Добавить</button>`),
+                    )
+                    .join("")
+                : `<p class="resource-empty">Новых учеников для заявки пока нет.</p>`
+            }
+          </section>
+        </div>
+      </details>
+    </section>
+  `;
+}
+
 function renderMessages(payload) {
   latestMessages = payload;
   const actor = getMessageActor();
@@ -5199,18 +5577,20 @@ function renderMessages(payload) {
       actor?.role === "Admin" && currentMessageFilter !== "all"
         ? conversations.filter((conversation) => getConversationFilterType(conversation) === currentMessageFilter)
         : conversations;
+    const friendsPanel = renderStudentFriendsPanel(payload?.friends, actor);
 
     if (filteredConversations.length === 0) {
-      conversationList.innerHTML = `${renderMessageStartPanel(recipients, actor)}<div class="resource-empty">Чаты пока не найдены.</div>`;
+      conversationList.innerHTML = `${renderMessageStartPanel(recipients, actor)}${friendsPanel}<div class="resource-empty">Чаты пока не найдены.</div>`;
     } else {
       conversationList.innerHTML =
         renderMessageStartPanel(recipients, actor) +
+        friendsPanel +
         filteredConversations
         .map((conversation) => `
           <button class="conversation-button ${String(conversation.conversationId) === String(currentConversationId) ? "is-active" : ""}" type="button" data-conversation-id="${escapeHtml(conversation.conversationId)}">
             <strong>${escapeHtml(conversation.title)}</strong>
-            <span>${escapeHtml([conversation.studentName, conversation.teacherName, conversation.curatorName, conversation.adminName].filter(Boolean).join(" · ") || conversation.staffName || "Учебный чат")}</span>
-            <span>${escapeHtml(conversation.chatType === "TeacherAdmin" ? "Чат с преподавателем" : conversation.chatType === "CuratorAdmin" ? "Чат с куратором" : conversation.chatType === "StudentAdmin" ? "Чат с учеником" : "Учебный чат")}</span>
+            <span>${escapeHtml([conversation.studentName, conversation.friendStudentName, conversation.teacherName, conversation.curatorName, conversation.adminName].filter(Boolean).join(" · ") || conversation.staffName || "Учебный чат")}</span>
+            <span>${escapeHtml(conversation.chatType === "TeacherAdmin" ? "Чат с преподавателем" : conversation.chatType === "CuratorAdmin" ? "Чат с куратором" : conversation.chatType === "StudentAdmin" ? "Чат с учеником" : conversation.chatType === "StudentFriend" ? "Чат с другом" : "Учебный чат")}</span>
             <span>${escapeHtml(formatStreamDate(conversation.lastMessageAt || conversation.createdAt))}</span>
           </button>
         `)
@@ -5322,6 +5702,59 @@ async function startMessageConversation(form) {
   }
 }
 
+async function startStudentFriendChat(friendId) {
+  if (!friendId) {
+    return;
+  }
+
+  setMessageStatus("Открываю чат с другом...", "pending");
+
+  try {
+    const response = await apiFetch("/api/messages/start", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ targetRole: "Student", targetId: friendId }),
+    });
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(result.message || result.error || "Не удалось открыть чат с другом.");
+    }
+
+    currentConversationId = result.activeConversationId;
+    await loadMessages(currentConversationId);
+    setMessageStatus("Чат с другом открыт.", "success");
+  } catch (error) {
+    setMessageStatus(error.message || "Не удалось открыть чат с другом.", "error");
+  }
+}
+
+async function sendFriendAction(endpoint, payload = {}) {
+  setMessageStatus("Обновляю друзей...", "pending");
+
+  try {
+    const response = await apiFetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(result.message || result.error || "Не удалось обновить друзей.");
+    }
+
+    await loadMessages(currentConversationId);
+    setMessageStatus(result.message || "Друзья обновлены.", "success");
+  } catch (error) {
+    setMessageStatus(error.message || "Не удалось обновить друзей.", "error");
+  }
+}
+
 async function submitMessage(event) {
   event.preventDefault();
 
@@ -5401,6 +5834,13 @@ function normalizeLesson(rawLesson) {
     teacherComment: rawLesson.teacherComment ?? null,
     homeworkScore: rawLesson.homeworkScore ?? null,
     checkedAt: rawLesson.checkedAt ?? null,
+    correctionId: rawLesson.correctionId ?? null,
+    correctionStatus: rawLesson.correctionStatus ?? null,
+    correctionSubmittedUrl: rawLesson.correctionSubmittedUrl ?? null,
+    correctionSubmittedAt: rawLesson.correctionSubmittedAt ?? null,
+    correctionScore: rawLesson.correctionScore ?? null,
+    correctionFeedbackText: rawLesson.correctionFeedbackText ?? null,
+    correctionCheckedAt: rawLesson.correctionCheckedAt ?? null,
   };
 }
 
@@ -5606,6 +6046,10 @@ function renderStreamCards(target, streams, { limit = 0, emptyText = "Ближа
       const action = link
         ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer"><svg><use href="${icon}" /></svg>${actionText}</a>`
         : `<button type="button" disabled><svg><use href="#icon-clock" /></svg>${disabledText}</button>`;
+      const chatAction =
+        !isCall && eventItem.streamId
+          ? `<button type="button" data-open-stream-chat="${escapeHtml(eventItem.streamId)}"><svg><use href="#icon-message" /></svg>Чат</button>`
+          : "";
 
       return `
         <article class="stream-card">
@@ -5618,11 +6062,193 @@ function renderStreamCards(target, streams, { limit = 0, emptyText = "Ближа
             <h3>${escapeHtml(title)}</h3>
             <p>${escapeHtml(subtitle)}</p>
           </div>
-          ${action}
+          <div class="stream-card__actions">
+            ${action}
+            ${chatAction}
+          </div>
         </article>
       `;
     })
     .join("");
+}
+
+function ensureStreamChatModal() {
+  let modal = document.querySelector("#stream-chat-modal");
+
+  if (modal) {
+    return modal;
+  }
+
+  modal = document.createElement("div");
+  modal.id = "stream-chat-modal";
+  modal.className = "stream-chat-modal is-hidden";
+  modal.innerHTML = `
+    <div class="stream-chat-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="stream-chat-title">
+      <header>
+        <div>
+          <span id="stream-chat-subtitle">Трансляция</span>
+          <h2 id="stream-chat-title">Чат трансляции</h2>
+        </div>
+        <button type="button" data-close-stream-chat aria-label="Закрыть чат">×</button>
+      </header>
+      <div class="stream-chat-messages" id="stream-chat-messages"></div>
+      <form class="stream-chat-form" id="stream-chat-form">
+        <input name="messageText" type="text" maxlength="600" placeholder="Написать вопрос или сообщение..." required />
+        <button type="submit"><svg><use href="#icon-message" /></svg>Отправить</button>
+      </form>
+      <p class="application-status" id="stream-chat-status" aria-live="polite"></p>
+    </div>
+  `;
+  document.body.append(modal);
+
+  modal.addEventListener("click", (event) => {
+    const friendButton = event.target.closest("[data-friend-request]");
+
+    if (friendButton) {
+      event.preventDefault();
+      sendFriendAction("/api/friends/request", { receiverId: friendButton.dataset.friendRequest });
+      return;
+    }
+
+    if (event.target === modal || event.target.closest("[data-close-stream-chat]")) {
+      closeStreamChat();
+    }
+  });
+
+  modal.querySelector("#stream-chat-form")?.addEventListener("submit", submitStreamChatMessage);
+  return modal;
+}
+
+function setStreamChatStatus(message, type = "") {
+  const status = document.querySelector("#stream-chat-status");
+
+  if (!status) {
+    return;
+  }
+
+  status.textContent = message;
+  status.className = `application-status${type ? ` is-${type}` : ""}`;
+}
+
+function renderStreamChat(payload) {
+  const modal = ensureStreamChatModal();
+  const stream = payload?.stream || {};
+  const messages = payload?.messages || [];
+  const title = modal.querySelector("#stream-chat-title");
+  const subtitle = modal.querySelector("#stream-chat-subtitle");
+  const messageBox = modal.querySelector("#stream-chat-messages");
+
+  if (title) {
+    title.textContent = stream.streamTitle || "Чат трансляции";
+  }
+
+  if (subtitle) {
+    subtitle.textContent = [stream.courseTitle, stream.lessonNumber ? `Урок ${stream.lessonNumber}` : "", formatStreamDate(stream.startsAt)].filter(Boolean).join(" · ");
+  }
+
+  if (messageBox) {
+    messageBox.innerHTML = messages.length
+      ? messages
+          .map(
+            (message) => `
+              <article class="stream-chat-message ${message.isOwn ? "is-own" : ""}">
+                ${
+                  message.isOwn
+                    ? `<span class="stream-chat-avatar">${escapeHtml(String(message.studentName || "У").trim().slice(0, 1).toUpperCase() || "У")}</span>`
+                    : `<button type="button" class="stream-chat-avatar" data-friend-request="${escapeHtml(message.studentId)}" title="Добавить в друзья">${escapeHtml(String(message.studentName || "У").trim().slice(0, 1).toUpperCase() || "У")}</button>`
+                }
+                <div>
+                  <strong>${escapeHtml(message.studentName || "Ученик")}</strong>
+                  ${message.badgeName ? `<span class="profile-badge ${escapeHtml(message.badgeClass || "")}">${escapeHtml(message.badgeName)}</span>` : ""}
+                  <p>${escapeHtml(message.messageText)}</p>
+                  <time>${escapeHtml(formatStreamDate(message.createdAt))}</time>
+                </div>
+              </article>
+            `,
+          )
+          .join("")
+      : `<div class="resource-empty">В чате пока нет сообщений. Можно задать первый вопрос.</div>`;
+    messageBox.scrollTop = messageBox.scrollHeight;
+  }
+
+  modal.classList.remove("is-hidden");
+}
+
+async function openStreamChat(streamId) {
+  if (!hasAuthenticatedAccount()) {
+    openAccount();
+    setAuthStatus("Войдите в аккаунт ученика, чтобы писать в чат трансляции.", "error");
+    return;
+  }
+
+  activeStreamChatId = streamId;
+  const modal = ensureStreamChatModal();
+  modal.classList.remove("is-hidden");
+  setStreamChatStatus("Загружаю чат...", "pending");
+
+  try {
+    const response = await apiFetch(`/api/streams/${encodeURIComponent(streamId)}/chat`, { cache: "no-store" });
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(payload.message || payload.error || "Не удалось загрузить чат трансляции.");
+    }
+
+    renderStreamChat(payload);
+    setStreamChatStatus("", "");
+  } catch (error) {
+    setStreamChatStatus(error.message || "Не удалось загрузить чат трансляции.", "error");
+  }
+}
+
+function closeStreamChat() {
+  activeStreamChatId = null;
+  document.querySelector("#stream-chat-modal")?.classList.add("is-hidden");
+}
+
+async function submitStreamChatMessage(event) {
+  event.preventDefault();
+
+  if (!activeStreamChatId) {
+    return;
+  }
+
+  const form = event.currentTarget;
+  const payload = Object.fromEntries(new FormData(form).entries());
+  const button = form.querySelector("button[type='submit']");
+
+  if (!String(payload.messageText || "").trim()) {
+    setStreamChatStatus("Введите сообщение.", "error");
+    return;
+  }
+
+  if (button) {
+    button.disabled = true;
+  }
+
+  try {
+    const response = await apiFetch(`/api/streams/${encodeURIComponent(activeStreamChatId)}/chat`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(result.message || result.error || "Не удалось отправить сообщение.");
+    }
+
+    form.reset();
+    await openStreamChat(activeStreamChatId);
+  } catch (error) {
+    setStreamChatStatus(error.message || "Не удалось отправить сообщение.", "error");
+  } finally {
+    if (button) {
+      button.disabled = false;
+    }
+  }
 }
 
 async function loadStreams(courseKey = "") {
@@ -5841,6 +6467,49 @@ function renderHomeworkReviewResult(lesson) {
   `;
 }
 
+function getCorrectionStatusMeta(status) {
+  if (status === "Checked") {
+    return { label: "Исправление проверено", className: "is-green" };
+  }
+
+  if (status === "Submitted") {
+    return { label: "Исправление на проверке", className: "is-blue" };
+  }
+
+  return { label: "Нужна работа над ошибками", className: "is-yellow" };
+}
+
+function getCorrectionScoreText(lesson) {
+  const rawScore = lesson?.correctionScore;
+
+  if (rawScore === null || rawScore === undefined || rawScore === "") {
+    return "";
+  }
+
+  const numericScore = Number(rawScore);
+  const score = Number.isFinite(numericScore) ? (Number.isInteger(numericScore) ? numericScore : Number(numericScore.toFixed(1))) : String(rawScore).trim();
+  return `${escapeHtml(score)} / 10 баллов`;
+}
+
+function renderCorrectionResult(lesson) {
+  if (lesson?.correctionStatus !== "Checked") {
+    return "";
+  }
+
+  const scoreText = getCorrectionScoreText(lesson) || "Оценка не указана";
+  const feedbackText = lesson.correctionFeedbackText || "Комментарий преподавателя не оставлен.";
+
+  return `
+    <section class="homework-review-result is-correction" aria-label="Результат работы над ошибками">
+      <div>
+        <span>Работа над ошибками</span>
+        <strong>${scoreText}</strong>
+      </div>
+      <p><strong>Комментарий преподавателя:</strong> ${escapeHtml(feedbackText)}</p>
+    </section>
+  `;
+}
+
 function getHomeworkButtonMeta(lesson) {
   const effectiveStatus = getEffectiveHomeworkStatus(lesson);
 
@@ -5899,6 +6568,13 @@ function applyLessonAccessRules(lessons, courseAccess = null) {
     feedbackText: null,
     homeworkScore: null,
     checkedAt: null,
+    correctionId: null,
+    correctionStatus: null,
+    correctionSubmittedUrl: null,
+    correctionSubmittedAt: null,
+    correctionScore: null,
+    correctionFeedbackText: null,
+    correctionCheckedAt: null,
   }));
 }
 
@@ -5977,6 +6653,14 @@ function renderLessonRow(lesson) {
         </button>
         ${checkedScoreText ? `<span class="lesson-score-chip">${checkedScoreText}</span>` : ""}
       `);
+      if (lesson.correctionId) {
+        const correctionMeta = getCorrectionStatusMeta(lesson.correctionStatus);
+        actionButtons.push(`
+          <button class="button-yellow correction-action" type="button" data-homework-lesson-id="${escapeHtml(getLessonKey(lesson))}" title="Открыть работу над ошибками">
+            <svg><use href="#icon-clipboard" /></svg>${correctionMeta.label}
+          </button>
+        `);
+      }
     } else {
       actionButtons.push(`
         <button class="button-yellow" type="button" disabled title="Зарегистрируйтесь, чтобы сдавать ДЗ">
@@ -6022,6 +6706,7 @@ function renderHomeworks(lessons) {
       const meta = getHomeworkStatusMeta(getEffectiveHomeworkStatus(lesson));
       const homeworkButton = getHomeworkButtonMeta(lesson);
       const checkedScoreText = getCheckedHomeworkScoreText(lesson);
+      const correctionMeta = lesson.correctionId ? getCorrectionStatusMeta(lesson.correctionStatus) : null;
       const scoreText =
         checkedScoreText
           ? checkedScoreText
@@ -6036,6 +6721,7 @@ function renderHomeworks(lessons) {
             <div class="resource-card__meta">
               <span class="resource-chip">Урок ${escapeHtml(lesson.lessonNumber)}</span>
               <span class="resource-chip ${meta.className}">${meta.label}</span>
+              ${correctionMeta ? `<span class="resource-chip ${correctionMeta.className}">${correctionMeta.label}</span>` : ""}
               <span class="resource-chip">до ${escapeHtml(formatDate(lesson.homeworkDueAt))}</span>
             </div>
             <h3>${escapeHtml(lesson.homeworkTitle || `ДЗ: ${lesson.lessonTitle}`)}</h3>
@@ -6166,6 +6852,17 @@ function setHomeworkSubmitStatus(message, type = "") {
   status.className = `homework-upload-status${type ? ` is-${type}` : ""}`;
 }
 
+function setCorrectionSubmitStatus(message, type = "") {
+  const status = document.querySelector("#correction-upload-status");
+
+  if (!status) {
+    return;
+  }
+
+  status.textContent = message;
+  status.className = `homework-upload-status${type ? ` is-${type}` : ""}`;
+}
+
 function normalizeHomeworkLink(value) {
   const trimmed = String(value || "").trim();
 
@@ -6272,6 +6969,77 @@ async function submitHomeworkLink(lessonKey, form) {
   }
 }
 
+async function submitCorrectionLink(lessonKey, form) {
+  const input = form?.querySelector("#correction-link-input");
+  const lesson = findLessonByKey(lessonKey);
+  const correctionLink = normalizeHomeworkLink(input?.value || "");
+
+  if (!hasAuthenticatedAccount()) {
+    setCorrectionSubmitStatus("Войдите или создайте аккаунт, чтобы сдавать работу над ошибками.", "error");
+    return;
+  }
+
+  if (input) {
+    input.value = correctionLink;
+  }
+
+  if (!lesson?.homeworkAssignmentId || !lesson?.correctionId) {
+    setCorrectionSubmitStatus("Работа над ошибками для этого ДЗ еще не назначена.", "error");
+    return;
+  }
+
+  if (lesson.correctionStatus === "Checked") {
+    setCorrectionSubmitStatus("Проверенную работу над ошибками нельзя заменить с сайта.", "error");
+    return;
+  }
+
+  if (!isGoogleHomeworkUrl(correctionLink)) {
+    setCorrectionSubmitStatus("Вставьте ссылку на файл или документ в Google Drive.", "error");
+    input?.focus();
+    return;
+  }
+
+  const submitButton = form?.querySelector("button[type='submit']");
+  if (submitButton) {
+    submitButton.disabled = true;
+  }
+
+  setCorrectionSubmitStatus("Сохраняю работу над ошибками в базе...", "pending");
+
+  try {
+    const response = await apiFetch(`/api/homeworks/${encodeURIComponent(lesson.homeworkAssignmentId)}/correction/submit`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ correctionLink }),
+    });
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(result.message || result.error || "Не удалось сохранить работу над ошибками");
+    }
+
+    lesson.correctionStatus = result.correctionStatus || "Submitted";
+    lesson.correctionSubmittedUrl = result.correctionSubmittedUrl || correctionLink;
+    lesson.correctionSubmittedAt = result.correctionSubmittedAt || new Date().toISOString();
+    lesson.correctionScore = null;
+    lesson.correctionFeedbackText = null;
+    lesson.correctionCheckedAt = null;
+
+    renderCourseData(currentLessons);
+    await loadAccount({ silent: true });
+    openHomeworkModal(getLessonKey(lesson));
+    setCorrectionSubmitStatus("Работа над ошибками отправлена на проверку.", "success");
+  } catch (error) {
+    setCorrectionSubmitStatus(error.message || "Ссылка не сохранена. Проверьте сервер.", "error");
+  } finally {
+    if (submitButton) {
+      submitButton.disabled = false;
+    }
+  }
+}
+
 function openHomeworkModal(lessonKey) {
   const lesson = findLessonByKey(lessonKey);
 
@@ -6284,6 +7052,16 @@ function openHomeworkModal(lessonKey) {
   const isChecked = effectiveStatus === "Checked";
   const currentLink = lesson.submittedHomeworkUrl || "";
   const checkedScoreText = getCheckedHomeworkScoreText(lesson);
+  const correctionMeta = lesson.correctionId ? getCorrectionStatusMeta(lesson.correctionStatus) : null;
+  const correctionLink = lesson.correctionSubmittedUrl || "";
+  const isCorrectionChecked = lesson.correctionStatus === "Checked";
+  const correctionStatusText = !lesson.correctionId
+    ? ""
+    : isCorrectionChecked
+      ? "Работа над ошибками уже проверена. Ссылку можно открыть, но заменить её нельзя."
+      : correctionLink
+        ? "Работа над ошибками отправлена на проверку. Можно заменить ссылку до проверки."
+        : "После оценки ниже 5 нужно прикрепить работу над ошибками ссылкой на Google Drive.";
   const statusText = !lesson.homeworkAssignmentId
     ? "Это ДЗ найдено в курсе, но ещё не назначено ученику в базе."
     : isChecked
@@ -6300,11 +7078,51 @@ function openHomeworkModal(lessonKey) {
     <span class="resource-chip">Урок ${escapeHtml(lesson.lessonNumber)}</span>
     <span class="resource-chip ${meta.className}">${meta.label}</span>
     ${checkedScoreText ? `<span class="resource-chip is-green">${checkedScoreText}</span>` : ""}
+    ${correctionMeta ? `<span class="resource-chip ${correctionMeta.className}">${correctionMeta.label}</span>` : ""}
     <span class="resource-chip">до ${escapeHtml(formatDate(lesson.homeworkDueAt))}</span>
   `;
 
   homeworkModalActions.innerHTML = `
     ${renderHomeworkReviewResult(lesson)}
+    ${
+      lesson.correctionId
+        ? `
+          <section class="homework-correction-panel">
+            <header>
+              <span class="resource-chip ${correctionMeta.className}">${correctionMeta.label}</span>
+              ${getCorrectionScoreText(lesson) ? `<span class="resource-chip is-green">${getCorrectionScoreText(lesson)}</span>` : ""}
+            </header>
+            <h3>Работа над ошибками</h3>
+            <p>Это дополнительная работа по этому же уроку. Она появляется, если оценка за основное ДЗ ниже 5.</p>
+            ${renderCorrectionResult(lesson)}
+            <div class="staff-card__actions">
+              ${correctionLink ? createActionLink(correctionLink, isCorrectionChecked ? "button-green" : "button-blue", "#icon-clipboard", isCorrectionChecked ? "Открыть проверенную работу" : "Открыть работу на проверке") : ""}
+              ${correctionLink ? `<button class="button-yellow" type="button" data-copy-homework-link="${escapeHtml(correctionLink)}"><svg><use href="#icon-clipboard" /></svg>Скопировать ссылку</button>` : ""}
+            </div>
+            <form class="homework-link-form" data-correction-submit-form="${escapeHtml(getLessonKey(lesson))}">
+              <label class="homework-link-field" for="correction-link-input">
+                <span>Ссылка на работу над ошибками в Google Drive</span>
+                <input
+                  id="correction-link-input"
+                  name="correctionLink"
+                  type="text"
+                  inputmode="url"
+                  autocomplete="url"
+                  placeholder="https://drive.google.com/..."
+                  value="${escapeHtml(correctionLink)}"
+                  ${isCorrectionChecked ? "disabled" : ""}
+                  required
+                />
+              </label>
+              <button class="button-blue" type="submit" ${isCorrectionChecked ? "disabled" : ""}>
+                <svg><use href="#icon-upload" /></svg>Сохранить работу над ошибками
+              </button>
+              <p id="correction-upload-status" class="homework-upload-status">${correctionStatusText}</p>
+            </form>
+          </section>
+        `
+        : ""
+    }
     ${createActionLink(getLessonHomeworkTaskUrl(lesson), "", "#icon-file", "Открыть задание")}
     ${currentLink ? createActionLink(currentLink, isChecked ? "button-green" : "button-blue", "#icon-clipboard", isChecked ? "Открыть проверенное ДЗ" : "Открыть ДЗ на проверке") : ""}
     ${currentLink ? `<button class="button-yellow" type="button" data-copy-homework-link="${escapeHtml(currentLink)}"><svg><use href="#icon-clipboard" /></svg>Скопировать ссылку</button>` : ""}
@@ -6750,6 +7568,14 @@ if (homeworkModal) {
   });
 
   homeworkModal.addEventListener("submit", (event) => {
+    const correctionForm = event.target.closest("[data-correction-submit-form]");
+
+    if (correctionForm) {
+      event.preventDefault();
+      submitCorrectionLink(correctionForm.dataset.correctionSubmitForm, correctionForm);
+      return;
+    }
+
     const form = event.target.closest("[data-homework-submit-form]");
 
     if (!form) {
@@ -6780,6 +7606,9 @@ if (shopItemsList) {
     const buyButton = event.target.closest("[data-shop-buy]");
     const equipButton = event.target.closest("[data-shop-equip]");
     const unequipButton = event.target.closest("[data-shop-unequip]");
+    const badgeBuyButton = event.target.closest("[data-badge-buy]");
+    const badgeEquipButton = event.target.closest("[data-badge-equip]");
+    const badgeUnequipButton = event.target.closest("[data-badge-unequip]");
 
     if (buyButton && !buyButton.disabled) {
       sendShopAction("/api/shop/purchase", buyButton.dataset.shopBuy);
@@ -6793,6 +7622,21 @@ if (shopItemsList) {
 
     if (unequipButton && !unequipButton.disabled) {
       sendShopAction("/api/shop/equip", unequipButton.dataset.shopUnequip, { unequip: true });
+      return;
+    }
+
+    if (badgeBuyButton && !badgeBuyButton.disabled) {
+      sendBadgeAction("/api/badges/purchase", badgeBuyButton.dataset.badgeBuy);
+      return;
+    }
+
+    if (badgeEquipButton && !badgeEquipButton.disabled) {
+      sendBadgeAction("/api/badges/equip", badgeEquipButton.dataset.badgeEquip);
+      return;
+    }
+
+    if (badgeUnequipButton && !badgeUnequipButton.disabled) {
+      sendBadgeAction("/api/badges/equip", badgeUnequipButton.dataset.badgeUnequip, { unequip: true });
     }
   });
 }
@@ -6855,6 +7699,38 @@ document.addEventListener("click", (event) => {
     renderGlobalNotifications();
   }
 
+  const streamChatButton = event.target.closest("[data-open-stream-chat]");
+
+  if (streamChatButton) {
+    event.preventDefault();
+    openStreamChat(streamChatButton.dataset.openStreamChat);
+    return;
+  }
+
+  const staffShopBuyButton = event.target.closest("[data-staff-shop-buy]");
+
+  if (staffShopBuyButton && !staffShopBuyButton.disabled) {
+    event.preventDefault();
+    sendStaffShopAction("/api/staff/shop/purchase", staffShopBuyButton.dataset.staffShopBuy);
+    return;
+  }
+
+  const staffShopEquipButton = event.target.closest("[data-staff-shop-equip]");
+
+  if (staffShopEquipButton && !staffShopEquipButton.disabled) {
+    event.preventDefault();
+    sendStaffShopAction("/api/staff/shop/equip", staffShopEquipButton.dataset.staffShopEquip);
+    return;
+  }
+
+  const staffShopUnequipButton = event.target.closest("[data-staff-shop-unequip]");
+
+  if (staffShopUnequipButton && !staffShopUnequipButton.disabled) {
+    event.preventDefault();
+    sendStaffShopAction("/api/staff/shop/equip", staffShopUnequipButton.dataset.staffShopUnequip, { unequip: true });
+    return;
+  }
+
   const staffPageButton = event.target.closest("[data-staff-page]");
 
   if (staffPageButton) {
@@ -6871,6 +7747,16 @@ document.addEventListener("click", (event) => {
     if (currentStaffPage === "messages") {
       loadMessages(currentConversationId);
     }
+    return;
+  }
+
+  const homeworkModeButton = event.target.closest("[data-staff-homework-mode]");
+
+  if (homeworkModeButton) {
+    event.preventDefault();
+    resetStaffDrilldown("homework", {
+      mode: homeworkModeButton.dataset.staffHomeworkMode === "corrections" ? "corrections" : "homeworks",
+    });
     return;
   }
 
@@ -6904,11 +7790,13 @@ document.addEventListener("click", (event) => {
     event.preventDefault();
     const pageName = staffStepBackButton.dataset.staffBackStep || currentStaffPage;
     const backTo = staffStepBackButton.dataset.staffBackTo || "courses";
+    const currentMode = getStaffDrilldown(pageName).mode;
+    const nextState = currentMode ? { mode: currentMode } : {};
 
     if (backTo === "lessons") {
-      resetStaffDrilldown(pageName, { courseId: staffStepBackButton.dataset.courseId || "", lessonKey: "" });
+      resetStaffDrilldown(pageName, { ...nextState, courseId: staffStepBackButton.dataset.courseId || "", lessonKey: "" });
     } else {
-      resetStaffDrilldown(pageName, {});
+      resetStaffDrilldown(pageName, nextState);
     }
     return;
   }
@@ -6956,6 +7844,42 @@ document.addEventListener("change", (event) => {
 });
 
 document.addEventListener("submit", (event) => {
+  const profileStatusForm = event.target.closest("[data-profile-status-form]");
+
+  if (profileStatusForm) {
+    event.preventDefault();
+    const status = profileStatusForm.querySelector(".staff-form-status");
+    const payload = Object.fromEntries(new FormData(profileStatusForm).entries());
+
+    if (status) {
+      status.textContent = "Сохраняю статус...";
+      status.className = "staff-form-status is-pending";
+    }
+
+    apiFetch("/api/account/status", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
+      .then(async (response) => {
+        const account = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(account.message || account.error || "Статус не сохранен.");
+        }
+        saveStoredAccount(account);
+        applyAccountToUi(account);
+      })
+      .catch((error) => {
+        if (status) {
+          status.textContent = error.message || "Статус не сохранен.";
+          status.className = "staff-form-status is-error";
+        }
+      });
+    return;
+  }
+
   const adminApplicationForm = event.target.closest("[data-admin-application-form]");
 
   if (adminApplicationForm) {
@@ -7060,6 +7984,19 @@ document.addEventListener("submit", (event) => {
     return;
   }
 
+  const correctionReviewForm = event.target.closest("[data-staff-correction-review-form]");
+
+  if (correctionReviewForm) {
+    event.preventDefault();
+    const correctionId = correctionReviewForm.dataset.correctionId;
+    submitStaffJsonForm(
+      correctionReviewForm,
+      `/api/staff/corrections/${encodeURIComponent(correctionId)}/review`,
+      "Работа над ошибками проверена.",
+    );
+    return;
+  }
+
   const lessonForm = event.target.closest("[data-staff-lesson-form]");
 
   if (lessonForm) {
@@ -7129,6 +8066,49 @@ if (conversationList) {
       event.preventDefault();
       currentMessageFilter = filterButton.dataset.messageFilter || "all";
       renderMessages(latestMessages || { conversations: [], messages: [] });
+      return;
+    }
+
+    const friendRequestButton = event.target.closest("[data-friend-request]");
+
+    if (friendRequestButton) {
+      event.preventDefault();
+      sendFriendAction("/api/friends/request", { receiverId: friendRequestButton.dataset.friendRequest });
+      return;
+    }
+
+    const friendRespondButton = event.target.closest("[data-friend-respond]");
+
+    if (friendRespondButton) {
+      event.preventDefault();
+      sendFriendAction("/api/friends/respond", {
+        requestId: friendRespondButton.dataset.friendRespond,
+        action: friendRespondButton.dataset.friendAction || "accept",
+      });
+      return;
+    }
+
+    const friendCancelButton = event.target.closest("[data-friend-cancel]");
+
+    if (friendCancelButton) {
+      event.preventDefault();
+      sendFriendAction("/api/friends/cancel", { requestId: friendCancelButton.dataset.friendCancel });
+      return;
+    }
+
+    const friendRemoveButton = event.target.closest("[data-friend-remove]");
+
+    if (friendRemoveButton) {
+      event.preventDefault();
+      sendFriendAction("/api/friends/remove", { friendId: friendRemoveButton.dataset.friendRemove });
+      return;
+    }
+
+    const startFriendChatButton = event.target.closest("[data-start-friend-chat]");
+
+    if (startFriendChatButton) {
+      event.preventDefault();
+      startStudentFriendChat(startFriendChatButton.dataset.startFriendChat);
       return;
     }
 

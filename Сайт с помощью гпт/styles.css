@@ -575,9 +575,9 @@ a > svg {
 .avatar-pet.capybara {
   position: absolute;
   left: 50%;
-  bottom: 3px;
+  bottom: -1px;
   z-index: 1;
-  transform: translateX(-50%) scale(0.22);
+  transform: translateX(-50%) scale(0.17);
   transform-origin: bottom center;
 }
 
@@ -2938,6 +2938,107 @@ a > svg {
   box-shadow: 0 0 0 5px #222831;
 }
 
+.capybara[data-animal="dog"] {
+  --pet-main: #b56d32;
+  --pet-light: #d49453;
+  --pet-dark: #5a351d;
+}
+
+.capybara[data-animal="dog"] .capybara__ear {
+  width: 20px;
+  height: 28px;
+  bottom: 98px;
+}
+
+.capybara[data-animal="dog"] .capybara__tail {
+  opacity: 1;
+  left: 13px;
+  bottom: 68px;
+  width: 28px;
+  height: 12px;
+  transform: rotate(-18deg);
+}
+
+.capybara[data-animal="bunny"] {
+  --pet-main: #f2dfcf;
+  --pet-light: #fff6ef;
+  --pet-dark: #946d62;
+}
+
+.capybara[data-animal="bunny"] .capybara__body {
+  width: 112px;
+}
+
+.capybara[data-animal="bunny"] .capybara__ear {
+  width: 14px;
+  height: 42px;
+  bottom: 112px;
+}
+
+.capybara[data-animal="bunny"] .capybara__tail {
+  opacity: 1;
+  left: 20px;
+  bottom: 63px;
+  width: 20px;
+  height: 20px;
+  background: #fff6ef;
+}
+
+.capybara[data-animal="penguin"] {
+  --pet-main: #1f2937;
+  --pet-light: #f9fafb;
+  --pet-dark: #111827;
+  --pet-eye: #111827;
+}
+
+.capybara[data-animal="penguin"] .capybara__body {
+  background: linear-gradient(90deg, #111827 0 22%, #f9fafb 23% 77%, #111827 78%);
+}
+
+.capybara[data-animal="penguin"] .capybara__nose {
+  background: #f59e0b;
+}
+
+.capybara[data-animal="frog"] {
+  --pet-main: #58b368;
+  --pet-light: #7bd77f;
+  --pet-dark: #276749;
+  --pet-eye: #102a1d;
+}
+
+.capybara[data-animal="frog"] .capybara__ear {
+  width: 22px;
+  height: 22px;
+  border-radius: 0;
+  bottom: 104px;
+}
+
+.capybara[data-fur="fur-midnight"] {
+  --pet-main: #24324a;
+  --pet-light: #3e5275;
+  --pet-dark: #101827;
+}
+
+.capybara[data-fur="fur-rose"] {
+  --pet-main: #d989a6;
+  --pet-light: #f1b5c8;
+  --pet-dark: #8b3f5c;
+}
+
+.capybara[data-fur="fur-gold"] {
+  --pet-main: #e0a83b;
+  --pet-light: #f6ca63;
+  --pet-dark: #8a5c17;
+}
+
+.capybara[data-eyes="eyes-neon"] {
+  --pet-eye: #00e5ff;
+}
+
+.capybara[data-eyes="eyes-neon"] .capybara__eye {
+  box-shadow: 0 0 0 2px #07485d, 0 0 10px #00e5ff;
+}
+
 .capybara__clothes,
 .capybara__neckwear,
 .capybara__face-item,
@@ -2967,6 +3068,15 @@ a > svg {
   width: 128px;
   border-color: #5430a8;
   background: linear-gradient(90deg, #7d4cff, #b487ff);
+}
+
+.capybara[data-outfit="tracksuit"] .capybara__clothes {
+  left: 39px;
+  bottom: 38px;
+  width: 110px;
+  height: 44px;
+  border: 4px solid #1f365c;
+  background: linear-gradient(90deg, #1d65d8 0 44%, #ffffff 45% 55%, #1d65d8 56%);
 }
 
 .capybara[data-neck="blue-scarf"] .capybara__neckwear {
@@ -3007,6 +3117,15 @@ a > svg {
     linear-gradient(90deg, #27364f 0 10px, transparent 10px 58px, #27364f 58px);
 }
 
+.capybara[data-face="anime-shades"] .capybara__face-item {
+  right: 24px;
+  bottom: 82px;
+  width: 68px;
+  height: 16px;
+  background: linear-gradient(135deg, #111827 0 45%, #00e5ff 46% 55%, #111827 56%);
+  box-shadow: 0 5px 0 #111827;
+}
+
 .capybara[data-head="gold-crown"] .capybara__headwear {
   right: 31px;
   bottom: 118px;
@@ -3038,6 +3157,15 @@ a > svg {
   box-shadow: 38px 10px 0 -6px #df3e3e;
 }
 
+.capybara[data-head="ninja-band"] .capybara__headwear {
+  right: 22px;
+  bottom: 101px;
+  width: 72px;
+  height: 12px;
+  background: #ef4444;
+  box-shadow: -24px 0 0 -3px #ef4444, 54px 6px 0 -3px #ef4444;
+}
+
 .capybara[data-hand="notebook"] .capybara__hand-item {
   right: 10px;
   bottom: 34px;
@@ -3054,6 +3182,105 @@ a > svg {
   height: 46px;
   background: linear-gradient(#f2c94c 0 74%, #f2994a 75% 90%, #3f2517 91%);
   transform: rotate(28deg);
+}
+
+.capybara[data-hand="volleyball"] .capybara__hand-item {
+  right: 5px;
+  bottom: 43px;
+  width: 30px;
+  height: 30px;
+  border: 4px solid #111827;
+  background:
+    linear-gradient(90deg, transparent 0 44%, #ef4444 45% 56%, transparent 57%),
+    linear-gradient(0deg, transparent 0 44%, #1d65d8 45% 56%, transparent 57%),
+    #ffffff;
+}
+
+.capybara[data-hand="skateboard"] .capybara__hand-item,
+.capybara[data-animation="skate"] .capybara__hand-item {
+  left: 35px;
+  right: auto;
+  bottom: 16px;
+  width: 135px;
+  height: 12px;
+  background: #27364f;
+  box-shadow: 18px 14px 0 -3px #111827, 98px 14px 0 -3px #111827;
+}
+
+.capybara-stage[data-scene="scene-beach"] {
+  background: linear-gradient(180deg, #9ddcff 0 56%, #f4d58d 57% 100%);
+}
+
+.capybara-stage[data-scene="scene-classroom"] {
+  background: linear-gradient(180deg, #dfeaff 0 58%, #d6e2c7 59% 100%);
+}
+
+.capybara-stage[data-scene="scene-classroom"]::before {
+  background:
+    linear-gradient(90deg, transparent 0 16px, #ffffff 16px 18px, transparent 18px),
+    #2f855a;
+  box-shadow: 0 0 0 4px #1f365c;
+}
+
+.capybara-stage[data-scene="scene-stadium"] {
+  background: linear-gradient(180deg, #c7e8ff 0 54%, #8bd47f 55% 100%);
+}
+
+.capybara-stage[data-scene="scene-stadium"]::before {
+  background: linear-gradient(90deg, transparent 0 48%, #ffffff 49% 51%, transparent 52%);
+}
+
+@keyframes pet-dance {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-4px) rotate(-2deg);
+  }
+  75% {
+    transform: translateY(-4px) rotate(2deg);
+  }
+}
+
+@keyframes pet-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes pet-volleyball {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(-10px, -18px);
+  }
+}
+
+.capybara[data-animation="dance"] .capybara__body,
+.capybara[data-animation="dance"] .capybara__head {
+  animation: pet-dance 0.8s steps(2) infinite;
+}
+
+.capybara[data-animation="float"] .capybara__body,
+.capybara[data-animation="float"] .capybara__head,
+.capybara[data-animation="float"] .capybara__tail {
+  animation: pet-float 1.6s steps(3) infinite;
+}
+
+.capybara[data-animation="volleyball"] .capybara__hand-item {
+  animation: pet-volleyball 1s steps(4) infinite;
+}
+
+.capybara[data-animation="skate"] .capybara__body,
+.capybara[data-animation="skate"] .capybara__head {
+  animation: pet-float 0.75s steps(2) infinite;
 }
 
 .shop-items-list {
@@ -3144,6 +3371,118 @@ a > svg {
   cursor: default;
 }
 
+.profile-status-form {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.profile-status-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.profile-status-form select,
+.profile-status-form button {
+  min-height: 38px;
+  border-radius: 8px;
+}
+
+.profile-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 24px;
+  padding: 4px 8px;
+  border: 2px solid #1f365c;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  image-rendering: pixelated;
+  box-shadow: 3px 3px 0 #c8d7ee;
+}
+
+.badge-lofi,
+.badge-ach-50 {
+  background: #dbeafe;
+  border-color: #3b82f6;
+}
+
+.badge-main,
+.badge-final,
+.badge-ach-100 {
+  background: linear-gradient(90deg, #facc15, #fb923c);
+  border-color: #92400e;
+}
+
+.badge-sigma,
+.badge-ach-70,
+.badge-ach-80 {
+  background: #111827;
+  border-color: #64748b;
+  color: #e5e7eb;
+}
+
+.badge-meme,
+.badge-ach-30,
+.badge-ach-40 {
+  background: #dcfce7;
+  border-color: #16a34a;
+}
+
+.badge-slayer,
+.badge-aura,
+.badge-ach-90,
+.badge-ach-95 {
+  background: #f5d0fe;
+  border-color: #a21caf;
+}
+
+.badge-speedrun,
+.badge-chill,
+.badge-ach-start,
+.badge-ach-10,
+.badge-ach-20,
+.badge-ach-60 {
+  background: #ffedd5;
+  border-color: #f97316;
+}
+
+.badge-shop-item h3 {
+  margin: 0;
+}
+
+.staff-points-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 14px 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
+.staff-points-total span {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.staff-points-total strong {
+  font-size: 28px;
+  color: var(--ink);
+}
+
+.staff-shop-list {
+  margin-top: 12px;
+}
+
 .home-streams-panel {
   margin-top: 18px;
   padding: 24px;
@@ -3168,6 +3507,199 @@ a > svg {
     border-color 160ms ease,
     background-color 160ms ease,
     box-shadow 160ms ease;
+}
+
+.stream-card__actions {
+  display: grid;
+  gap: 8px;
+  align-content: center;
+}
+
+.stream-card__actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid #b9d9ff;
+  border-radius: 7px;
+  background: #ffffff;
+  color: var(--blue);
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.friends-panel {
+  margin: 10px 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f8fbff;
+}
+
+.friends-panel summary {
+  cursor: pointer;
+  padding: 12px;
+  font-weight: 900;
+}
+
+.friends-panel__grid {
+  display: grid;
+  gap: 12px;
+  padding: 0 12px 12px;
+}
+
+.friends-panel__grid section {
+  display: grid;
+  gap: 8px;
+}
+
+.friends-panel__grid h3 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.friend-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.friend-card span {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.friend-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.friend-card__actions button {
+  min-height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.stream-chat-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.38);
+}
+
+.stream-chat-modal.is-hidden {
+  display: none;
+}
+
+.stream-chat-modal__dialog {
+  display: grid;
+  grid-template-rows: auto minmax(220px, 1fr) auto auto;
+  gap: 12px;
+  width: min(720px, 100%);
+  max-height: min(760px, 92vh);
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.22);
+}
+
+.stream-chat-modal__dialog header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.stream-chat-modal__dialog header span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.stream-chat-modal__dialog h2 {
+  margin: 2px 0 0;
+}
+
+.stream-chat-modal__dialog header button {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fbff;
+  font-size: 22px;
+}
+
+.stream-chat-messages {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-height: 220px;
+  overflow: auto;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f8fbff;
+}
+
+.stream-chat-message {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.stream-chat-avatar {
+  width: 42px;
+  height: 42px;
+  border: 2px solid #1f365c;
+  border-radius: 8px;
+  background: #dbeafe;
+  font-weight: 900;
+}
+
+.stream-chat-message > div {
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.stream-chat-message p {
+  margin: 0;
+}
+
+.stream-chat-message time {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.stream-chat-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.stream-chat-form input,
+.stream-chat-form button {
+  min-height: 44px;
+  border-radius: 8px;
 }
 
 .stream-card > div {
