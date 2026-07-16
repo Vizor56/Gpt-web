@@ -414,6 +414,7 @@ const detailDescription = document.querySelector("#detail-description");
 const detailLessons = document.querySelector("#detail-lessons");
 const detailProgressText = document.querySelector("#detail-progress-text");
 const breadcrumbCourse = document.querySelector("#breadcrumb-course");
+const coursePage = document.querySelector("[data-page='course']");
 const donut = document.querySelector(".donut");
 const lessonList = document.querySelector("#lesson-list");
 const homeworkList = document.querySelector("#homework-list");
@@ -686,6 +687,11 @@ function getLessonGenitiveWord(count) {
 
 function getFallbackLessonCount(courseKey) {
   return (fallbackLessons[courseKey] || fallbackLessons.math).length;
+}
+
+function getCourseThemeKey(courseKey = currentCourseKey) {
+  const key = String(courseKey || "math");
+  return Object.prototype.hasOwnProperty.call(courseData, key) ? key : "math";
 }
 
 function updateCourseCardLessonCount(card, count) {
@@ -6669,13 +6675,15 @@ function renderStreamCards(target, streams, { limit = 0, emptyText = "Ближа
         ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer"><svg><use href="${icon}" /></svg>${actionText}</a>`
         : `<button type="button" disabled><svg><use href="#icon-clock" /></svg>${disabledText}</button>`;
       const eventStatus = getEventStatusMeta(eventItem);
+      const themeKey = isCall ? "" : getCourseThemeKey(eventItem.courseSlug || currentCourseKey);
+      const themeAttr = themeKey ? ` data-course-theme="${escapeHtml(themeKey)}"` : "";
       const chatAction =
         !isCall && eventItem.streamId
           ? `<button type="button" data-open-stream-chat="${escapeHtml(eventItem.streamId)}"><svg><use href="#icon-message" /></svg>Чат</button>`
           : "";
 
       return `
-        <article class="stream-card">
+        <article class="stream-card"${themeAttr}>
           <div>
             <div class="stream-card__meta">
               <span class="resource-chip is-blue">${escapeHtml(primaryLabel)}</span>
@@ -7336,9 +7344,10 @@ function renderLessonRow(lesson) {
   }
 
   const shortActionsClass = actionButtons.length <= 2 ? " lesson-actions--short" : "";
+  const themeKey = getCourseThemeKey();
 
   return `
-    <article class="lesson-row">
+    <article class="lesson-row" data-course-theme="${escapeHtml(themeKey)}">
       <span class="lesson-number ${numberClass}">${escapeHtml(lesson.lessonNumber)}</span>
       <div class="lesson-copy">
         <h3>Урок ${escapeHtml(lesson.lessonNumber)}. ${escapeHtml(lesson.lessonTitle)}</h3>
@@ -7368,6 +7377,7 @@ function renderHomeworks(lessons) {
 
   homeworkList.innerHTML = homeworks
     .map((lesson) => {
+      const themeKey = getCourseThemeKey();
       const meta = getHomeworkStatusMeta(getEffectiveHomeworkStatus(lesson));
       const homeworkButton = getHomeworkButtonMeta(lesson);
       const checkedScoreText = getCheckedHomeworkScoreText(lesson);
@@ -7381,7 +7391,7 @@ function renderHomeworks(lessons) {
       const scoreClass = getEffectiveHomeworkStatus(lesson) === "Submitted" ? "is-blue" : isHomeworkSubmitted(lesson) ? "is-green" : "is-yellow";
 
       return `
-        <article class="resource-card">
+        <article class="resource-card" data-course-theme="${escapeHtml(themeKey)}">
           <div>
             <div class="resource-card__meta">
               <span class="resource-chip">Урок ${escapeHtml(lesson.lessonNumber)}</span>
@@ -7412,9 +7422,10 @@ function renderCourseNotes(lessons) {
     return;
   }
 
+  const themeKey = getCourseThemeKey();
   notesList.innerHTML = notes
     .map((lesson) => `
-      <article class="resource-card">
+      <article class="resource-card" data-course-theme="${escapeHtml(themeKey)}">
         <div>
           <div class="resource-card__meta">
             <span class="resource-chip">Урок ${escapeHtml(lesson.lessonNumber)}</span>
@@ -7867,8 +7878,11 @@ async function loadNotesLibrary() {
   }
 
   libraryNotesList.innerHTML = notes
-    .map((note) => `
-      <article class="resource-card">
+    .map((note) => {
+      const themeKey = getCourseThemeKey(note.courseSlug);
+
+      return `
+      <article class="resource-card" data-course-theme="${escapeHtml(themeKey)}">
         <div>
           <div class="resource-card__meta">
             <span class="resource-chip is-blue">${escapeHtml(note.courseTitle)}</span>
@@ -7884,7 +7898,8 @@ async function loadNotesLibrary() {
           </a>
         </div>
       </article>
-    `)
+    `;
+    })
     .join("");
 }
 
@@ -7931,6 +7946,7 @@ async function openCourse(courseKey, viewName = "lessons") {
   currentCourseKey = courseKey;
   currentCourseView = viewName;
   const course = courseData[courseKey] || courseData.math;
+  const themeKey = getCourseThemeKey(courseKey);
   const fallbackLessonCount = getFallbackLessonCount(courseKey);
   const isGuest = !hasAuthenticatedAccount();
   const accountCourse = getAccountCourse(courseKey);
@@ -7938,6 +7954,7 @@ async function openCourse(courseKey, viewName = "lessons") {
   const isPreviewAccess = !hasFullCourseAccess;
   currentCourseAccess = accountCourse || null;
 
+  coursePage?.setAttribute("data-course-theme", themeKey);
   detailTitle.textContent = course.title;
   detailDescription.textContent = course.description;
   detailLessons.textContent = isPreviewAccess ? `1 из ${fallbackLessonCount} ${getLessonGenitiveWord(fallbackLessonCount)} открыт` : course.lessonsText;
