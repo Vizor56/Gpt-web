@@ -2303,10 +2303,52 @@ body[data-site-theme] :is(.shop-section-tabs button.is-active, .account-tabs but
   margin-bottom: 16px;
 }
 
+.library-filter {
+  display: grid;
+  gap: 7px;
+  min-width: 220px;
+  max-width: 340px;
+  margin-left: auto;
+}
+
+.library-filter span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.library-filter select {
+  width: 100%;
+  min-height: 43px;
+  padding: 0 38px 0 13px;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background:
+    linear-gradient(45deg, transparent 50%, var(--blue) 50%) right 17px center / 7px 7px no-repeat,
+    linear-gradient(135deg, var(--blue) 50%, transparent 50%) right 12px center / 7px 7px no-repeat,
+    #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  appearance: none;
+  cursor: pointer;
+}
+
+.library-filter select:focus-visible {
+  border-color: var(--blue);
+  outline: 3px solid rgba(0, 113, 255, 0.16);
+}
+
 .library-toolbar span {
   color: var(--muted);
   font-size: 15px;
   font-weight: 700;
+}
+
+.library-toolbar .library-filter span {
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .library-toolbar strong {
@@ -10600,6 +10642,16 @@ body[data-site-theme] .notification-button {
   .library-toolbar {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .library-filter {
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+  }
+
+  .library-toolbar button {
+    width: 100%;
   }
 
   .account-summary-panel,

@@ -427,6 +427,7 @@ const detailCuratorName = document.querySelector("#detail-curator-name");
 const detailCuratorButton = document.querySelector("#detail-curator-message");
 const libraryNotesList = document.querySelector("#library-notes-list");
 const libraryCount = document.querySelector("#library-count");
+const libraryCourseFilter = document.querySelector("#library-course-filter");
 const applicationForm = document.querySelector("#application-form");
 const applicationStatus = document.querySelector("#application-status");
 const supportForm = document.querySelector("#support-form");
@@ -483,6 +484,8 @@ let currentCourseAccess = null;
 let currentLessons = getFallbackLessons("math");
 let libraryLoaded = false;
 let libraryAccessKey = "";
+let latestLibraryNotes = [];
+let currentLibraryCourse = "all";
 let currentAccount = readStoredAccount();
 let currentStaff = readStoredStaff();
 let latestAccount = null;
@@ -8037,43 +8040,104 @@ function closeHomeworkModal() {
   homeworkModal.removeAttribute("data-course-theme");
 }
 
-async function loadNotesLibrary() {
-  const accessKey = getNotesLibraryAccessKey();
+function getLibraryNoteCourseKey(note) {
+  return String(note?.courseSlug || note?.courseTitle || "unknown");
+}
 
-  if (libraryLoaded && libraryAccessKey === accessKey) {
+function sortLibraryNotes(notes = []) {
+  return [...notes].sort((first, second) => {
+    const firstCourse = String(first.courseTitle || "");
+    const secondCourse = String(second.courseTitle || "");
+    const courseCompare = firstCourse.localeCompare(secondCourse, "ru");
+
+    if (courseCompare !== 0) {
+      return courseCompare;
+    }
+
+    const lessonCompare = Number(first.lessonNumber || 0) - Number(second.lessonNumber || 0);
+
+    if (lessonCompare !== 0) {
+      return lessonCompare;
+    }
+
+    return String(first.materialTitle || "").localeCompare(String(second.materialTitle || ""), "ru");
+  });
+}
+
+function getLibraryCourseOptions(notes = []) {
+  const courses = new Map();
+
+  notes.forEach((note) => {
+    const key = getLibraryNoteCourseKey(note);
+    const title = note.courseTitle || "Курс";
+    const current = courses.get(key) || { key, title, count: 0 };
+
+    current.count += 1;
+    courses.set(key, current);
+  });
+
+  return [...courses.values()].sort((first, second) => first.title.localeCompare(second.title, "ru"));
+}
+
+function syncLibraryCourseFilter(notes = latestLibraryNotes) {
+  if (!libraryCourseFilter) {
     return;
   }
 
+  const options = getLibraryCourseOptions(notes);
+  const hasCurrentCourse = currentLibraryCourse === "all" || options.some((option) => option.key === currentLibraryCourse);
+
+  if (!hasCurrentCourse) {
+    currentLibraryCourse = "all";
+  }
+
+  libraryCourseFilter.innerHTML = [
+    `<option value="all">Все курсы</option>`,
+    ...options.map((course) => `<option value="${escapeHtml(course.key)}">${escapeHtml(course.title)} · ${formatNumber(course.count)}</option>`),
+  ].join("");
+  libraryCourseFilter.value = currentLibraryCourse;
+}
+
+function getFilteredLibraryNotes() {
+  const notes = sortLibraryNotes(latestLibraryNotes);
+
+  if (currentLibraryCourse === "all") {
+    return notes;
+  }
+
+  return notes.filter((note) => getLibraryNoteCourseKey(note) === currentLibraryCourse);
+}
+
+function renderNotesLibrary() {
   if (!libraryNotesList) {
     return;
   }
 
-  libraryNotesList.innerHTML = `<div class="resource-empty">Загружаю конспекты...</div>`;
+  syncLibraryCourseFilter(latestLibraryNotes);
 
-  let notes = [];
-
-  try {
-    notes = filterNotesForCurrentAccess(await loadNotesFromApi());
-  } catch (error) {
-    notes = filterNotesForCurrentAccess(getFallbackNotesLibrary());
-    console.info("Конспекты из базы не загружены, показан локальный список.", error);
-  }
-
-  libraryLoaded = true;
-  libraryAccessKey = accessKey;
+  const notes = getFilteredLibraryNotes();
+  const total = latestLibraryNotes.length;
 
   if (libraryCount) {
-    libraryCount.textContent = `${notes.length} файлов`;
+    libraryCount.textContent =
+      currentLibraryCourse === "all"
+        ? `${formatNumber(total)} файлов`
+        : `${formatNumber(notes.length)} из ${formatNumber(total)} файлов`;
+  }
+
+  if (total === 0) {
+    libraryNotesList.innerHTML = `<div class="resource-empty">В библиотеке пока нет конспектов.</div>`;
+    return;
   }
 
   if (notes.length === 0) {
-    libraryNotesList.innerHTML = `<div class="resource-empty">В библиотеке пока нет конспектов.</div>`;
+    libraryNotesList.innerHTML = `<div class="resource-empty">Для выбранного курса пока нет доступных конспектов.</div>`;
     return;
   }
 
   libraryNotesList.innerHTML = notes
     .map((note) => {
-      const themeKey = getCourseThemeKey(note.courseSlug);
+      const themeKey = getCourseThemeKey(note.courseSlug, note.courseTitle);
 
       return `
       <article class="resource-card" data-course-theme="${escapeHtml(themeKey)}">
@@ -8095,6 +8159,35 @@ async function loadNotesLibrary() {
     `;
     })
     .join("");
+}
+
+async function loadNotesLibrary() {
+  const accessKey = getNotesLibraryAccessKey();
+
+  if (libraryLoaded && libraryAccessKey === accessKey) {
+    renderNotesLibrary();
+    return;
+  }
+
+  if (!libraryNotesList) {
+    return;
+  }
+
+  libraryNotesList.innerHTML = `<div class="resource-empty">Загружаю конспекты...</div>`;
+
+  let notes = [];
+
+  try {
+    notes = filterNotesForCurrentAccess(await loadNotesFromApi());
+  } catch (error) {
+    notes = filterNotesForCurrentAccess(getFallbackNotesLibrary());
+    console.info("Конспекты из базы не загружены, показан локальный список.", error);
+  }
+
+  libraryLoaded = true;
+  libraryAccessKey = accessKey;
+  latestLibraryNotes = sortLibraryNotes(notes);
+  renderNotesLibrary();
 }
 
 function openStudy(tabName = "owned") {
@@ -8319,6 +8412,13 @@ openLibraryControls.forEach((control) => {
     openLibrary();
   });
 });
+
+if (libraryCourseFilter) {
+  libraryCourseFilter.addEventListener("change", () => {
+    currentLibraryCourse = libraryCourseFilter.value || "all";
+    renderNotesLibrary();
+  });
+}
 
 openSupportControls.forEach((control) => {
   control.addEventListener("click", (event) => {
