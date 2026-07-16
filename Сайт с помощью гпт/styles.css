@@ -9253,6 +9253,346 @@ body[data-site-theme] .notification-button {
     repeating-linear-gradient(90deg, var(--mint) 0 12px, var(--blue) 12px 16px);
 }
 
+.account-page.is-points-mode {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 86% 8%, rgba(241, 184, 75, 0.16), transparent 24%),
+    linear-gradient(90deg, rgba(38, 50, 74, 0.035) 1px, transparent 1px) 0 0 / 28px 28px,
+    linear-gradient(0deg, rgba(38, 50, 74, 0.032) 1px, transparent 1px) 0 0 / 28px 28px;
+}
+
+.account-page.is-points-mode::before {
+  position: absolute;
+  top: 28px;
+  right: 38px;
+  z-index: -1;
+  width: 140px;
+  height: 106px;
+  background:
+    linear-gradient(#26324a 0 0) 12px 20px / 112px 8px,
+    linear-gradient(#58c9bf 0 0) 26px 38px / 84px 18px,
+    linear-gradient(#f1b84b 0 0) 38px 70px / 60px 14px;
+  background-repeat: no-repeat;
+  content: "";
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+.account-page.is-points-mode .page-heading h1 {
+  text-shadow: 3px 3px 0 rgba(88, 201, 191, 0.22);
+}
+
+.account-page.is-points-mode .account-tabs {
+  width: fit-content;
+  max-width: 100%;
+  padding: 8px;
+  border: 2px solid #26324a;
+  border-radius: 5px;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 253, 248, 0.62) 0 10px, transparent 10px 20px),
+    #dff6f2;
+  box-shadow: 5px 5px 0 rgba(38, 50, 74, 0.22);
+}
+
+.account-page.is-points-mode .account-tabs button {
+  border: 2px solid #26324a;
+  border-radius: 3px;
+  box-shadow: 3px 3px 0 rgba(38, 50, 74, 0.2);
+}
+
+.account-page.is-points-mode .account-tabs button.is-active {
+  color: #26324a;
+  background: #f1b84b;
+  box-shadow:
+    3px 3px 0 #26324a,
+    inset 0 -4px 0 rgba(152, 91, 18, 0.18);
+}
+
+.capybara-shop-panel,
+.staff-panel:has(.staff-shop-layout) {
+  --shop-pixel-ink: #26324a;
+  --shop-pixel-blue: #58c9bf;
+  --shop-pixel-gold: #f1b84b;
+  --shop-pixel-paper: #fff7df;
+  --shop-pixel-shadow: #9eb7c8;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 3px solid var(--shop-pixel-ink) !important;
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, rgba(38, 50, 74, 0.06) 1px, transparent 1px) 0 0 / 18px 18px,
+    linear-gradient(0deg, rgba(38, 50, 74, 0.05) 1px, transparent 1px) 0 0 / 18px 18px,
+    radial-gradient(circle at 88% 12%, rgba(241, 184, 75, 0.34) 0 18px, transparent 19px),
+    linear-gradient(135deg, rgba(88, 201, 191, 0.22), transparent 42%),
+    var(--shop-pixel-paper) !important;
+  box-shadow:
+    8px 8px 0 var(--shop-pixel-shadow),
+    14px 14px 0 rgba(32, 42, 45, 0.08),
+    inset 0 0 0 4px rgba(255, 253, 248, 0.82);
+  image-rendering: pixelated;
+}
+
+.capybara-shop-panel::before,
+.staff-panel:has(.staff-shop-layout)::before {
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  z-index: -1;
+  width: 112px;
+  height: 86px;
+  background:
+    linear-gradient(var(--shop-pixel-ink) 0 0) 8px 12px / 96px 8px,
+    linear-gradient(var(--shop-pixel-blue) 0 0) 18px 28px / 76px 18px,
+    linear-gradient(var(--shop-pixel-gold) 0 0) 28px 56px / 56px 14px,
+    linear-gradient(rgba(255, 253, 248, 0.82) 0 0) 74px 32px / 10px 8px;
+  background-repeat: no-repeat;
+  content: "";
+  opacity: 0.48;
+  pointer-events: none;
+}
+
+.capybara-shop-panel .account-section-heading,
+.staff-panel:has(.staff-shop-layout) > h2 {
+  position: relative;
+  z-index: 1;
+  align-items: center;
+  padding: 12px 14px;
+  color: var(--shop-pixel-ink);
+  border: 2px solid var(--shop-pixel-ink);
+  border-radius: 4px;
+  background:
+    linear-gradient(90deg, rgba(255, 253, 248, 0.7), transparent),
+    #ffe8a3;
+  box-shadow: 4px 4px 0 var(--shop-pixel-ink);
+}
+
+.capybara-shop-panel .account-section-heading h2,
+.staff-panel:has(.staff-shop-layout) > h2 {
+  color: var(--shop-pixel-ink);
+  text-shadow: 2px 2px 0 rgba(255, 253, 248, 0.8);
+}
+
+#shop-balance,
+.staff-points-total {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 34px;
+  padding: 5px 10px;
+  color: var(--shop-pixel-ink);
+  border: 2px solid var(--shop-pixel-ink);
+  border-radius: 3px;
+  background: #fffdf8;
+  box-shadow: 3px 3px 0 var(--shop-pixel-gold);
+  font-weight: 950;
+}
+
+.capybara-shop-layout,
+.staff-shop-layout {
+  position: relative;
+  z-index: 1;
+  align-items: stretch;
+  gap: 22px;
+}
+
+.capybara-shop-panel .capybara-stage,
+.staff-capybara-stage {
+  min-height: 330px;
+  border: 3px solid var(--shop-pixel-ink);
+  border-radius: 6px;
+  background:
+    linear-gradient(90deg, rgba(255, 253, 248, 0.18) 1px, transparent 1px) 0 0 / 20px 20px,
+    linear-gradient(0deg, rgba(255, 253, 248, 0.18) 1px, transparent 1px) 0 0 / 20px 20px,
+    linear-gradient(180deg, #bfe8ff 0 56%, #83d37c 57% 100%);
+  box-shadow:
+    5px 5px 0 var(--shop-pixel-ink),
+    inset 0 -16px 0 rgba(38, 50, 74, 0.12);
+}
+
+.capybara-shop-panel .capybara-stage::after,
+.staff-capybara-stage::after {
+  height: 58px;
+  background:
+    repeating-linear-gradient(90deg, rgba(38, 50, 74, 0.12) 0 8px, transparent 8px 16px),
+    rgba(68, 166, 100, 0.28);
+}
+
+.capybara-shop-panel .shop-items-list,
+.staff-shop-list {
+  gap: 14px;
+  min-width: 0;
+  padding: 14px;
+  border: 3px solid var(--shop-pixel-ink);
+  border-radius: 6px;
+  background:
+    linear-gradient(90deg, rgba(38, 50, 74, 0.05) 1px, transparent 1px) 0 0 / 16px 16px,
+    linear-gradient(0deg, rgba(38, 50, 74, 0.045) 1px, transparent 1px) 0 0 / 16px 16px,
+    rgba(255, 253, 248, 0.86);
+  box-shadow: 5px 5px 0 rgba(38, 50, 74, 0.26);
+}
+
+.capybara-shop-panel .shop-section-tabs,
+.staff-shop-list .shop-section-tabs {
+  gap: 9px;
+  margin: 0;
+  padding: 8px;
+  border: 2px solid var(--shop-pixel-ink);
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 253, 248, 0.5) 0 10px, transparent 10px 20px),
+    #dff6f2;
+}
+
+.capybara-shop-panel .shop-section-tabs button,
+.staff-shop-list .shop-section-tabs button {
+  min-height: 38px;
+  color: var(--shop-pixel-ink);
+  border: 2px solid var(--shop-pixel-ink);
+  border-radius: 3px;
+  background: #fffdf8;
+  box-shadow: 3px 3px 0 rgba(38, 50, 74, 0.22);
+  font-size: 13px;
+  letter-spacing: 0;
+  transition:
+    box-shadow 120ms ease,
+    transform 120ms ease,
+    background-color 120ms ease;
+}
+
+.capybara-shop-panel .shop-section-tabs button.is-active,
+.staff-shop-list .shop-section-tabs button.is-active {
+  color: var(--shop-pixel-ink);
+  border-color: var(--shop-pixel-ink);
+  background: var(--shop-pixel-gold);
+  box-shadow:
+    3px 3px 0 var(--shop-pixel-ink),
+    inset 0 -4px 0 rgba(152, 91, 18, 0.18);
+}
+
+.capybara-shop-panel .shop-section-tabs button:hover,
+.staff-shop-list .shop-section-tabs button:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--shop-pixel-ink);
+}
+
+.capybara-shop-panel .shop-section,
+.staff-shop-list .shop-section {
+  padding: 10px;
+  border: 2px solid rgba(38, 50, 74, 0.28);
+  border-radius: 4px;
+  background: rgba(255, 253, 248, 0.72);
+}
+
+.capybara-shop-panel .shop-section > h3,
+.staff-shop-list .shop-section > h3 {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  width: fit-content;
+  padding: 0 10px;
+  color: #fffdf8;
+  border: 2px solid var(--shop-pixel-ink);
+  border-radius: 3px;
+  background: var(--shop-pixel-ink);
+  box-shadow: 3px 3px 0 var(--shop-pixel-blue);
+  font-size: 15px;
+}
+
+.capybara-shop-panel .shop-item,
+.staff-shop-list .shop-item {
+  grid-template-columns: 98px minmax(0, 1fr) auto;
+  border: 2px solid var(--shop-pixel-ink);
+  border-radius: 5px;
+  background:
+    linear-gradient(135deg, rgba(255, 253, 248, 0.94) 0 48%, var(--shop-soft, #f0f7f5) 49% 100%) !important;
+  box-shadow:
+    5px 5px 0 rgba(38, 50, 74, 0.2),
+    inset 0 0 0 2px rgba(255, 253, 248, 0.64);
+  transform: translate(0, 0);
+}
+
+.capybara-shop-panel .shop-item:hover,
+.staff-shop-list .shop-item:hover {
+  border-color: var(--shop-accent, var(--shop-pixel-ink));
+  box-shadow:
+    7px 7px 0 rgba(38, 50, 74, 0.26),
+    inset 0 0 0 2px rgba(255, 253, 248, 0.74);
+  transform: translate(-1px, -1px);
+}
+
+.capybara-shop-panel .shop-item::before,
+.staff-shop-list .shop-item::before {
+  border: 2px solid var(--shop-border, rgba(38, 50, 74, 0.2));
+  border-radius: 0;
+  opacity: 0.62;
+}
+
+.capybara-shop-panel .shop-item__preview,
+.staff-shop-list .shop-item__preview {
+  width: 90px;
+  height: 90px;
+  border: 2px solid var(--shop-pixel-ink);
+  border-radius: 4px;
+  box-shadow:
+    3px 3px 0 rgba(38, 50, 74, 0.2),
+    inset 0 -8px 0 rgba(38, 50, 74, 0.06);
+}
+
+.capybara-shop-panel .shop-preview-pet,
+.staff-shop-list .shop-preview-pet,
+.capybara-shop-panel .shop-theme-preview,
+.staff-shop-list .shop-theme-preview {
+  border: 2px solid var(--shop-pixel-ink);
+  border-radius: 3px;
+}
+
+.capybara-shop-panel .shop-item h3,
+.staff-shop-list .shop-item h3 {
+  color: var(--shop-pixel-ink);
+  font-size: 17px;
+  text-shadow: 1px 1px 0 rgba(255, 253, 248, 0.86);
+}
+
+.capybara-shop-panel .shop-item p,
+.staff-shop-list .shop-item p {
+  color: rgba(38, 50, 74, 0.78);
+}
+
+.capybara-shop-panel .shop-item .resource-chip,
+.staff-shop-list .shop-item .resource-chip {
+  border: 1px solid rgba(38, 50, 74, 0.16);
+  border-radius: 3px;
+  font-weight: 950;
+}
+
+.capybara-shop-panel .shop-item button,
+.staff-shop-list .shop-item button {
+  color: var(--shop-pixel-ink);
+  border: 2px solid var(--shop-pixel-ink);
+  border-radius: 3px;
+  background: #fffdf8;
+  box-shadow: 3px 3px 0 rgba(38, 50, 74, 0.28);
+}
+
+.capybara-shop-panel .shop-item button:not(:disabled):hover,
+.staff-shop-list .shop-item button:not(:disabled):hover {
+  color: var(--shop-pixel-ink);
+  border-color: var(--shop-pixel-ink);
+  background: var(--shop-pixel-blue);
+  box-shadow: 4px 4px 0 var(--shop-pixel-ink);
+  transform: translate(-1px, -1px);
+}
+
+.capybara-shop-panel .resource-empty,
+.staff-shop-list .resource-empty {
+  border: 2px dashed rgba(38, 50, 74, 0.34);
+  border-radius: 4px;
+  background: rgba(255, 253, 248, 0.76);
+  font-weight: 900;
+}
+
 @media (max-width: 1180px) {
   .course-page[data-course-theme]::before {
     right: 14px;
