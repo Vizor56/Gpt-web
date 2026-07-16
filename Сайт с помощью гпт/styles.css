@@ -8531,8 +8531,10 @@ button.stream-chat-avatar {
 .course-card[data-course],
 .home-course-list button[data-course],
 .course-page[data-course-theme],
+.lesson-row[data-course-theme],
 .resource-card[data-course-theme],
-.stream-card[data-course-theme] {
+.stream-card[data-course-theme],
+.homework-modal[data-course-theme] {
   --course-accent: var(--blue);
   --course-rgb: 20, 92, 89;
   --course-wash: #e5f4f1;
@@ -8550,8 +8552,10 @@ button.stream-chat-avatar {
 .course-card[data-course="math"],
 .home-course-list button[data-course="math"],
 .course-page[data-course-theme="math"],
+.lesson-row[data-course-theme="math"],
 .resource-card[data-course-theme="math"],
-.stream-card[data-course-theme="math"] {
+.stream-card[data-course-theme="math"],
+.homework-modal[data-course-theme="math"] {
   --course-accent: #145c59;
   --course-rgb: 20, 92, 89;
   --course-wash: #e5f4f1;
@@ -8570,8 +8574,10 @@ button.stream-chat-avatar {
 .course-card[data-course="russian"],
 .home-course-list button[data-course="russian"],
 .course-page[data-course-theme="russian"],
+.lesson-row[data-course-theme="russian"],
 .resource-card[data-course-theme="russian"],
-.stream-card[data-course-theme="russian"] {
+.stream-card[data-course-theme="russian"],
+.homework-modal[data-course-theme="russian"] {
   --course-accent: #8e514a;
   --course-rgb: 142, 81, 74;
   --course-wash: #f7ebe8;
@@ -8590,8 +8596,10 @@ button.stream-chat-avatar {
 .course-card[data-course="informatics"],
 .home-course-list button[data-course="informatics"],
 .course-page[data-course-theme="informatics"],
+.lesson-row[data-course-theme="informatics"],
 .resource-card[data-course-theme="informatics"],
-.stream-card[data-course-theme="informatics"] {
+.stream-card[data-course-theme="informatics"],
+.homework-modal[data-course-theme="informatics"] {
   --course-accent: #2f637b;
   --course-rgb: 47, 99, 123;
   --course-wash: #e7f2f6;
@@ -8611,8 +8619,10 @@ button.stream-chat-avatar {
 .course-card[data-course="physics"],
 .home-course-list button[data-course="physics"],
 .course-page[data-course-theme="physics"],
+.lesson-row[data-course-theme="physics"],
 .resource-card[data-course-theme="physics"],
-.stream-card[data-course-theme="physics"] {
+.stream-card[data-course-theme="physics"],
+.homework-modal[data-course-theme="physics"] {
   --course-accent: #4a5280;
   --course-rgb: 74, 82, 128;
   --course-wash: #eeeff8;
@@ -8629,8 +8639,10 @@ button.stream-chat-avatar {
 .course-card[data-course="english"],
 .home-course-list button[data-course="english"],
 .course-page[data-course-theme="english"],
+.lesson-row[data-course-theme="english"],
 .resource-card[data-course-theme="english"],
-.stream-card[data-course-theme="english"] {
+.stream-card[data-course-theme="english"],
+.homework-modal[data-course-theme="english"] {
   --course-accent: #586b47;
   --course-rgb: 88, 107, 71;
   --course-wash: #edf3e8;
@@ -8648,8 +8660,10 @@ button.stream-chat-avatar {
 .course-card[data-course="ogeMath"],
 .home-course-list button[data-course="ogeMath"],
 .course-page[data-course-theme="ogeMath"],
+.lesson-row[data-course-theme="ogeMath"],
 .resource-card[data-course-theme="ogeMath"],
-.stream-card[data-course-theme="ogeMath"] {
+.stream-card[data-course-theme="ogeMath"],
+.homework-modal[data-course-theme="ogeMath"] {
   --course-accent: #806b34;
   --course-rgb: 128, 107, 52;
   --course-wash: #f4efdf;
@@ -9014,6 +9028,229 @@ button.stream-chat-avatar {
   color: var(--course-accent);
   border-color: rgba(var(--course-rgb), 0.22);
   background: rgba(255, 253, 248, 0.9);
+}
+
+body[data-site-theme] .app {
+  background:
+    radial-gradient(circle at 90% 7%, var(--theme-button-soft), transparent 28%),
+    linear-gradient(90deg, var(--theme-grid) 1px, transparent 1px) 0 0 / 42px 42px,
+    linear-gradient(0deg, var(--theme-grid) 1px, transparent 1px) 0 0 / 42px 42px,
+    linear-gradient(180deg, var(--theme-panel) 0%, var(--bg) 100%);
+}
+
+body[data-site-theme] .workspace {
+  background:
+    radial-gradient(circle at 84% 6%, var(--theme-button-soft), transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent 34%);
+}
+
+body[data-site-theme] .sidebar,
+body[data-site-theme] .topbar,
+body[data-site-theme] .staff-workspace-header {
+  border-color: var(--line);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28), transparent),
+    var(--theme-shell);
+}
+
+body[data-site-theme] :is(
+  .panel,
+  .nearest-panel,
+  .home-next-panel,
+  .home-streams-panel,
+  .application-panel,
+  .messages-panel,
+  .conversation-list,
+  .conversation-start-form,
+  .message-list,
+  .message-form,
+  .message-bubble,
+  .staff-panel,
+  .staff-card,
+  .admin-person-details,
+  .admin-detail-block,
+  .account-summary-panel,
+  .account-course-row,
+  .achievement-card,
+  .capybara-shop-panel,
+  .shop-section-tabs,
+  .staff-points-total
+):not([data-course-theme]) {
+  border-color: var(--line);
+  background:
+    linear-gradient(135deg, var(--theme-button-soft), transparent 58%),
+    var(--theme-panel);
+}
+
+body[data-site-theme] :is(.side-link.is-active, .conversation-button.is-active, .conversation-filters button.is-active, .account-tabs button.is-active, .shop-section-tabs button.is-active) {
+  color: var(--blue);
+  border-color: rgba(20, 92, 89, 0.22);
+  background:
+    linear-gradient(100deg, var(--theme-nav-active), var(--theme-panel-soft) 70%, var(--theme-warm-accent));
+}
+
+body[data-site-theme] :is(.side-link:hover, .conversation-button:hover, .tab:hover) {
+  background: var(--theme-panel-soft);
+}
+
+body[data-site-theme] :is(input, select, textarea) {
+  border-color: var(--line);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.42), transparent),
+    var(--theme-panel);
+}
+
+body[data-site-theme] :is(.resource-chip.is-blue, .tag--blue) {
+  color: var(--blue);
+  border: 1px solid rgba(20, 92, 89, 0.14);
+  background: var(--theme-button-soft);
+}
+
+body[data-site-theme] .profile-button,
+body[data-site-theme] .notification-button {
+  color: var(--ink);
+}
+
+.course-page[data-course-theme] {
+  background:
+    radial-gradient(circle at 88% 9%, rgba(var(--course-rgb), 0.12), transparent 26%),
+    linear-gradient(90deg, rgba(var(--course-rgb), 0.055) 1px, transparent 1px) 0 0 / 42px 42px,
+    linear-gradient(0deg, rgba(var(--course-rgb), 0.045) 1px, transparent 1px) 0 0 / 42px 42px,
+    linear-gradient(180deg, rgba(var(--course-rgb), 0.045), transparent 42%);
+}
+
+.lesson-row[data-course-theme] {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(var(--course-rgb), 0.16);
+  background:
+    linear-gradient(135deg, rgba(var(--course-rgb), 0.075), transparent 52%),
+    rgba(255, 253, 248, 0.94);
+}
+
+.lesson-row[data-course-theme]::before {
+  position: absolute;
+  right: -54px;
+  bottom: -58px;
+  width: 150px;
+  height: 126px;
+  background: var(--course-art);
+  content: "";
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+.lesson-row[data-course-theme] > * {
+  position: relative;
+  z-index: 1;
+}
+
+.lesson-row[data-course-theme] .lesson-copy h3,
+.lesson-row[data-course-theme] .lesson-number {
+  color: var(--course-accent);
+}
+
+.lesson-row[data-course-theme] .lesson-number {
+  border-color: rgba(var(--course-rgb), 0.22);
+  background: rgba(var(--course-rgb), 0.1);
+}
+
+.homework-modal[data-course-theme] {
+  border-color: rgba(var(--course-rgb), 0.2);
+  background:
+    linear-gradient(135deg, rgba(var(--course-rgb), 0.075), transparent 54%),
+    var(--course-pattern),
+    var(--surface);
+}
+
+.homework-modal[data-course-theme]::before {
+  position: absolute;
+  right: -54px;
+  bottom: -58px;
+  width: 180px;
+  height: 152px;
+  background: var(--course-art);
+  content: "";
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+.homework-modal[data-course-theme] > * {
+  position: relative;
+  z-index: 1;
+}
+
+.homework-modal[data-course-theme] h2,
+.homework-modal[data-course-theme] .homework-correction-panel h3 {
+  color: var(--course-accent);
+}
+
+.homework-modal[data-course-theme] .homework-link-form,
+.homework-modal[data-course-theme] .homework-correction-panel {
+  border-color: rgba(var(--course-rgb), 0.16);
+  background:
+    linear-gradient(135deg, rgba(var(--course-rgb), 0.055), transparent 58%),
+    rgba(255, 253, 248, 0.92);
+}
+
+.homework-modal[data-course-theme] .homework-modal__actions button,
+.homework-modal[data-course-theme] .homework-modal__actions a {
+  border-color: rgba(var(--course-rgb), 0.2);
+}
+
+.points-panel {
+  --pixel-ink: #26324a;
+  --pixel-shadow: #9bb7c8;
+  --pixel-coin: var(--gold);
+  border: 3px solid var(--pixel-ink) !important;
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, rgba(255, 253, 248, 0.18) 0 12px, transparent 12px 24px),
+    linear-gradient(0deg, rgba(255, 253, 248, 0.18) 0 12px, transparent 12px 24px),
+    radial-gradient(circle at 84% 18%, rgba(241, 184, 75, 0.42) 0 13px, transparent 14px),
+    linear-gradient(135deg, rgba(88, 201, 191, 0.32), transparent 38%),
+    #fff3c4 !important;
+  box-shadow:
+    6px 6px 0 var(--pixel-shadow),
+    10px 10px 0 rgba(32, 42, 45, 0.08),
+    inset 0 0 0 3px rgba(255, 253, 248, 0.82);
+  image-rendering: pixelated;
+}
+
+.points-panel h2 {
+  color: #fffdf8;
+  border: 2px solid var(--pixel-ink);
+  border-radius: 3px;
+  background: var(--pixel-ink);
+  box-shadow: 4px 4px 0 var(--pixel-coin);
+  text-transform: none;
+}
+
+.points-panel .balance-row strong {
+  color: var(--pixel-ink);
+  font-weight: 950;
+  text-shadow: 2px 2px 0 rgba(255, 253, 248, 0.96);
+}
+
+.points-panel .balance-row button {
+  color: var(--pixel-ink);
+  border: 2px solid var(--pixel-ink);
+  border-radius: 3px;
+  background: var(--mint);
+  box-shadow: 4px 4px 0 var(--pixel-ink);
+}
+
+.points-panel .level-track {
+  border: 2px solid var(--pixel-ink);
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(90deg, #f7ecd2 0 10px, #eadab7 10px 20px);
+}
+
+.points-panel .level-track span {
+  border-radius: 0;
+  background:
+    repeating-linear-gradient(90deg, var(--mint) 0 12px, var(--blue) 12px 16px);
 }
 
 @media (max-width: 1180px) {

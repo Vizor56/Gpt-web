@@ -6864,7 +6864,9 @@ function renderStreamCards(target, streams, { limit = 0, emptyText = "Ближа
         ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer"><svg><use href="${icon}" /></svg>${actionText}</a>`
         : `<button type="button" disabled><svg><use href="#icon-clock" /></svg>${disabledText}</button>`;
       const eventStatus = getEventStatusMeta(eventItem);
-      const themeKey = isCall ? "" : getCourseThemeKey(eventItem.courseSlug || currentCourseKey);
+      const themeKey = isCall
+        ? ""
+        : getCourseThemeKey(eventItem.courseSlug || eventItem.courseKey || eventItem.courseId || currentCourseKey, eventItem.courseTitle || eventItem.streamTitle || eventItem.lessonTitle || "");
       const themeAttr = themeKey ? ` data-course-theme="${escapeHtml(themeKey)}"` : "";
       const chatAction =
         !isCall && eventItem.streamId
@@ -7919,6 +7921,7 @@ function openHomeworkModal(lessonKey) {
 
   const effectiveStatus = getEffectiveHomeworkStatus(lesson);
   const meta = getHomeworkStatusMeta(effectiveStatus);
+  const themeKey = getCourseThemeKey(lesson.courseSlug || lesson.courseKey || lesson.courseId || currentCourseKey, `${lesson.courseTitle || ""} ${lesson.lessonTitle || ""} ${lesson.topic || ""}`);
   const isChecked = effectiveStatus === "Checked";
   const currentLink = lesson.submittedHomeworkUrl || "";
   const checkedScoreText = getCheckedHomeworkScoreText(lesson);
@@ -7940,6 +7943,7 @@ function openHomeworkModal(lessonKey) {
         ? "Работа отправлена на проверку. Можно заменить ссылку до проверки."
         : "Вставьте ссылку на файл или документ в Google Drive.";
 
+  homeworkModal.setAttribute("data-course-theme", themeKey);
   homeworkModalStatus.textContent = meta.label;
   homeworkModalStatus.className = `homework-modal__eyebrow ${meta.className}`;
   homeworkModalTitle.textContent = getHomeworkDisplayTitle(lesson, `ДЗ: ${lesson.lessonTitle}`);
@@ -8030,6 +8034,7 @@ function closeHomeworkModal() {
 
   homeworkModal.classList.add("is-hidden");
   homeworkModal.setAttribute("aria-hidden", "true");
+  homeworkModal.removeAttribute("data-course-theme");
 }
 
 async function loadNotesLibrary() {
