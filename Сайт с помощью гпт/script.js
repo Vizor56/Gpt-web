@@ -1062,8 +1062,16 @@ function updateProfileSummary(account = latestAccount) {
   }
 
   if (accountProfileStatus) {
+    const activeBadge = account?.student?.activeBadge || null;
+    const activeBadgeMarkup = renderProfileBadgeMarkup(activeBadge, "profile-status-badge");
     accountProfileStatus.innerHTML = hasSession
-      ? `<span>Статус: <strong>${escapeHtml(getProfileStatusLabel(account?.student?.profileStatus))}</strong></span>${renderProfileStatusForm(account?.student?.profileStatus || "focused")}`
+      ? `
+        <div class="profile-status-card">
+          <span>Статус: <strong>${escapeHtml(getProfileStatusLabel(account?.student?.profileStatus))}</strong></span>
+          ${activeBadgeMarkup || `<span class="resource-chip is-muted">Плашка не выбрана</span>`}
+        </div>
+        ${renderProfileStatusForm(account?.student?.profileStatus || "focused")}
+      `
       : "";
   }
 
@@ -1668,6 +1676,17 @@ function renderPixelPetMarkup(items = [], { wrapperClass = "profile-pet-chip", p
       </span>
     </${tag}>
   `;
+}
+
+function renderProfileBadgeMarkup(badge = null, extraClass = "") {
+  const badgeName = badge?.badgeName || badge?.activeBadgeName || "";
+  const badgeClass = badge?.badgeClass || badge?.cssClass || badge?.activeBadgeClass || "";
+
+  if (!badgeName) {
+    return "";
+  }
+
+  return `<span class="profile-badge ${escapeHtml(badgeClass)} ${escapeHtml(extraClass)}">${escapeHtml(badgeName)}</span>`;
 }
 
 function getShopPreviewItems(item, equippedItems = []) {
@@ -5914,15 +5933,25 @@ function renderStudentFriendsPanel(friendState = null, actor = getMessageActor()
   const incoming = friendState?.incomingRequests || [];
   const outgoing = friendState?.outgoingRequests || [];
   const suggestions = friendState?.suggestions || [];
-  const renderPerson = (person, actions = "") => `
-    <article class="friend-card">
-      <div>
-        <strong>${escapeHtml(person.studentName || "Ученик")}</strong>
-        <span>${escapeHtml(person.subtitle || person.profileStatus || "Профиль ученика")}</span>
-      </div>
-      <div class="friend-card__actions">${actions}</div>
-    </article>
-  `;
+  const renderPerson = (person, actions = "") => {
+    const badgeMarkup = renderProfileBadgeMarkup(person, "friend-card__badge");
+    const avatarMarkup = renderPixelPetMarkup(person.profileItems || [], {
+      wrapperClass: "friend-card__avatar",
+      petClass: "friend-card__pet",
+    });
+
+    return `
+      <article class="friend-card">
+        ${avatarMarkup}
+        <div class="friend-card__body">
+          <strong>${escapeHtml(person.studentName || "Ученик")}</strong>
+          <span>${escapeHtml(person.subtitle || getProfileStatusLabel(person.profileStatus) || "Профиль ученика")}</span>
+          ${badgeMarkup ? `<div class="friend-card__badges">${badgeMarkup}</div>` : ""}
+        </div>
+        <div class="friend-card__actions">${actions}</div>
+      </article>
+    `;
+  };
 
   return `
     <section class="friends-panel">
@@ -6060,11 +6089,15 @@ function renderMessages(payload) {
         wrapperClass: "message-profile-pet",
         petClass: "message-profile-pet__pet",
       });
+      const badge = renderProfileBadgeMarkup(message, "message-profile-badge");
       return `
         <article class="message-bubble ${isOwn ? "is-own" : ""}">
           <div class="message-bubble__head">
             ${avatar}
-            <strong>${escapeHtml(message.senderName || message.senderRole)}</strong>
+            <div class="message-bubble__author">
+              <strong>${escapeHtml(message.senderName || message.senderRole)}</strong>
+              ${badge}
+            </div>
           </div>
           <p>${escapeHtml(message.messageText)}</p>
           <time>${escapeHtml(formatStreamDate(message.sentAt))}</time>

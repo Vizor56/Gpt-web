@@ -1340,13 +1340,17 @@ async function buildAccountPayload(studentId, authToken = "") {
         s.grade,
         s.profile_status AS "profileStatus",
         s.active_badge_id AS "activeBadgeId",
+        pb.badge_code AS "activeBadgeCode",
+        pb.badge_name AS "activeBadgeName",
+        pb.css_class AS "activeBadgeClass",
         sa.login,
         COALESCE(SUM(pt.points), 0)::integer AS "pointsTotal"
       FROM students s
       LEFT JOIN student_accounts sa ON sa.student_id = s.id
       LEFT JOIN point_transactions pt ON pt.student_id = s.id
+      LEFT JOIN profile_badges pb ON pb.id = s.active_badge_id
       WHERE s.id = $1
-      GROUP BY s.id, sa.login
+      GROUP BY s.id, sa.login, pb.id, pb.badge_code, pb.badge_name, pb.css_class
     `,
     [studentId],
   );
@@ -1446,6 +1450,14 @@ async function buildAccountPayload(studentId, authToken = "") {
       grade: student.grade,
       profileStatus: student.profileStatus,
       activeBadgeId: student.activeBadgeId,
+      activeBadge: student.activeBadgeId
+        ? {
+            badgeId: student.activeBadgeId,
+            badgeCode: student.activeBadgeCode,
+            badgeName: student.activeBadgeName,
+            cssClass: student.activeBadgeClass,
+          }
+        : null,
     },
     account: {
       login: student.login,
@@ -2712,6 +2724,35 @@ async function getStudentProfileItemsMap(studentIds = []) {
       map.set(key, []);
     }
     map.get(key).push(normalizeProfileShopItem(row));
+  });
+
+  return map;
+}
+
+async function getStudentProfileBadgesMap(studentIds = []) {
+  const ids = [...new Set(studentIds.map((id) => Number(id)).filter(Boolean))];
+  const map = new Map(ids.map((id) => [id, null]));
+
+  if (!ids.length) {
+    return map;
+  }
+
+  const rows = await dbQuery(
+    `
+      SELECT
+        s.id AS "studentId",
+        pb.badge_name AS "badgeName",
+        pb.css_class AS "badgeClass"
+      FROM students s
+      LEFT JOIN profile_badges pb ON pb.id = s.active_badge_id
+      WHERE s.id = ANY($1::int[])
+    `,
+    [ids],
+  );
+
+  rows.rows.forEach((row) => {
+    const key = Number(row.studentId);
+    map.set(key, row.badgeName ? { badgeName: row.badgeName, badgeClass: row.badgeClass || "" } : null);
   });
 
   return map;
@@ -5907,9 +5948,13 @@ async function getStudentFriendsPayload(studentId) {
         s.id AS "studentId",
         CONCAT(s.first_name, ' ', s.last_name) AS "studentName",
         COALESCE(s.grade::text || ' класс', '') AS subtitle,
+        s.profile_status AS "profileStatus",
+        pb.badge_name AS "badgeName",
+        pb.css_class AS "badgeClass",
         sfr.created_at AS "createdAt"
       FROM student_friend_requests sfr
       JOIN students s ON s.id = sfr.requester_id
+      LEFT JOIN profile_badges pb ON pb.id = s.active_badge_id
       WHERE sfr.receiver_id = $1 AND sfr.status = 'Pending'
       ORDER BY sfr.created_at DESC
     `,
@@ -5923,9 +5968,13 @@ async function getStudentFriendsPayload(studentId) {
         s.id AS "studentId",
         CONCAT(s.first_name, ' ', s.last_name) AS "studentName",
         COALESCE(s.grade::text || ' класс', '') AS subtitle,
+        s.profile_status AS "profileStatus",
+        pb.badge_name AS "badgeName",
+        pb.css_class AS "badgeClass",
         sfr.created_at AS "createdAt"
       FROM student_friend_requests sfr
       JOIN students s ON s.id = sfr.receiver_id
+      LEFT JOIN profile_badges pb ON pb.id = s.active_badge_id
       WHERE sfr.requester_id = $1 AND sfr.status = 'Pending'
       ORDER BY sfr.created_at DESC
     `,
@@ -5937,8 +5986,12 @@ async function getStudentFriendsPayload(studentId) {
       SELECT
         s.id AS "studentId",
         CONCAT(s.first_name, ' ', s.last_name) AS "studentName",
-        COALESCE(s.grade::text || ' класс', '') AS subtitle
+        COALESCE(s.grade::text || ' класс', '') AS subtitle,
+        s.profile_status AS "profileStatus",
+        pb.badge_name AS "badgeName",
+        pb.css_class AS "badgeClass"
       FROM students s
+      LEFT JOIN profile_badges pb ON pb.id = s.active_badge_id
       WHERE s.id <> $1
         AND NOT EXISTS (
           SELECT 1 FROM student_friends sf WHERE sf.student_id = $1 AND sf.friend_id = s.id
@@ -5955,12 +6008,19 @@ async function getStudentFriendsPayload(studentId) {
     [studentId],
   );
 
-  const normalizeRequest = (row) => ({ ...row, createdAt: toDateText(row.createdAt) });
+  const profileItems = await getStudentProfileItemsMap([
+    ...friends.rows,
+    ...incoming.rows,
+    ...outgoing.rows,
+    ...suggestions.rows,
+  ].map((row) => row.studentId));
+  const withProfile = (row) => ({ ...row, profileItems: profileItems.get(Number(row.studentId)) || [] });
+  const normalizeRequest = (row) => ({ ...withProfile(row), createdAt: toDateText(row.createdAt) });
   return {
-    friends: friends.rows,
+    friends: friends.rows.map(withProfile),
     incomingRequests: incoming.rows.map(normalizeRequest),
     outgoingRequests: outgoing.rows.map(normalizeRequest),
-    suggestions: suggestions.rows,
+    suggestions: suggestions.rows.map(withProfile),
   };
 }
 
@@ -6258,7 +6318,9 @@ async function getMessagesPayload(actor, requestedConversationId = 0) {
   const messageStaffRefs = messages.rows
     .filter((row) => row.senderStaffRole && row.senderStaffId)
     .map((row) => ({ role: row.senderStaffRole, staffId: row.senderStaffId }));
-  const studentProfileItems = await getStudentProfileItemsMap([activeConversation?.studentId, activeConversation?.friendStudentId, ...messageStudentIds]);
+  const studentIdsForProfiles = [activeConversation?.studentId, activeConversation?.friendStudentId, ...messageStudentIds];
+  const studentProfileItems = await getStudentProfileItemsMap(studentIdsForProfiles);
+  const studentProfileBadges = await getStudentProfileBadgesMap(studentIdsForProfiles);
   const staffProfileItems = await getStaffProfileItemsMap([
     activeConversation?.teacherId ? { role: "Teacher", staffId: activeConversation.teacherId } : null,
     activeConversation?.curatorId ? { role: "Curator", staffId: activeConversation.curatorId } : null,
@@ -6266,28 +6328,35 @@ async function getMessagesPayload(actor, requestedConversationId = 0) {
     ...messageStaffRefs,
   ].filter(Boolean));
   const friendState = actor.role === "Student" ? await getStudentFriendsPayload(actor.id) : null;
+  const getMessageStudentId = (message) => {
+    if (!activeConversation || message.senderRole !== "Student") {
+      return 0;
+    }
+
+    if (message.senderStudentId) {
+      return Number(message.senderStudentId);
+    }
+
+    const senderName = String(message.senderName || "").trim().toLowerCase();
+    const friendName = String(activeConversation.friendStudentName || "").trim().toLowerCase();
+    const primaryName = String(activeConversation.studentName || "").trim().toLowerCase();
+    return Number(
+      activeConversation.chatType === "StudentFriend" && activeConversation.friendStudentId && senderName && senderName === friendName
+        ? activeConversation.friendStudentId
+        : senderName && senderName === primaryName
+          ? activeConversation.studentId
+          : actor.role === "Student"
+            ? actor.id
+            : activeConversation.studentId,
+    );
+  };
   const getMessageProfileItems = (message) => {
     if (!activeConversation || message.senderRole === "System") {
       return [];
     }
 
     if (message.senderRole === "Student") {
-      if (message.senderStudentId) {
-        return studentProfileItems.get(Number(message.senderStudentId)) || [];
-      }
-
-      const senderName = String(message.senderName || "").trim().toLowerCase();
-      const friendName = String(activeConversation.friendStudentName || "").trim().toLowerCase();
-      const primaryName = String(activeConversation.studentName || "").trim().toLowerCase();
-      const studentId =
-        activeConversation.chatType === "StudentFriend" && activeConversation.friendStudentId && senderName && senderName === friendName
-          ? activeConversation.friendStudentId
-          : senderName && senderName === primaryName
-            ? activeConversation.studentId
-            : actor.role === "Student"
-              ? actor.id
-              : activeConversation.studentId;
-      return studentProfileItems.get(Number(studentId)) || [];
+      return studentProfileItems.get(getMessageStudentId(message)) || [];
     }
 
     const staffRole = message.senderStaffRole || message.senderRole;
@@ -6302,6 +6371,13 @@ async function getMessagesPayload(actor, requestedConversationId = 0) {
             : null);
 
     return staffId ? staffProfileItems.get(`${staffRole}:${Number(staffId)}`) || [] : [];
+  };
+  const getMessageBadge = (message) => {
+    if (message.senderRole !== "Student") {
+      return null;
+    }
+
+    return studentProfileBadges.get(getMessageStudentId(message)) || null;
   };
   const isOwnMessage = (message) => {
     if (message.senderRole !== actor.role) {
@@ -6330,6 +6406,7 @@ async function getMessagesPayload(actor, requestedConversationId = 0) {
       sentAt: toDateText(row.sentAt),
       isOwn: isOwnMessage(row),
       profileItems: getMessageProfileItems(row),
+      ...(getMessageBadge(row) || {}),
     })),
   };
 }
