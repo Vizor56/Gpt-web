@@ -9310,6 +9310,7 @@ body[data-site-theme] .notification-button {
 }
 
 .capybara-shop-panel,
+.staff-shop-panel,
 .staff-panel:has(.staff-shop-layout) {
   --shop-pixel-ink: #26324a;
   --shop-pixel-blue: #58c9bf;
@@ -9335,6 +9336,7 @@ body[data-site-theme] .notification-button {
 }
 
 .capybara-shop-panel::before,
+.staff-shop-panel::before,
 .staff-panel:has(.staff-shop-layout)::before {
   position: absolute;
   top: 18px;
@@ -9354,6 +9356,7 @@ body[data-site-theme] .notification-button {
 }
 
 .capybara-shop-panel .account-section-heading,
+.staff-shop-panel > h2,
 .staff-panel:has(.staff-shop-layout) > h2 {
   position: relative;
   z-index: 1;
@@ -9369,6 +9372,7 @@ body[data-site-theme] .notification-button {
 }
 
 .capybara-shop-panel .account-section-heading h2,
+.staff-shop-panel > h2,
 .staff-panel:has(.staff-shop-layout) > h2 {
   color: var(--shop-pixel-ink);
   text-shadow: 2px 2px 0 rgba(255, 253, 248, 0.8);

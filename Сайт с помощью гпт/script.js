@@ -3207,7 +3207,7 @@ function renderStaffPoints() {
     .join("");
 
   return `
-    <section class="staff-panel">
+    <section class="staff-panel staff-shop-panel">
       <h2>Баллы</h2>
       <p>Баллы начисляются за проверки и кураторские оценки. На них можно покупать пиксельные элементы профиля команды.</p>
       <div class="staff-points-total">
