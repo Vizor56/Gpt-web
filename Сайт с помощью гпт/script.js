@@ -1620,6 +1620,119 @@ function getShopSectionTabs() {
   ];
 }
 
+const shopSlotTones = {
+  theme: ["#315f61", "#edf5f2", "#bfd8d2"],
+  animal: ["#8a5c3b", "#fff2e5", "#e6c6a6"],
+  fur: ["#9a6340", "#fff5ea", "#e5c9a9"],
+  eyes: ["#1d65d8", "#eef5ff", "#bdd5ff"],
+  scene: ["#2f637b", "#edf7fa", "#bddbe6"],
+  animation: ["#7c3aed", "#f4efff", "#d7c7ff"],
+  outfit: ["#147a46", "#edf9f2", "#bde8ce"],
+  head: ["#806b34", "#fff7df", "#ead89f"],
+  face: ["#334155", "#f0f5fb", "#cad6e3"],
+  neck: ["#2f80ed", "#edf5ff", "#bfd8ff"],
+  hand: ["#c9822e", "#fff5e8", "#efd0a7"],
+};
+
+const shopItemTones = {
+  blue_scarf: ["#2f80ed", "#eaf3ff", "#b8d7ff"],
+  green_hoodie: ["#16a05d", "#ecfbf2", "#b9e8cc"],
+  round_glasses: ["#27364f", "#f1f5f9", "#cbd5e1"],
+  gold_crown: ["#c89116", "#fff8df", "#ead78f"],
+  pet_cat: ["#a66a3f", "#fff0e3", "#e3c0a0"],
+  pet_fox: ["#d46f2f", "#fff1e6", "#efc3a4"],
+  pet_panda: ["#202a2d", "#f5f5f0", "#d6d6ce"],
+  fur_choco: ["#7c4a32", "#fff0e7", "#d8b095"],
+  fur_cream: ["#c99455", "#fff7eb", "#edd4ad"],
+  fur_gray: ["#64748b", "#f1f5f9", "#cbd5e1"],
+  eyes_green: ["#11845b", "#ecfdf5", "#b8e5d0"],
+  eyes_blue: ["#1d65d8", "#eef5ff", "#bdd5ff"],
+  eyes_star: ["#c88a00", "#fff8d8", "#eadc92"],
+  scene_room: ["#7da0c9", "#eef6ff", "#c7dff8"],
+  scene_night: ["#27314f", "#eef1fb", "#c3cbe5"],
+  scene_space: ["#5e3ad7", "#f2efff", "#d4c7ff"],
+  wizard_hat: ["#5e3ad7", "#f3efff", "#d5c8ff"],
+  red_cap: ["#df3e3e", "#fff0f0", "#f5c0c0"],
+  lab_coat: ["#68758a", "#f6f8fb", "#cfd8e4"],
+  purple_cape: ["#7d4cff", "#f4efff", "#d8c8ff"],
+  notebook: ["#1d65d8", "#eef5ff", "#bdd5ff"],
+  pencil: ["#d99b19", "#fff6dc", "#efd997"],
+  medal: ["#c89116", "#fff8df", "#ead78f"],
+  pixel_headphones: ["#27364f", "#eff4fb", "#cbd7e8"],
+  pet_dog: ["#b56d32", "#fff0e3", "#e5bd98"],
+  pet_bunny: ["#d58c9d", "#fff1f5", "#edc5d1"],
+  pet_penguin: ["#1f2937", "#eef4fb", "#cbd5e1"],
+  pet_frog: ["#48a35b", "#ebfaef", "#b8e7c4"],
+  fur_midnight: ["#24324a", "#eef2f8", "#c2cbda"],
+  fur_rose: ["#c9678b", "#fff0f6", "#efbdd0"],
+  fur_gold: ["#d49422", "#fff7df", "#edd596"],
+  eyes_neon: ["#00a8c7", "#e9fbff", "#a6e9f5"],
+  scene_beach: ["#3b9fc9", "#eaf9ff", "#bae8f7"],
+  scene_classroom: ["#2f855a", "#edf8f0", "#bfe4cd"],
+  scene_stadium: ["#47a65c", "#ecfaef", "#b9e8c3"],
+  anime_shades: ["#111827", "#f1f5f9", "#cbd5e1"],
+  ninja_band: ["#ef4444", "#fff0f0", "#f3bcbc"],
+  volleyball: ["#1d65d8", "#eef5ff", "#bfd7ff"],
+  skateboard: ["#27364f", "#f0f4fb", "#cbd7e8"],
+  tracksuit: ["#1d65d8", "#eef5ff", "#bdd5ff"],
+  anim_dance: ["#e15a8a", "#fff0f6", "#f4bdd1"],
+  anim_skate: ["#27364f", "#f0f4fb", "#cbd7e8"],
+  anim_volleyball: ["#ef4444", "#fff0f0", "#f3bcbc"],
+  anim_float: ["#58a6a0", "#edf8f6", "#bfe0dc"],
+  theme_focus_mint: ["#116b64", "#eef8f4", "#cfe6de"],
+  theme_deep_graphite: ["#315f61", "#eef0ec", "#cfd7d2"],
+  theme_academy_paper: ["#145c59", "#f8f3e7", "#ded2ba"],
+  theme_pixel_twilight: ["#5e3ad7", "#f2efff", "#d7c8ff"],
+  theme_formula_lab: ["#2f637b", "#edf7f6", "#bfdde1"],
+  teacher_pet_owl: ["#8b6f47", "#fff4dd", "#e5cca0"],
+  teacher_pet_lion: ["#c78337", "#fff0dd", "#efc79b"],
+  teacher_fur_graphite: ["#526070", "#f1f5f8", "#cad3dc"],
+  teacher_eyes_amber: ["#d0820f", "#fff5dd", "#efd398"],
+  teacher_scene_board: ["#2f855a", "#edf8f0", "#bfe4cd"],
+  teacher_scene_library: ["#8b5e3c", "#fff1df", "#e6c5a3"],
+  teacher_anim_point: ["#6b4f1d", "#fff6df", "#e7d39e"],
+  teacher_anim_grade: ["#2f8f6f", "#edf9f2", "#bde5ce"],
+  teacher_blazer: ["#1f365c", "#eef4fb", "#c7d6ec"],
+  teacher_cardigan: ["#b45309", "#fff1df", "#efc89c"],
+  teacher_pointer: ["#6b4f1d", "#fff6df", "#e7d39e"],
+  teacher_book: ["#315f61", "#eef8f4", "#cfe6de"],
+  curator_pet_deer: ["#b88955", "#fff1e4", "#e8c5a1"],
+  curator_pet_otter: ["#8a5c3b", "#fff0e5", "#dec0a4"],
+  curator_fur_mint: ["#48a984", "#ecfbf6", "#b8e8d4"],
+  curator_eyes_violet: ["#8b5cf6", "#f5efff", "#d9c8ff"],
+  curator_scene_lounge: ["#63c59a", "#ecfbf4", "#bde8d3"],
+  curator_scene_calendar: ["#7c3aed", "#f4efff", "#d7c7ff"],
+  curator_anim_checklist: ["#2f8f6f", "#edf9f2", "#bde5ce"],
+  curator_anim_call: ["#58a6a0", "#edf8f6", "#bfe0dc"],
+  curator_vest: ["#10b981", "#ecfdf5", "#b8ead2"],
+  curator_soft_hoodie: ["#a78bfa", "#f5f0ff", "#d9ccff"],
+  curator_headset: ["#5b21b6", "#f2ecff", "#d0bcff"],
+  curator_planner: ["#7c3aed", "#f4efff", "#d7c7ff"],
+  admin_pet_robot: ["#64748b", "#f1f5f9", "#cbd5e1"],
+  admin_pet_raven: ["#1f2937", "#eef2f7", "#c6d0dd"],
+  admin_fur_steel: ["#7f8ea3", "#f1f5f9", "#cbd5e1"],
+  admin_eyes_cyan: ["#06b6d4", "#e9fbff", "#a8e9f4"],
+  admin_scene_server: ["#0f172a", "#eef2f8", "#c5cedd"],
+  admin_scene_dashboard: ["#3b82f6", "#eef5ff", "#bdd5ff"],
+  admin_anim_deploy: ["#22c55e", "#ecfdf3", "#b6e8c7"],
+  admin_anim_scan: ["#06b6d4", "#e9fbff", "#a8e9f4"],
+  admin_jacket: ["#111827", "#eef2f7", "#c6d0dd"],
+  admin_suit: ["#334155", "#f1f5f9", "#cbd5e1"],
+  admin_laptop: ["#0f172a", "#eef2f8", "#c5cedd"],
+  admin_keycard: ["#38bdf8", "#eaf9ff", "#b5e8fa"],
+};
+
+function getShopItemTone(item = {}) {
+  const slot = getShopSlot(item.itemType);
+  const [accent, soft, border] = shopItemTones[item.itemCode] || shopSlotTones[slot] || ["#315f61", "#f2f7f5", "#cfdedb"];
+  return { accent, soft, border, slot };
+}
+
+function getShopItemAttrs(item = {}) {
+  const { accent, soft, border, slot } = getShopItemTone(item);
+  return ` data-shop-code="${escapeHtml(item.itemCode || "")}" data-shop-slot="${escapeHtml(slot)}" style="--shop-accent: ${escapeHtml(accent)}; --shop-soft: ${escapeHtml(soft)}; --shop-border: ${escapeHtml(border)};"`;
+}
+
 function renderShopSectionTabs(activeSection = currentShopSection, dataAttribute = "data-shop-section", { includeBadges = true } = {}) {
   return `
     <div class="shop-section-tabs" role="tablist" aria-label="Разделы магазина">
@@ -1762,8 +1875,8 @@ function getShopPreviewItems(item, equippedItems = []) {
 function renderShopItemPreview(item, equippedItems = []) {
   if (getShopSlot(item?.itemType) === "theme") {
     return `
-      <div class="shop-item__preview shop-item__preview--theme" aria-hidden="true">
-        <span class="shop-theme-preview" data-site-theme-preview="${escapeHtml(item.cssClass || "")}">
+      <div class="shop-item__preview shop-item__preview--theme" aria-hidden="true"${getShopItemAttrs(item)}>
+        <span class="shop-theme-preview" data-site-theme-preview="${escapeHtml(item.cssClass || "")}"${getShopItemAttrs(item)}>
           <i></i>
           <strong></strong>
           <em></em>
@@ -1773,7 +1886,7 @@ function renderShopItemPreview(item, equippedItems = []) {
   }
 
   return `
-    <div class="shop-item__preview" aria-hidden="true">
+    <div class="shop-item__preview" aria-hidden="true"${getShopItemAttrs(item)}>
       ${renderPixelPetMarkup(getShopPreviewItems(item, equippedItems), {
         wrapperClass: "shop-preview-pet",
         petClass: "shop-preview-pet__pet",
@@ -1920,7 +2033,7 @@ function renderShop(shop) {
                 : `<button type="button" data-shop-buy="${escapeHtml(item.itemCode)}" ${canBuy ? "" : "disabled"}>Купить</button>`;
 
               return `
-                <article class="shop-item">
+                <article class="shop-item"${getShopItemAttrs(item)}>
                   ${renderShopItemPreview(item, equippedItems)}
                   <div>
                     <h3>${escapeHtml(item.itemName)}</h3>
@@ -3071,7 +3184,7 @@ function renderStaffPoints() {
                   : `<button type="button" data-staff-shop-equip="${escapeHtml(item.itemCode)}">Надеть</button>`
                 : `<button type="button" data-staff-shop-buy="${escapeHtml(item.itemCode)}" ${canBuy ? "" : "disabled"}>Купить</button>`;
               return `
-                <article class="shop-item">
+                <article class="shop-item"${getShopItemAttrs(item)}>
                   ${renderShopItemPreview(item, equippedItems)}
                   <div>
                     <h3>${escapeHtml(item.itemName)}</h3>
