@@ -2223,7 +2223,11 @@ async function getStreams(slug = "") {
       LEFT JOIN lessons l ON l.id = ls.lesson_id
       WHERE ls.status IN ('Planned', 'Live')
         AND c.status = 'Active'
-        AND ls.starts_at >= NOW()
+        AND (
+          ls.starts_at >= NOW()
+          OR (ls.ends_at IS NOT NULL AND ls.ends_at >= NOW())
+          OR ls.status = 'Live'
+        )
         AND ($1 = '' OR c.slug = $1)
       ORDER BY ls.starts_at, ls.id
     `,
@@ -5783,6 +5787,14 @@ app.post(
     });
 
     response.json({ ok: true, source: "database", ...(await getStudentFriendsPayload(student.studentId)) });
+  }),
+);
+
+app.get(
+  "/api/friends",
+  asyncRoute(async (request, response) => {
+    const student = await getStudentByToken(request);
+    response.json({ source: "database", ...(await getStudentFriendsPayload(student.studentId)) });
   }),
 );
 

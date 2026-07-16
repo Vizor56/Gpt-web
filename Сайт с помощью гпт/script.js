@@ -394,6 +394,7 @@ const openStudyControls = document.querySelectorAll("[data-open-study]");
 const openLibraryControls = document.querySelectorAll("[data-open-library]");
 const openSupportControls = document.querySelectorAll("[data-open-support]");
 const openAccountControls = document.querySelectorAll("[data-open-account]");
+const openPointsControls = document.querySelectorAll("[data-open-points]");
 const openMessagesControls = document.querySelectorAll("[data-open-messages]");
 const courseCards = document.querySelectorAll("[data-course]");
 const studyCourseCards = document.querySelectorAll("#course-grid [data-course]");
@@ -439,9 +440,15 @@ const closeHomeworkButtons = document.querySelectorAll("[data-close-homework]");
 const accountStudentName = document.querySelector("#account-student-name");
 const accountStudentMeta = document.querySelector("#account-student-meta");
 const accountPointsTotal = document.querySelector("#account-points-total");
+const accountPageTitle = document.querySelector("#account-page-title");
+const accountPageDescription = document.querySelector("#account-page-description");
 const accountProgressSummary = document.querySelector("#account-progress-summary");
 const accountCourseProgressList = document.querySelector("#account-course-progress-list");
+const accountFriendsList = document.querySelector("#account-friends-list");
+const accountProfileSections = document.querySelectorAll("[data-account-profile-section]");
 const authStatus = document.querySelector("#auth-status");
+const accountSideColumn = document.querySelector(".account-page .right-column");
+const accountSummaryPanel = document.querySelector(".account-summary-panel");
 const accountSessionStatus = document.querySelector("#account-session-status");
 const accountProfileStatus = document.querySelector("#account-profile-status");
 const accountTabs = document.querySelectorAll("[data-account-tab]");
@@ -485,12 +492,16 @@ let currentConversationId = null;
 let currentMessageFilter = "all";
 let activeStreamChatId = null;
 let streamsLoaded = false;
+let latestGlobalStreams = [];
+let latestCourseStreams = [];
+let latestStudentCalls = [];
 let currentStaffPage = "messages";
 let staffFilters = {};
 let staffDrilldownState = {};
 let latestNotificationItems = [];
 let notificationPanelOpen = false;
 let currentAccountTab = "progress";
+let currentAccountMode = "profile";
 let currentShopSection = "all";
 let currentStaffShopSection = "all";
 
@@ -752,7 +763,8 @@ function setActiveNav(pageName) {
     const isLibrary = pageName === "library" && Boolean(link.dataset.openLibrary);
     const isSupport = pageName === "support" && Boolean(link.dataset.openSupport);
     const isAccount = pageName === "account" && Boolean(link.dataset.openAccount);
-    link.classList.toggle("is-active", isHome || isStudy || isMessages || isLibrary || isSupport || isAccount);
+    const isPoints = pageName === "points" && Boolean(link.dataset.openPoints);
+    link.classList.toggle("is-active", isHome || isStudy || isMessages || isLibrary || isSupport || isAccount || isPoints);
   });
 }
 
@@ -817,8 +829,23 @@ function openAccount() {
   }
 
   showPage("account");
+  setAccountMode("profile");
   setActiveNav("account");
   history.replaceState(null, "", "#account");
+  loadAccount();
+  loadAccountFriends();
+}
+
+function openPoints() {
+  if (isStaffMode()) {
+    openStaffPage("points");
+    return;
+  }
+
+  showPage("account");
+  setAccountMode("points");
+  setActiveNav("points");
+  history.replaceState(null, "", "#points");
   loadAccount();
   loadShop();
 }
@@ -845,7 +872,61 @@ function setStudyTab(tabName = "owned") {
   });
 }
 
+function setAccountMode(mode = "profile") {
+  currentAccountMode = mode === "points" ? "points" : "profile";
+  const isPointsMode = currentAccountMode === "points";
+  document.querySelector('[data-page="account"]')?.classList.toggle("is-points-mode", isPointsMode);
+
+  if (accountPageTitle) {
+    accountPageTitle.textContent = isPointsMode ? "Баллы" : "Аккаунт";
+  }
+
+  if (accountPageDescription) {
+    accountPageDescription.textContent = isPointsMode ? "Магазин профиля и достижения" : "Профиль, прогресс, статус и друзья";
+  }
+
+  if (accountSummaryPanel) {
+    accountSummaryPanel.classList.toggle("is-hidden", isPointsMode);
+  }
+
+  if (accountSideColumn) {
+    accountSideColumn.classList.toggle("is-hidden", isPointsMode);
+  }
+
+  accountProfileSections.forEach((section) => {
+    section.classList.toggle("is-hidden", isPointsMode);
+    section.setAttribute("aria-hidden", String(isPointsMode));
+  });
+
+  const visibleTabs = isPointsMode ? new Set(["shop", "achievements"]) : new Set();
+  accountTabs.forEach((tab) => {
+    const visible = visibleTabs.has(tab.dataset.accountTab || "");
+    tab.classList.toggle("is-hidden", !visible);
+    tab.setAttribute("aria-hidden", String(!visible));
+  });
+
+  document.querySelector(".account-tabs")?.classList.toggle("is-hidden", !isPointsMode);
+
+  if (isPointsMode) {
+    setAccountTab(currentAccountTab === "achievements" ? "achievements" : "shop");
+    return;
+  }
+
+  accountPanels.forEach((panel) => {
+    const isProgress = panel.dataset.accountPanel === "progress";
+    panel.classList.toggle("is-hidden", !isProgress);
+    panel.setAttribute("aria-hidden", String(!isProgress));
+  });
+  currentAccountTab = "progress";
+}
+
 function setAccountTab(tabName = "progress") {
+  if (currentAccountMode === "profile") {
+    tabName = "progress";
+  } else if (!["shop", "achievements"].includes(tabName)) {
+    tabName = "shop";
+  }
+
   currentAccountTab = tabName;
 
   accountTabs.forEach((item) => {
@@ -868,6 +949,37 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function looksLikeMojibake(value) {
+  const text = String(value || "");
+
+  if (!text) {
+    return false;
+  }
+
+  const suspiciousPairs = text.match(/[РС][\u00a0-\u00bf\u0400-\u045f]/g) || [];
+  return suspiciousPairs.length >= 3 || /(?:Рџ|Р”|РЈ|Рќ|РЎ|СЂ|СЃ|С‚|СЊ|в„–)/.test(text);
+}
+
+function cleanDisplayText(value, fallback = "") {
+  const text = String(value || "").trim();
+
+  if (!text || looksLikeMojibake(text)) {
+    return fallback;
+  }
+
+  return text;
+}
+
+function getHomeworkDisplayTitle(item = {}, fallback = "Домашнее задание") {
+  const lessonTitle = cleanDisplayText(item.lessonTitle, "");
+  const fallbackTitle = lessonTitle ? `ДЗ: ${lessonTitle}` : fallback;
+  return cleanDisplayText(item.homeworkTitle || item.homeworkName, fallbackTitle);
+}
+
+function getHomeworkDisplayDescription(item = {}, fallback = "") {
+  return cleanDisplayText(item.homeworkDescription, cleanDisplayText(item.topic || item.lessonTitle, fallback));
 }
 
 function normalizeAccountCourse(course) {
@@ -1009,7 +1121,7 @@ function applyGuestUi(message = "Войдите или создайте акка
   }
 
   if (accountStudentMeta) {
-    accountStudentMeta.textContent = "После входа здесь появятся имя, класс, купленные курсы и баллы.";
+    accountStudentMeta.textContent = "После входа здесь появятся имя, класс, купленные курсы и прогресс.";
   }
 
   if (accountPointsTotal) {
@@ -1035,6 +1147,8 @@ function applyGuestUi(message = "Войдите или создайте акка
   if (accountCourseProgressList) {
     accountCourseProgressList.innerHTML = `<div class="resource-empty">${escapeHtml(message)}</div>`;
   }
+
+  renderAccountFriends(null);
 
   if (accountSessionStatus) {
     accountSessionStatus.classList.remove("is-active");
@@ -1364,6 +1478,9 @@ function applyAccountToUi(account = latestAccount) {
   applyAccountToCourseCards(account);
   renderAccountProgress(account);
   renderAccountAchievements(latestShop);
+  if (currentAccountMode === "profile") {
+    loadAccountFriends();
+  }
   applyCourseDetailProgress(currentCourseKey, getAccountCourse(currentCourseKey));
   renderGlobalNotifications();
 }
@@ -1481,12 +1598,18 @@ function renderProfileStatusForm(selected = "focused") {
   const options = ["focused", "chill", "grinding", "on_fire", "need_coffee", "ready_exam", "resting"];
   return `
     <form class="profile-status-form" data-profile-status-form>
-      <label>
-        Статус
-        <select name="profileStatus">
-          ${options.map((option) => `<option value="${option}" ${option === selected ? "selected" : ""}>${escapeHtml(getProfileStatusLabel(option))}</option>`).join("")}
-        </select>
-      </label>
+      <div class="profile-status-options" role="radiogroup" aria-label="Статус профиля">
+        ${options
+          .map(
+            (option) => `
+              <label class="profile-status-option ${option === selected ? "is-selected" : ""}">
+                <input type="radio" name="profileStatus" value="${escapeHtml(option)}" ${option === selected ? "checked" : ""} />
+                <span>${escapeHtml(getProfileStatusLabel(option))}</span>
+              </label>
+            `,
+          )
+          .join("")}
+      </div>
       <button type="submit">Сохранить</button>
       <p class="staff-form-status" aria-live="polite"></p>
     </form>
@@ -2870,7 +2993,6 @@ function renderStaffPoints() {
     .join("");
 
   return `
-    ${renderStaffMetricCards()}
     <section class="staff-panel">
       <h2>Баллы</h2>
       <p>Баллы начисляются за проверки и кураторские оценки. На них можно покупать пиксельные элементы профиля команды.</p>
@@ -2904,7 +3026,7 @@ function renderStaffAccount() {
         </div>
         <div>
           <h2>${escapeHtml(staff.name || "Аккаунт команды")}</h2>
-          <p>${escapeHtml(getStaffRoleLabel(staff.role))} · ${escapeHtml(formatNumber(shop.pointsTotal || 0))} баллов</p>
+          <p>${escapeHtml(getStaffRoleLabel(staff.role))} · рабочий профиль</p>
         </div>
       </div>
       <div class="staff-info-grid">
@@ -2912,10 +3034,6 @@ function renderStaffAccount() {
         <span>Логин<strong>${escapeHtml(staff.login || "-")}</strong></span>
         <span>ID<strong>${escapeHtml(staff.staffId || "-")}</strong></span>
       </div>
-      <button class="submit-button" type="button" data-staff-page="points">
-        <svg><use href="#icon-star" /></svg>
-        Открыть магазин профиля
-      </button>
       <button class="submit-button" type="button" data-staff-logout>
         <svg><use href="#icon-user" /></svg>
         Выйти из кабинета команды
@@ -3253,8 +3371,8 @@ function renderTeacherHomeworkLegacy() {
                       <span class="resource-chip">${escapeHtml(item.studentName)}</span>
                       <span class="resource-chip">Урок ${escapeHtml(item.lessonNumber || "-")}</span>
                     </div>
-                    <h3>${escapeHtml(item.homeworkTitle || "Домашнее задание")}</h3>
-                    <p>${escapeHtml(item.lessonTitle || item.homeworkDescription || "")}</p>
+                    <h3>${escapeHtml(getHomeworkDisplayTitle(item, "Домашнее задание"))}</h3>
+                    <p>${escapeHtml(getHomeworkDisplayDescription(item))}</p>
                     <div class="staff-card__actions">
                       ${createStaffLink(item.taskLink, "Задание", "#icon-file")}
                       ${createStaffLink(item.submissionLink, canOpenSubmission ? "Работа ученика" : "Нет ссылки", "#icon-clipboard")}
@@ -3309,8 +3427,8 @@ function renderTeacherHomeworkCard(item) {
         <span class="resource-chip">${escapeHtml(item.studentName || "Ученик")}</span>
         ${item.submittedAt ? `<span class="resource-chip">${escapeHtml(formatStreamDate(item.submittedAt))}</span>` : ""}
       </div>
-      <h3>${escapeHtml(item.homeworkTitle || "Домашнее задание")}</h3>
-      <p>${escapeHtml(item.lessonTitle || item.homeworkDescription || "")}</p>
+      <h3>${escapeHtml(getHomeworkDisplayTitle(item, "Домашнее задание"))}</h3>
+      <p>${escapeHtml(getHomeworkDisplayDescription(item))}</p>
       <div class="staff-card__actions">
         ${createStaffLink(item.taskLink, "Задание", "#icon-file")}
         ${createStaffLink(item.submissionLink, canOpenSubmission ? "Работа ученика" : "Нет ссылки", "#icon-clipboard")}
@@ -3389,8 +3507,8 @@ function renderTeacherCorrectionCard(item) {
         <span class="resource-chip">${escapeHtml(item.studentName || "Ученик")}</span>
         ${item.submittedAt ? `<span class="resource-chip">${escapeHtml(formatStreamDate(item.submittedAt))}</span>` : ""}
       </div>
-      <h3>${escapeHtml(item.homeworkTitle || "Работа над ошибками")}</h3>
-      <p>${escapeHtml(item.lessonTitle || item.homeworkDescription || "")}</p>
+      <h3>${escapeHtml(getHomeworkDisplayTitle(item, "Работа над ошибками"))}</h3>
+      <p>${escapeHtml(getHomeworkDisplayDescription(item))}</p>
       <div class="staff-card__actions">
         ${createStaffLink(item.taskLink, "Задание", "#icon-file")}
         ${createStaffLink(item.submissionLink, canOpenSubmission ? "Работа ученика" : "Нет ссылки", "#icon-clipboard")}
@@ -3506,8 +3624,8 @@ function renderTeacherArchivePage() {
                         <span class="resource-chip">${escapeHtml(item.studentName)}</span>
                         ${item.checkedAt ? `<span class="resource-chip">${escapeHtml(formatStreamDate(item.checkedAt))}</span>` : ""}
                       </div>
-                      <h3>${escapeHtml(item.homeworkTitle || "Домашнее задание")}</h3>
-                      <p>${escapeHtml(item.lessonTitle || item.homeworkDescription || "")}</p>
+                      <h3>${escapeHtml(getHomeworkDisplayTitle(item, "Домашнее задание"))}</h3>
+                      <p>${escapeHtml(getHomeworkDisplayDescription(item))}</p>
                       <div class="staff-card__actions">
                         ${createStaffLink(item.taskLink, "Задание", "#icon-file")}
                         ${createStaffLink(item.submissionLink, "Работа ученика", "#icon-clipboard")}
@@ -3645,19 +3763,19 @@ function renderTeacherLessonRow(course, lesson) {
 }
 
 function renderTeacherStreamCard(course, stream) {
+  const timedStatus = getEventStatusMeta({ ...stream, eventType: "stream" });
   const statusLabel =
-    stream.status === "Live"
-      ? "Идёт сейчас"
-      : stream.status === "Done"
-        ? "Завершена"
-        : stream.status === "Cancelled"
-          ? "Отменена"
-          : "Запланирована";
+    stream.status === "Done"
+      ? "Завершена"
+      : stream.status === "Cancelled"
+        ? "Отменена"
+        : timedStatus.label || "Запланирована";
+  const statusClass = stream.status === "Done" ? "is-muted" : stream.status === "Cancelled" ? "is-yellow" : timedStatus.className || "is-blue";
 
   return `
     <article class="staff-card staff-stream-card">
       <div class="staff-card__meta">
-        <span class="resource-chip is-blue">${escapeHtml(statusLabel)}</span>
+        <span class="resource-chip ${statusClass}">${escapeHtml(statusLabel)}</span>
         ${stream.startsAt ? `<span class="resource-chip">${escapeHtml(formatStreamDate(stream.startsAt))}</span>` : ""}
         <span class="resource-chip">${stream.lessonNumber ? `Урок ${escapeHtml(stream.lessonNumber)}` : "Общий эфир"}</span>
       </div>
@@ -5787,7 +5905,7 @@ function renderMessageStartPanel(recipients = [], actor = getMessageActor()) {
   `;
 }
 
-function renderStudentFriendsPanel(friendState = null, actor = getMessageActor()) {
+function renderStudentFriendsPanel(friendState = null, actor = getMessageActor(), { open = false } = {}) {
   if (actor?.role !== "Student") {
     return "";
   }
@@ -5808,7 +5926,7 @@ function renderStudentFriendsPanel(friendState = null, actor = getMessageActor()
 
   return `
     <section class="friends-panel">
-      <details>
+      <details ${open ? "open" : ""}>
         <summary>Друзья и заявки</summary>
         <div class="friends-panel__grid">
           <section>
@@ -5986,6 +6104,49 @@ async function loadMessages(conversationId = currentConversationId) {
   }
 }
 
+function renderAccountFriends(friendState = null) {
+  if (!accountFriendsList) {
+    return;
+  }
+
+  if (!hasAuthenticatedAccount()) {
+    accountFriendsList.innerHTML = `<div class="resource-empty">Войдите в аккаунт, чтобы видеть друзей и заявки.</div>`;
+    return;
+  }
+
+  accountFriendsList.innerHTML =
+    renderStudentFriendsPanel(friendState, { role: "Student" }, { open: true }) ||
+    `<div class="resource-empty">Друзья и заявки пока не загрузились.</div>`;
+}
+
+async function loadAccountFriends() {
+  if (!accountFriendsList) {
+    return null;
+  }
+
+  if (!hasAuthenticatedAccount()) {
+    renderAccountFriends(null);
+    return null;
+  }
+
+  accountFriendsList.innerHTML = `<div class="resource-empty">Загружаю друзей из базы...</div>`;
+
+  try {
+    const response = await apiFetch("/api/friends", { cache: "no-store" });
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(payload.message || payload.error || "Не удалось загрузить друзей.");
+    }
+
+    renderAccountFriends(payload);
+    return payload;
+  } catch (error) {
+    accountFriendsList.innerHTML = `<div class="resource-empty">${escapeHtml(error.message || "Друзья не загрузились.")}</div>`;
+    return null;
+  }
+}
+
 async function startMessageConversation(form) {
   const value = String(new FormData(form).get("recipient") || "");
   const [targetRole, targetId] = value.split(":");
@@ -6054,6 +6215,9 @@ async function startStudentFriendChat(friendId) {
     }
 
     currentConversationId = result.activeConversationId;
+    showPage("messages");
+    setActiveNav("messages");
+    history.replaceState(null, "", "#messages");
     await loadMessages(currentConversationId);
     setMessageStatus("Чат с другом открыт.", "success");
   } catch (error) {
@@ -6127,7 +6291,7 @@ async function sendFriendAction(endpoint, payload = {}) {
       throw new Error(result.message || result.error || "Не удалось обновить друзей.");
     }
 
-    await loadMessages(currentConversationId);
+    await Promise.allSettled([loadMessages(currentConversationId), loadAccountFriends()]);
     setMessageStatus(result.message || "Друзья обновлены.", "success");
   } catch (error) {
     setMessageStatus(error.message || "Не удалось обновить друзей.", "error");
@@ -6188,18 +6352,19 @@ async function submitMessage(event) {
 }
 
 function normalizeLesson(rawLesson) {
+  const lessonTitle = cleanDisplayText(rawLesson.lessonTitle ?? rawLesson.Lesson_Title, "Урок");
   return {
     lessonId: rawLesson.lessonId ?? rawLesson.Lesson_ID ?? null,
     lessonNumber: rawLesson.lessonNumber ?? rawLesson.Lesson_Number,
-    lessonTitle: rawLesson.lessonTitle ?? rawLesson.Lesson_Title,
-    topic: rawLesson.topic ?? rawLesson.Topic ?? "",
+    lessonTitle,
+    topic: cleanDisplayText(rawLesson.topic ?? rawLesson.Topic, ""),
     lessonStatus: rawLesson.lessonStatus ?? rawLesson.Lesson_Status ?? "Open",
     videoUrl: rawLesson.videoUrl ?? rawLesson.Video_Link ?? null,
     notesUrl: rawLesson.notesUrl ?? rawLesson.Notes_Link ?? null,
     homeworkUrl: rawLesson.homeworkUrl ?? rawLesson.Homework_Link ?? rawLesson.homeworkTaskUrl ?? null,
     homeworkTemplateId: rawLesson.homeworkTemplateId ?? null,
-    homeworkTitle: rawLesson.homeworkTitle ?? rawLesson.homeworkName ?? null,
-    homeworkDescription: rawLesson.homeworkDescription ?? "",
+    homeworkTitle: cleanDisplayText(rawLesson.homeworkTitle ?? rawLesson.homeworkName, null),
+    homeworkDescription: cleanDisplayText(rawLesson.homeworkDescription, ""),
     homeworkTaskUrl: rawLesson.homeworkTaskUrl ?? rawLesson.homeworkUrl ?? rawLesson.Homework_Link ?? null,
     homeworkAssignmentId: rawLesson.homeworkAssignmentId ?? null,
     homeworkStatus: rawLesson.homeworkStatus ?? null,
@@ -6318,14 +6483,59 @@ function normalizeStudentCall(rawCall) {
 }
 
 function isFutureEvent(item) {
-  const date = new Date(item?.startsAt || "");
-  return !Number.isNaN(date.getTime()) && date.getTime() >= Date.now();
+  const start = new Date(item?.startsAt || "");
+  const end = new Date(item?.endsAt || "");
+  const now = Date.now();
+
+  if (!Number.isNaN(end.getTime())) {
+    return end.getTime() >= now;
+  }
+
+  return !Number.isNaN(start.getTime()) && start.getTime() >= now;
 }
 
 function sortUpcomingEvents(items = []) {
   return [...items]
     .filter(isFutureEvent)
     .sort((left, right) => new Date(left.startsAt || 0) - new Date(right.startsAt || 0));
+}
+
+function formatRelativeEventTime(milliseconds) {
+  const minutes = Math.max(1, Math.round(milliseconds / 60000));
+
+  if (minutes < 60) {
+    return `через ${minutes} мин`;
+  }
+
+  const hours = Math.round(minutes / 60);
+
+  if (hours < 24) {
+    return `через ${hours} ч`;
+  }
+
+  return `через ${Math.round(hours / 24)} дн`;
+}
+
+function getEventStatusMeta(eventItem = {}) {
+  const now = Date.now();
+  const start = new Date(eventItem.startsAt || "");
+  const end = new Date(eventItem.endsAt || "");
+  const status = String(eventItem.status || "Planned");
+
+  if (status === "Live") {
+    return { label: "Идёт сейчас", className: "is-green" };
+  }
+
+  if (!Number.isNaN(start.getTime()) && start.getTime() <= now && !Number.isNaN(end.getTime()) && end.getTime() >= now) {
+    return { label: "Идёт сейчас", className: "is-green" };
+  }
+
+  if (!Number.isNaN(start.getTime()) && start.getTime() > now) {
+    const startsIn = start.getTime() - now;
+    return { label: formatRelativeEventTime(startsIn), className: startsIn < 60 * 60 * 1000 ? "is-yellow" : "is-blue" };
+  }
+
+  return { label: "Завершено", className: "is-muted" };
 }
 
 async function loadStreamsFromApi(courseKey = "") {
@@ -6425,6 +6635,7 @@ function renderStreamCards(target, streams, { limit = 0, emptyText = "Ближа
       const action = link
         ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer"><svg><use href="${icon}" /></svg>${actionText}</a>`
         : `<button type="button" disabled><svg><use href="#icon-clock" /></svg>${disabledText}</button>`;
+      const eventStatus = getEventStatusMeta(eventItem);
       const chatAction =
         !isCall && eventItem.streamId
           ? `<button type="button" data-open-stream-chat="${escapeHtml(eventItem.streamId)}"><svg><use href="#icon-message" /></svg>Чат</button>`
@@ -6436,6 +6647,7 @@ function renderStreamCards(target, streams, { limit = 0, emptyText = "Ближа
             <div class="stream-card__meta">
               <span class="resource-chip is-blue">${escapeHtml(primaryLabel)}</span>
               <span class="resource-chip">${lessonText}</span>
+              <span class="resource-chip ${eventStatus.className}">${escapeHtml(eventStatus.label)}</span>
               <span class="resource-chip is-yellow">${escapeHtml(formatStreamDate(eventItem.startsAt))}</span>
             </div>
             <h3>${escapeHtml(title)}</h3>
@@ -6649,6 +6861,7 @@ async function loadStreams(courseKey = "") {
   streams = sortUpcomingEvents(streams);
 
   if (courseKey) {
+    latestCourseStreams = streams;
     renderStreamCards(courseStreamList, streams);
 
     if (detailNextStream) {
@@ -6659,6 +6872,7 @@ async function loadStreams(courseKey = "") {
   }
 
   streamsLoaded = true;
+  latestGlobalStreams = streams;
   renderStreamCards(homeStreamList, streams, { limit: 3 });
 
   let studentCalls = [];
@@ -6670,11 +6884,41 @@ async function loadStreams(courseKey = "") {
     console.info("Созвоны ученика не загружены.", error);
   }
 
+  latestStudentCalls = studentCalls;
   renderStreamCards(studyStreamList, sortUpcomingEvents([...streams, ...studentCalls]), {
     limit: 4,
     emptyText: "Ближайших трансляций и созвонов пока нет.",
   });
   return streams;
+}
+
+function refreshVisibleStreamCards() {
+  renderStreamCards(homeStreamList, latestGlobalStreams, { limit: 3 });
+  renderStreamCards(studyStreamList, sortUpcomingEvents([...latestGlobalStreams, ...latestStudentCalls]), {
+    limit: 4,
+    emptyText: "Ближайших трансляций и созвонов пока нет.",
+  });
+  renderStreamCards(courseStreamList, latestCourseStreams);
+
+  if (detailNextStream) {
+    const streams = sortUpcomingEvents(latestCourseStreams);
+    detailNextStream.textContent = streams[0] ? formatStreamDate(streams[0].startsAt) : "нет эфиров";
+  }
+}
+
+function startStreamStatusRefresh() {
+  window.setInterval(() => {
+    if (document.hidden) {
+      return;
+    }
+
+    refreshVisibleStreamCards();
+    loadStreams();
+
+    if (!document.querySelector('[data-page="course"]')?.classList.contains("is-hidden")) {
+      loadStreams(currentCourseKey);
+    }
+  }, 60 * 1000);
 }
 
 function getFallbackLessons(courseKey) {
@@ -6852,9 +7096,11 @@ function renderHomeworkReviewResult(lesson) {
   `;
 }
 
-function getCorrectionStatusMeta(status) {
+function getCorrectionStatusMeta(status, score = null) {
   if (status === "Checked") {
-    return { label: "Исправление проверено", className: "is-green" };
+    const numericScore = Number(score);
+    const isGoodScore = Number.isFinite(numericScore) && numericScore >= 5;
+    return { label: "Исправление проверено", className: isGoodScore ? "is-green" : "is-yellow" };
   }
 
   if (status === "Submitted") {
@@ -7039,9 +7285,10 @@ function renderLessonRow(lesson) {
         ${checkedScoreText ? `<span class="lesson-score-chip">${checkedScoreText}</span>` : ""}
       `);
       if (lesson.correctionId) {
-        const correctionMeta = getCorrectionStatusMeta(lesson.correctionStatus);
+        const correctionMeta = getCorrectionStatusMeta(lesson.correctionStatus, lesson.correctionScore);
+        const correctionButtonClass = correctionMeta.className === "is-green" ? "button-green" : correctionMeta.className === "is-blue" ? "button-blue" : "button-yellow";
         actionButtons.push(`
-          <button class="button-yellow correction-action" type="button" data-homework-lesson-id="${escapeHtml(getLessonKey(lesson))}" title="Открыть работу над ошибками">
+          <button class="${correctionButtonClass} correction-action" type="button" data-homework-lesson-id="${escapeHtml(getLessonKey(lesson))}" title="Открыть работу над ошибками">
             <svg><use href="#icon-clipboard" /></svg>${correctionMeta.label}
           </button>
         `);
@@ -7091,7 +7338,7 @@ function renderHomeworks(lessons) {
       const meta = getHomeworkStatusMeta(getEffectiveHomeworkStatus(lesson));
       const homeworkButton = getHomeworkButtonMeta(lesson);
       const checkedScoreText = getCheckedHomeworkScoreText(lesson);
-      const correctionMeta = lesson.correctionId ? getCorrectionStatusMeta(lesson.correctionStatus) : null;
+      const correctionMeta = lesson.correctionId ? getCorrectionStatusMeta(lesson.correctionStatus, lesson.correctionScore) : null;
       const scoreText =
         checkedScoreText
           ? checkedScoreText
@@ -7109,8 +7356,8 @@ function renderHomeworks(lessons) {
               ${correctionMeta ? `<span class="resource-chip ${correctionMeta.className}">${correctionMeta.label}</span>` : ""}
               <span class="resource-chip">до ${escapeHtml(formatDate(lesson.homeworkDueAt))}</span>
             </div>
-            <h3>${escapeHtml(lesson.homeworkTitle || `ДЗ: ${lesson.lessonTitle}`)}</h3>
-            <p>${escapeHtml(lesson.homeworkDescription || lesson.topic || "")}</p>
+            <h3>${escapeHtml(getHomeworkDisplayTitle(lesson, `ДЗ: ${lesson.lessonTitle}`))}</h3>
+            <p>${escapeHtml(getHomeworkDisplayDescription(lesson))}</p>
           </div>
           <div class="resource-card__actions">
             <button class="${homeworkButton.className}" type="button" data-homework-lesson-id="${escapeHtml(getLessonKey(lesson))}" title="${homeworkButton.title}">
@@ -7442,7 +7689,7 @@ function openHomeworkModal(lessonKey) {
   const isChecked = effectiveStatus === "Checked";
   const currentLink = lesson.submittedHomeworkUrl || "";
   const checkedScoreText = getCheckedHomeworkScoreText(lesson);
-  const correctionMeta = lesson.correctionId ? getCorrectionStatusMeta(lesson.correctionStatus) : null;
+  const correctionMeta = lesson.correctionId ? getCorrectionStatusMeta(lesson.correctionStatus, lesson.correctionScore) : null;
   const correctionLink = lesson.correctionSubmittedUrl || "";
   const isCorrectionChecked = lesson.correctionStatus === "Checked";
   const correctionStatusText = !lesson.correctionId
@@ -7462,8 +7709,8 @@ function openHomeworkModal(lessonKey) {
 
   homeworkModalStatus.textContent = meta.label;
   homeworkModalStatus.className = `homework-modal__eyebrow ${meta.className}`;
-  homeworkModalTitle.textContent = lesson.homeworkTitle || `ДЗ: ${lesson.lessonTitle}`;
-  homeworkModalDescription.textContent = lesson.homeworkDescription || lesson.topic || "";
+  homeworkModalTitle.textContent = getHomeworkDisplayTitle(lesson, `ДЗ: ${lesson.lessonTitle}`);
+  homeworkModalDescription.textContent = getHomeworkDisplayDescription(lesson);
   homeworkModalMeta.innerHTML = `
     <span class="resource-chip">Урок ${escapeHtml(lesson.lessonNumber)}</span>
     <span class="resource-chip ${meta.className}">${meta.label}</span>
@@ -7858,6 +8105,13 @@ openAccountControls.forEach((control) => {
   });
 });
 
+openPointsControls.forEach((control) => {
+  control.addEventListener("click", (event) => {
+    event.preventDefault();
+    openPoints();
+  });
+});
+
 openHomeControls.forEach((control) => {
   control.addEventListener("click", (event) => {
     event.preventDefault();
@@ -7866,7 +8120,7 @@ openHomeControls.forEach((control) => {
 });
 
 sideLinks.forEach((link) => {
-  if (!link.dataset.openStudy && !link.dataset.openHome && !link.dataset.openMessages && !link.dataset.openLibrary && !link.dataset.openSupport && !link.dataset.openAccount) {
+  if (!link.dataset.openStudy && !link.dataset.openHome && !link.dataset.openMessages && !link.dataset.openLibrary && !link.dataset.openSupport && !link.dataset.openAccount && !link.dataset.openPoints) {
     link.addEventListener("click", () => {
       sideLinks.forEach((item) => item.classList.remove("is-active"));
       link.classList.add("is-active");
@@ -8546,6 +8800,52 @@ if (conversationList) {
   });
 }
 
+if (accountFriendsList) {
+  accountFriendsList.addEventListener("click", (event) => {
+    const friendRequestButton = event.target.closest("[data-friend-request]");
+
+    if (friendRequestButton) {
+      event.preventDefault();
+      sendFriendAction("/api/friends/request", { receiverId: friendRequestButton.dataset.friendRequest });
+      return;
+    }
+
+    const friendRespondButton = event.target.closest("[data-friend-respond]");
+
+    if (friendRespondButton) {
+      event.preventDefault();
+      sendFriendAction("/api/friends/respond", {
+        requestId: friendRespondButton.dataset.friendRespond,
+        action: friendRespondButton.dataset.friendAction || "accept",
+      });
+      return;
+    }
+
+    const friendCancelButton = event.target.closest("[data-friend-cancel]");
+
+    if (friendCancelButton) {
+      event.preventDefault();
+      sendFriendAction("/api/friends/cancel", { requestId: friendCancelButton.dataset.friendCancel });
+      return;
+    }
+
+    const friendRemoveButton = event.target.closest("[data-friend-remove]");
+
+    if (friendRemoveButton) {
+      event.preventDefault();
+      sendFriendAction("/api/friends/remove", { friendId: friendRemoveButton.dataset.friendRemove });
+      return;
+    }
+
+    const startFriendChatButton = event.target.closest("[data-start-friend-chat]");
+
+    if (startFriendChatButton) {
+      event.preventDefault();
+      startStudentFriendChat(startFriendChatButton.dataset.startFriendChat);
+    }
+  });
+}
+
 if (conversationList) {
   conversationList.addEventListener("submit", (event) => {
     const form = event.target.closest("[data-message-start-form]");
@@ -8582,6 +8882,8 @@ if (hasAuthenticatedStaff(currentStaff)) {
   openSupport();
 } else if (location.hash === "#messages") {
   openMessages();
+} else if (location.hash === "#points") {
+  openPoints();
 } else if (location.hash === "#account") {
   openAccount();
 } else {
@@ -8608,6 +8910,8 @@ if (hasAuthenticatedStaff(currentStaff)) {
 if (!streamsLoaded) {
   loadStreams();
 }
+
+startStreamStatusRefresh();
 
 window.addEventListener("hashchange", () => {
   const staffPageFromHash = location.hash.match(/^#staff-(.+)$/)?.[1];
@@ -8650,6 +8954,11 @@ window.addEventListener("hashchange", () => {
 
   if (location.hash === "#messages") {
     openMessages();
+    return;
+  }
+
+  if (location.hash === "#points") {
+    openPoints();
     return;
   }
 

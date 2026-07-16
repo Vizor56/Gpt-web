@@ -145,9 +145,13 @@
             <svg><use href="#icon-message" /></svg>
             <span>Сообщения</span>
           </button>
-          <button class="side-link" type="button" data-open-account>
+          <button class="side-link" type="button" data-open-points>
             <svg><use href="#icon-star" /></svg>
             <span>Баллы</span>
+          </button>
+          <button class="side-link" type="button" data-open-account>
+            <svg><use href="#icon-user" /></svg>
+            <span>Аккаунт</span>
           </button>
           <button class="side-link" type="button" data-open-library>
             <svg><use href="#icon-clipboard" /></svg>
@@ -525,7 +529,7 @@
                     <span>Текущий баланс</span>
                     <strong><span id="study-points-balance">1 250</span> <svg><use href="#icon-star" /></svg></strong>
                   </div>
-                  <button type="button" data-open-account>История баллов <svg><use href="#icon-chevron" /></svg></button>
+                  <button type="button" data-open-points>Магазин <svg><use href="#icon-chevron" /></svg></button>
                 </div>
                 <div class="level-progress">
                   <div class="level-labels">
@@ -723,15 +727,15 @@
           <section class="page-grid account-page is-hidden" data-page="account" aria-hidden="true">
             <div class="primary-column">
               <header class="page-heading">
-                <h1>Аккаунт</h1>
-                <p>Регистрация, баллы и прогресс по купленным курсам</p>
+                <h1 id="account-page-title">Аккаунт</h1>
+                <p id="account-page-description">Профиль, прогресс, статус и друзья</p>
               </header>
 
               <section class="panel account-summary-panel">
                 <div>
                   <span class="account-kicker">Ученик</span>
                   <h2 id="account-student-name">Войдите в аккаунт</h2>
-                  <p id="account-student-meta">После входа здесь появятся имя, класс, курсы и баллы.</p>
+                  <p id="account-student-meta">После входа здесь появятся имя, класс и учебные данные.</p>
                   <div class="account-profile-status" id="account-profile-status" aria-live="polite"></div>
                 </div>
                 <div class="account-points">
@@ -753,6 +757,16 @@
                   <span id="account-progress-summary">Личный прогресс доступен после входа.</span>
                 </div>
                 <div class="account-course-list" id="account-course-progress-list" aria-live="polite"></div>
+              </section>
+
+              <section class="account-friends-section" data-account-profile-section>
+                <div class="account-section-heading">
+                  <h2>Друзья</h2>
+                  <span>Заявки, список друзей и быстрые чаты</span>
+                </div>
+                <div class="account-friends-list" id="account-friends-list" aria-live="polite">
+                  <div class="resource-empty">Войдите в аккаунт, чтобы видеть друзей.</div>
+                </div>
               </section>
 
               <section class="account-achievements-section is-hidden" data-account-panel="achievements" aria-hidden="true">
