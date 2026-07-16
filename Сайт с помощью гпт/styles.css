@@ -7683,6 +7683,371 @@ button.stream-chat-avatar {
     linear-gradient(135deg, #145c59 0%, #1f7874 58%, #58c9bf 100%);
 }
 
+.home-summary {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(20, 92, 89, 0.14);
+  background:
+    linear-gradient(135deg, rgba(88, 201, 191, 0.14), transparent 46%),
+    linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(247, 246, 242, 0.9));
+}
+
+.home-summary::after {
+  position: absolute;
+  right: 28px;
+  bottom: 24px;
+  width: 158px;
+  height: 118px;
+  border: 1px solid rgba(20, 92, 89, 0.16);
+  background:
+    linear-gradient(90deg, rgba(20, 92, 89, 0.12) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(20, 92, 89, 0.1) 1px, transparent 1px);
+  background-size: 28px 28px;
+  content: "";
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.home-summary > * {
+  position: relative;
+  z-index: 1;
+}
+
+.home-summary__label,
+.course-badge--preview,
+.status-open {
+  color: var(--blue);
+  border-color: rgba(20, 92, 89, 0.16);
+  background: #e5f4f1;
+}
+
+.study-page .page-heading {
+  margin-bottom: 44px;
+}
+
+.study-page .tabs {
+  margin-bottom: 34px;
+}
+
+.study-aside {
+  position: sticky;
+  top: 20px;
+}
+
+.nearest-panel,
+.course-progress-panel,
+.earned-panel {
+  border-color: rgba(20, 92, 89, 0.13);
+}
+
+.course-card {
+  border-color: rgba(20, 92, 89, 0.13);
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(255, 253, 248, 0.94)),
+    var(--surface);
+  box-shadow: 0 16px 38px rgba(32, 42, 45, 0.052);
+}
+
+.course-card::after {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  left: 18px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(20, 92, 89, 0.18), transparent);
+  content: "";
+  pointer-events: none;
+}
+
+.course-card:hover {
+  border-color: rgba(20, 92, 89, 0.32);
+  box-shadow: 0 18px 42px rgba(32, 42, 45, 0.085);
+}
+
+.course-illustration {
+  border: 1px solid rgba(20, 92, 89, 0.08);
+  border-radius: 20px;
+}
+
+.illustration-math,
+.illustration-russian,
+.illustration-code,
+.illustration-physics {
+  background:
+    linear-gradient(135deg, rgba(88, 201, 191, 0.18), rgba(255, 253, 248, 0.38)),
+    #e8f3ef;
+  color: var(--blue);
+}
+
+.lesson-row {
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+.lesson-row:hover {
+  background: rgba(229, 244, 241, 0.36);
+}
+
+.lesson-number {
+  color: var(--blue);
+  border-color: rgba(20, 92, 89, 0.18);
+  background: #e5f4f1;
+}
+
+.lesson-status {
+  border-radius: 6px;
+}
+
+.status-check {
+  color: #7a4f12;
+  border-color: #efd18a;
+  background: #fff4d8;
+}
+
+.status-done {
+  color: #1f6f45;
+  border-color: #b9dfc8;
+  background: #e5f4ee;
+}
+
+.lesson-actions button,
+.lesson-actions a {
+  border-radius: 6px;
+  background: rgba(255, 253, 248, 0.92);
+}
+
+.lesson-actions button:hover,
+.lesson-actions a:hover {
+  border-color: rgba(20, 92, 89, 0.3);
+  background: #f4fbf9;
+}
+
+.points-panel {
+  --pixel-ink: #26324a;
+  --pixel-shadow: #a7bfd0;
+  --pixel-coin: #f1b84b;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 22px;
+  color: var(--pixel-ink);
+  border: 3px solid var(--pixel-ink);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(88, 201, 191, 0.28), transparent 36%),
+    radial-gradient(circle at 84% 16%, rgba(241, 184, 75, 0.34) 0 12px, transparent 13px),
+    repeating-linear-gradient(0deg, rgba(38, 50, 74, 0.045) 0 2px, transparent 2px 14px),
+    repeating-linear-gradient(90deg, rgba(38, 50, 74, 0.04) 0 2px, transparent 2px 14px),
+    #fff7df;
+  box-shadow:
+    6px 6px 0 var(--pixel-shadow),
+    12px 12px 0 rgba(32, 42, 45, 0.08),
+    inset 0 0 0 3px rgba(255, 253, 248, 0.82);
+}
+
+.points-panel::before {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: -1;
+  width: 76px;
+  height: 76px;
+  background:
+    linear-gradient(#f7d77d 0 0) 20px 8px / 36px 10px,
+    linear-gradient(#f1b84b 0 0) 10px 20px / 56px 36px,
+    linear-gradient(#d98f2c 0 0) 20px 56px / 36px 10px,
+    linear-gradient(rgba(255, 253, 248, 0.84) 0 0) 28px 24px / 10px 10px;
+  background-repeat: no-repeat;
+  content: "";
+  image-rendering: pixelated;
+  opacity: 0.72;
+}
+
+.points-panel::after {
+  position: absolute;
+  right: 16px;
+  bottom: 14px;
+  left: 16px;
+  z-index: -1;
+  height: 8px;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(38, 50, 74, 0.18) 0 8px,
+    transparent 8px 16px
+  );
+  content: "";
+  opacity: 0.7;
+}
+
+.points-panel h2 {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  margin: 0;
+  padding: 0 12px;
+  color: #fffdf8;
+  border: 2px solid var(--pixel-ink);
+  border-radius: 3px;
+  background: var(--pixel-ink);
+  box-shadow: 4px 4px 0 var(--pixel-coin);
+  font-size: 18px;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.points-panel .balance-row {
+  position: relative;
+  z-index: 1;
+  margin-top: 22px;
+}
+
+.points-panel .balance-row span,
+.points-panel .level-labels,
+.points-panel .earned-panel > span {
+  color: rgba(38, 50, 74, 0.78);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.points-panel .balance-row strong {
+  gap: 10px;
+  color: var(--pixel-ink);
+  font-size: clamp(31px, 3.1vw, 41px);
+  font-weight: 950;
+  text-shadow: 2px 2px 0 rgba(255, 253, 248, 0.96);
+}
+
+.points-panel .balance-row strong svg {
+  width: 29px;
+  height: 29px;
+  color: var(--pixel-coin);
+  filter: drop-shadow(2px 2px 0 var(--pixel-ink));
+}
+
+.points-panel .balance-row button {
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 13px;
+  color: #123536;
+  border: 2px solid var(--pixel-ink);
+  border-radius: 3px;
+  background: var(--mint);
+  box-shadow: 4px 4px 0 var(--pixel-ink);
+  font-size: 14px;
+  font-weight: 950;
+  transition:
+    box-shadow 120ms ease,
+    transform 120ms ease,
+    background-color 120ms ease;
+}
+
+.points-panel .balance-row button:hover {
+  background: #70ddd4;
+  box-shadow: 5px 5px 0 var(--pixel-ink);
+  transform: translate(-1px, -1px);
+}
+
+.points-panel .balance-row button:active {
+  box-shadow: 2px 2px 0 var(--pixel-ink);
+  transform: translate(2px, 2px);
+}
+
+.points-panel .level-progress {
+  position: relative;
+  z-index: 1;
+  margin-top: 24px;
+}
+
+.points-panel .level-track {
+  height: 18px;
+  padding: 2px;
+  border: 2px solid var(--pixel-ink);
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(90deg, #eadab7 0 10px, #f7ecd2 10px 20px);
+  box-shadow: inset 0 2px 0 rgba(255, 253, 248, 0.78);
+}
+
+.points-panel .level-track span {
+  border-radius: 0;
+  background:
+    repeating-linear-gradient(90deg, var(--mint) 0 12px, var(--blue) 12px 16px);
+  box-shadow: inset 0 -3px 0 rgba(15, 71, 69, 0.34);
+}
+
+.points-panel .bonus-note {
+  position: relative;
+  z-index: 1;
+  grid-template-columns: 40px 1fr;
+  min-height: 70px;
+  margin-top: 20px;
+  color: var(--pixel-ink);
+  border: 2px solid var(--pixel-ink);
+  border-radius: 4px;
+  background:
+    linear-gradient(90deg, rgba(255, 253, 248, 0.78), transparent),
+    #ffe8a3;
+  box-shadow: 4px 4px 0 rgba(38, 50, 74, 0.22);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.points-panel .bonus-note svg {
+  width: 31px;
+  height: 31px;
+  color: var(--pixel-coin);
+  filter: drop-shadow(2px 2px 0 var(--pixel-ink));
+}
+
+.account-points,
+.staff-points-total {
+  position: relative;
+  overflow: hidden;
+  color: #26324a;
+  border: 2px solid #26324a;
+  border-radius: 6px;
+  background:
+    radial-gradient(circle at 18px 18px, rgba(241, 184, 75, 0.38) 0 7px, transparent 8px),
+    repeating-linear-gradient(90deg, rgba(38, 50, 74, 0.05) 0 2px, transparent 2px 12px),
+    #fff5d8;
+  box-shadow:
+    4px 4px 0 #a7bfd0,
+    inset 0 0 0 2px rgba(255, 253, 248, 0.82);
+}
+
+.account-points::after,
+.staff-points-total::after {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  width: 44px;
+  height: 8px;
+  background: repeating-linear-gradient(90deg, rgba(38, 50, 74, 0.22) 0 6px, transparent 6px 12px);
+  content: "";
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.account-points > *,
+.staff-points-total > * {
+  position: relative;
+  z-index: 1;
+}
+
+.account-points strong,
+.staff-points-total strong {
+  color: #26324a;
+  font-weight: 950;
+  text-shadow: 2px 2px 0 rgba(255, 253, 248, 0.96);
+}
+
+.account-points span,
+.staff-points-total span {
+  color: rgba(38, 50, 74, 0.74);
+  font-weight: 900;
+}
+
 @media (max-width: 1600px) {
   :root {
     --sidebar-width: 292px;
@@ -7768,6 +8133,10 @@ button.stream-chat-avatar {
 }
 
 @media (max-width: 1180px) {
+  .study-aside {
+    position: static;
+  }
+
   .app {
     grid-template-columns: 1fr;
   }
