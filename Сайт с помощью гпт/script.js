@@ -6785,9 +6785,9 @@ function renderStreamChat(payload) {
               <article class="stream-chat-message ${message.isOwn ? "is-own" : ""}">
                 ${avatar}
                 <div>
-                  <div class="stream-chat-author ${message.badgeName ? "has-badge" : ""} ${escapeHtml(message.badgeClass || "")}">
+                  <div class="stream-chat-author">
                     <strong>${escapeHtml(message.studentName || "Ученик")}</strong>
-                    ${message.badgeName ? `<span>${escapeHtml(message.badgeName)}</span>` : ""}
+                    ${renderProfileBadgeMarkup(message, "stream-chat-badge")}
                   </div>
                   <p>${escapeHtml(message.messageText)}</p>
                   <time>${escapeHtml(formatStreamDate(message.createdAt))}</time>

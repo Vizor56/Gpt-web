@@ -5554,6 +5554,31 @@ button:disabled {
   font-weight: 600;
 }
 
+.support-page .compact-event {
+  display: grid;
+  justify-content: stretch;
+  align-items: start;
+  gap: 8px;
+  min-height: 0;
+  padding: 14px 16px;
+}
+
+.support-page .compact-event span {
+  min-width: 0;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.support-page .compact-event strong {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.38;
+  overflow-wrap: anywhere;
+}
+
 .detail-aside .earned-panel {
   min-height: 158px;
   padding: 22px 30px;
@@ -7310,6 +7335,20 @@ button.stream-chat-avatar {
   white-space: nowrap;
 }
 
+.stream-chat-author .profile-badge {
+  max-width: min(230px, 100%);
+  min-height: 22px;
+  padding: 3px 7px;
+  color: #0f172a;
+  font-size: 11px;
+}
+
+.stream-chat-author .badge-sigma,
+.stream-chat-author .badge-ach-70,
+.stream-chat-author .badge-ach-80 {
+  color: #e5e7eb;
+}
+
 .stream-chat-author.has-badge {
   border-color: rgba(20, 92, 89, 0.22);
   background: #fffaf0;
@@ -7618,6 +7657,7 @@ button.stream-chat-avatar {
 .home-summary__button,
 .curator-panel button,
 .stream-chat-form button {
+  color: #fffdf8;
   background: var(--blue);
   border-color: var(--blue);
 }
@@ -7626,6 +7666,7 @@ button.stream-chat-avatar {
 .home-summary__button:hover,
 .curator-panel button:hover,
 .stream-chat-form button:hover {
+  color: #fffdf8;
   background: var(--blue-dark);
   border-color: var(--blue-dark);
 }
