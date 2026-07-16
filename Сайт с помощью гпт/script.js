@@ -689,9 +689,45 @@ function getFallbackLessonCount(courseKey) {
   return (fallbackLessons[courseKey] || fallbackLessons.math).length;
 }
 
-function getCourseThemeKey(courseKey = currentCourseKey) {
-  const key = String(courseKey || "math");
-  return Object.prototype.hasOwnProperty.call(courseData, key) ? key : "math";
+function getCourseThemeKey(courseKey = currentCourseKey, fallbackText = "") {
+  const key = String(courseKey || "").trim();
+
+  if (Object.prototype.hasOwnProperty.call(courseData, key)) {
+    return key;
+  }
+
+  const source = `${key} ${fallbackText}`.toLowerCase();
+
+  if ((source.includes("oge") || source.includes("РѕРіСЌ") || source.includes("огэ")) && (source.includes("math") || source.includes("РјР°С‚") || source.includes("мат"))) {
+    return "ogeMath";
+  }
+
+  if (source.includes("physics") || source.includes("С„РёР·") || source.includes("физ")) {
+    return "physics";
+  }
+
+  if (source.includes("informatics") || source.includes("code") || source.includes("РёРЅС„РѕСЂРј") || source.includes("информ")) {
+    return "informatics";
+  }
+
+  if (source.includes("russian") || source.includes("СЂСѓСЃ") || source.includes("рус")) {
+    return "russian";
+  }
+
+  if (source.includes("english") || source.includes("Р°РЅРіР»") || source.includes("англ")) {
+    return "english";
+  }
+
+  if (source.includes("math") || source.includes("РјР°С‚") || source.includes("мат")) {
+    return "math";
+  }
+
+  return "math";
+}
+
+function getCourseThemeAttr(item = {}, fallbackText = "") {
+  const themeKey = getCourseThemeKey(item?.courseSlug || item?.courseKey || item?.courseTitle || item?.courseId || currentCourseKey, `${item?.courseTitle || ""} ${fallbackText}`);
+  return ` data-course-theme="${escapeHtml(themeKey)}"`;
 }
 
 function updateCourseCardLessonCount(card, count) {
@@ -1129,6 +1165,7 @@ function applyGuestUi(message = "Войдите или создайте акка
   }
 
   resetProfilePetAvatar();
+  applySiteTheme([]);
 
   if (accountStudentName) {
     accountStudentName.textContent = "Войдите в аккаунт";
@@ -1487,6 +1524,7 @@ function applyAccountToUi(account = latestAccount) {
   }
 
   latestAccount = account;
+  applySiteTheme(account.profileItems || []);
   updateProfileSummary(account);
   updatePointsPanels(account);
   applyAccountToCourseCards(account);
@@ -1532,6 +1570,7 @@ function getShopSlot(type = "") {
 
 function getShopTypeLabel(type = "") {
   const labels = {
+    theme: "Тема сайта",
     animal: "Питомец",
     fur: "Шерсть",
     eyes: "Глаза",
@@ -1548,7 +1587,7 @@ function getShopTypeLabel(type = "") {
 }
 
 function getShopSectionOrder(slot = "") {
-  const order = ["animal", "fur", "eyes", "scene", "animation", "outfit", "head", "face", "neck", "hand"];
+  const order = ["theme", "animal", "fur", "eyes", "scene", "animation", "outfit", "head", "face", "neck", "hand"];
   const index = order.indexOf(getShopSlot(slot));
   return index === -1 ? order.length : index;
 }
@@ -1570,6 +1609,7 @@ function getShopDisplaySection(type = "") {
 function getShopSectionTabs() {
   return [
     ["all", "Все"],
+    ["theme", "Темы сайта"],
     ["animal", "Питомцы"],
     ["appearance", "Внешность"],
     ["scene", "Окружение"],
@@ -1634,6 +1674,20 @@ function getPixelPetSceneTarget(petElement) {
   return petElement?.closest(".capybara-stage") || petElement?.closest(".avatar--student") || null;
 }
 
+function getEquippedSiteTheme(items = []) {
+  return (items || []).find((item) => item?.isEquipped && getShopSlot(item.itemType) === "theme" && item.cssClass)?.cssClass || "";
+}
+
+function applySiteTheme(items = []) {
+  const themeClass = getEquippedSiteTheme(items);
+
+  if (themeClass) {
+    document.body.dataset.siteTheme = themeClass;
+  } else {
+    delete document.body.dataset.siteTheme;
+  }
+}
+
 function getPixelPetAttributes(items = []) {
   const attrs = {};
   let scene = "";
@@ -1642,6 +1696,10 @@ function getPixelPetAttributes(items = []) {
     .filter((item) => item?.isEquipped !== false && item?.cssClass)
     .forEach((item) => {
       const slot = getShopSlot(item.itemType);
+
+      if (slot === "theme") {
+        return;
+      }
 
       if (slot === "scene") {
         scene = item.cssClass;
@@ -1702,6 +1760,18 @@ function getShopPreviewItems(item, equippedItems = []) {
 }
 
 function renderShopItemPreview(item, equippedItems = []) {
+  if (getShopSlot(item?.itemType) === "theme") {
+    return `
+      <div class="shop-item__preview shop-item__preview--theme" aria-hidden="true">
+        <span class="shop-theme-preview" data-site-theme-preview="${escapeHtml(item.cssClass || "")}">
+          <i></i>
+          <strong></strong>
+          <em></em>
+        </span>
+      </div>
+    `;
+  }
+
   return `
     <div class="shop-item__preview" aria-hidden="true">
       ${renderPixelPetMarkup(getShopPreviewItems(item, equippedItems), {
@@ -1735,6 +1805,10 @@ function applyPixelPetOutfit(petElement, items = []) {
     .forEach((item) => {
       const slot = getShopSlot(item.itemType);
 
+      if (slot === "theme") {
+        return;
+      }
+
       if (slot === "scene") {
         getPixelPetSceneTarget(petElement)?.setAttribute("data-scene", item.cssClass);
         return;
@@ -1754,6 +1828,7 @@ function resetProfilePetAvatar() {
 }
 
 function applyCapybaraOutfit(items = []) {
+  applySiteTheme(items);
   applyPixelPetOutfit(capybaraPreview, items);
   applyPixelPetOutfit(profilePetPreview, items);
 
@@ -2317,6 +2392,7 @@ function updateStaffWorkspaceHeader(pageName) {
   const staffHeaderProfile = document.querySelector("#staff-header-profile");
   const staffShopItems = latestStaffWorkspace?.staffShop?.items || [];
   const staffEquippedItems = staffShopItems.filter((item) => item.isEquipped);
+  applySiteTheme(staffShopItems);
 
   if (title) {
     title.textContent = getStaffPageTitle(pageName);
@@ -2703,7 +2779,7 @@ function renderHomeworkStatsOverview(stats, { curator = false } = {}) {
       ${summaries
         .map(
           (stat) => `
-            <button class="staff-lesson-summary" type="button" data-staff-scroll-target="${escapeHtml(stat.domId)}">
+            <button class="staff-lesson-summary" type="button" data-staff-scroll-target="${escapeHtml(stat.domId)}"${getCourseThemeAttr(stat)}>
               <div>
                 <span>${escapeHtml(stat.courseTitle || "Курс")}${stat.teacherName ? ` · ${escapeHtml(stat.teacherName)}` : ""}</span>
                 <strong>Урок ${escapeHtml(stat.lessonNumber || "-")} · ${escapeHtml(stat.lessonTitle || stat.homeworkTitle || "Домашнее задание")}</strong>
@@ -2808,7 +2884,7 @@ function renderHomeworkCourseStep(pageName, stats, { curator = false } = {}) {
         .map((summary) => {
           const complete = isHomeworkLessonComplete(summary, { curator });
           return `
-            <button class="staff-step-card ${complete ? "is-complete" : ""}" type="button" data-staff-open-course="${escapeHtml(pageName)}" data-course-id="${escapeHtml(summary.courseKey)}">
+            <button class="staff-step-card ${complete ? "is-complete" : ""}" type="button" data-staff-open-course="${escapeHtml(pageName)}" data-course-id="${escapeHtml(summary.courseKey)}"${getCourseThemeAttr(summary)}>
               <div class="staff-step-card__top">
                 <span>${escapeHtml(summary.teacherName || "Преподаватель")}</span>
                 <strong>${escapeHtml(summary.courseTitle || "Курс")}</strong>
@@ -2847,7 +2923,7 @@ function renderHomeworkLessonStep(pageName, courseSummary, lessonSummaries, { cu
         .map((summary) => {
           const complete = isHomeworkLessonComplete(summary, { curator });
           return `
-            <button class="staff-step-card ${complete ? "is-complete" : ""}" type="button" data-staff-open-lesson="${escapeHtml(pageName)}" data-course-id="${escapeHtml(getCourseSelectionKey(summary))}" data-lesson-key="${escapeHtml(summary.key)}">
+            <button class="staff-step-card ${complete ? "is-complete" : ""}" type="button" data-staff-open-lesson="${escapeHtml(pageName)}" data-course-id="${escapeHtml(getCourseSelectionKey(summary))}" data-lesson-key="${escapeHtml(summary.key)}"${getCourseThemeAttr(summary)}>
               <div class="staff-step-card__top">
                 <span>Урок ${escapeHtml(summary.lessonNumber || "-")}</span>
                 <strong>${escapeHtml(summary.lessonTitle || summary.homeworkTitle || "Домашнее задание")}</strong>
@@ -3091,7 +3167,7 @@ function renderStaffStudents() {
     ${Object.entries(grouped)
       .map(
         ([courseTitle, courseStudents]) => `
-          <section class="staff-group">
+          <section class="staff-group"${getCourseThemeAttr({ courseTitle })}>
             <h2>${escapeHtml(courseTitle)}</h2>
             <div class="staff-card-grid">
               ${courseStudents
@@ -3446,7 +3522,7 @@ function renderTeacherHomeworkCard(item) {
   const canOpenSubmission = Boolean(item.submissionLink);
 
   return `
-    <article class="staff-card ${isChecked ? "staff-card--checked is-complete" : isSubmitted ? "staff-card--pending" : "staff-card--muted"}">
+    <article class="staff-card ${isChecked ? "staff-card--checked is-complete" : isSubmitted ? "staff-card--pending" : "staff-card--muted"}"${getCourseThemeAttr(item)}>
       <div class="staff-card__meta">
         <span class="resource-chip ${status.className}">${status.label}</span>
         <span class="resource-chip">${escapeHtml(item.studentName || "Ученик")}</span>
@@ -3525,7 +3601,7 @@ function renderTeacherCorrectionCard(item) {
   const canOpenSubmission = Boolean(item.submissionLink);
 
   return `
-    <article class="staff-card ${isChecked ? "staff-card--checked is-complete" : isSubmitted ? "staff-card--pending" : "staff-card--muted"}">
+    <article class="staff-card ${isChecked ? "staff-card--checked is-complete" : isSubmitted ? "staff-card--pending" : "staff-card--muted"}"${getCourseThemeAttr(item)}>
       <div class="staff-card__meta">
         <span class="resource-chip ${status.className}">${status.label}</span>
         <span class="resource-chip is-yellow">Работа над ошибками</span>
@@ -3765,7 +3841,7 @@ function getTeacherCourseVisual(course) {
 
 function renderTeacherLessonRow(course, lesson) {
   return `
-    <article class="lesson-row staff-teacher-lesson-row">
+    <article class="lesson-row staff-teacher-lesson-row"${getCourseThemeAttr(course, lesson?.lessonTitle || lesson?.topic || "")}>
       <span class="lesson-number">${escapeHtml(lesson.lessonNumber || "-")}</span>
       <div class="lesson-copy">
         <h3>Урок ${escapeHtml(lesson.lessonNumber || "-")}. ${escapeHtml(lesson.lessonTitle || "Новый урок")}</h3>
@@ -3798,7 +3874,7 @@ function renderTeacherStreamCard(course, stream) {
   const statusClass = stream.status === "Done" ? "is-muted" : stream.status === "Cancelled" ? "is-yellow" : timedStatus.className || "is-blue";
 
   return `
-    <article class="staff-card staff-stream-card">
+    <article class="staff-card staff-stream-card"${getCourseThemeAttr(course, stream?.streamTitle || stream?.lessonTitle || "")}>
       <div class="staff-card__meta">
         <span class="resource-chip ${statusClass}">${escapeHtml(statusLabel)}</span>
         ${stream.startsAt ? `<span class="resource-chip">${escapeHtml(formatStreamDate(stream.startsAt))}</span>` : ""}
@@ -3821,7 +3897,7 @@ function renderTeacherCourseStepCard(course, lessons) {
   const visual = getTeacherCourseVisual(course);
 
   return `
-    <button class="staff-step-card staff-course-step-card" type="button" data-staff-open-course="courses" data-course-id="${escapeHtml(getCourseSelectionKey(course))}">
+    <button class="staff-step-card staff-course-step-card" type="button" data-staff-open-course="courses" data-course-id="${escapeHtml(getCourseSelectionKey(course))}"${getCourseThemeAttr(course)}>
       <div class="staff-course-step-card__body">
         <div class="course-illustration ${escapeHtml(visual.iconClass)}" aria-hidden="true">
           <svg class="course-illustration__icon"><use href="${escapeHtml(visual.iconSymbol)}" /></svg>
@@ -3882,8 +3958,8 @@ function renderTeacherCourses() {
 
   return `
     ${renderStaffStepHeading(selectedCourse.courseTitle || "Курс", "Уроки, материалы и инструменты курса", renderStaffStepBack("courses", "courses", "", "К курсам"))}
-    <section class="staff-group staff-teacher-course">
-      <article class="course-card staff-course-card is-selected">
+    <section class="staff-group staff-teacher-course"${getCourseThemeAttr(selectedCourse)}>
+      <article class="course-card staff-course-card is-selected"${getCourseThemeAttr(selectedCourse)}>
         <div class="course-card__body">
           <div class="course-illustration ${escapeHtml(visual.iconClass)}" aria-hidden="true">
             <svg class="course-illustration__icon"><use href="${escapeHtml(visual.iconSymbol)}" /></svg>
@@ -3904,7 +3980,7 @@ function renderTeacherCourses() {
           </div>
         </div>
       </article>
-      <section class="staff-panel" id="teacher-course-lessons-${escapeHtml(selectedCourse.courseId)}">
+      <section class="staff-panel" id="teacher-course-lessons-${escapeHtml(selectedCourse.courseId)}"${getCourseThemeAttr(selectedCourse)}>
         <header class="staff-panel-heading">
           <h3>Уроки курса</h3>
           <span>${formatNumber(lessons.length)} материалов</span>
@@ -3918,18 +3994,18 @@ function renderTeacherCourses() {
         </div>
       </section>
       <div class="staff-course-tools staff-course-tools--wide">
-        <section class="staff-panel" id="teacher-course-create-${escapeHtml(selectedCourse.courseId)}">
+        <section class="staff-panel" id="teacher-course-create-${escapeHtml(selectedCourse.courseId)}"${getCourseThemeAttr(selectedCourse)}>
           <h3>Создать урок, конспект и ДЗ</h3>
           <p>Если заполнить ссылки на конспект и домашнее задание, сайт автоматически создаст связанные записи в базе и выдаст ДЗ ученикам курса.</p>
           ${renderLessonForm(selectedCourse)}
         </section>
-        <section class="staff-panel" id="teacher-course-stream-${escapeHtml(selectedCourse.courseId)}">
+        <section class="staff-panel" id="teacher-course-stream-${escapeHtml(selectedCourse.courseId)}"${getCourseThemeAttr(selectedCourse)}>
           <h3>Создать трансляцию</h3>
           <p>Трансляция появится у учеников курса и в уведомлениях.</p>
           ${renderStreamForm(selectedCourse)}
         </section>
       </div>
-      <section class="staff-panel">
+      <section class="staff-panel"${getCourseThemeAttr(selectedCourse)}>
         <header class="staff-panel-heading">
           <h3>Трансляции курса</h3>
           <span>${formatNumber(courseStreams.length)} шт.</span>
@@ -4373,7 +4449,7 @@ function renderCuratorHomeworkCard(config, item) {
   const reviewed = isCuratorReviewed(item);
 
   return `
-    <article class="staff-card ${reviewed ? "staff-card--checked is-complete" : isStaffHomeworkChecked(item) ? "staff-card--pending" : isStaffHomeworkSubmitted(item) ? "staff-card--pending" : "staff-card--muted"}">
+    <article class="staff-card ${reviewed ? "staff-card--checked is-complete" : isStaffHomeworkChecked(item) ? "staff-card--pending" : isStaffHomeworkSubmitted(item) ? "staff-card--pending" : "staff-card--muted"}"${getCourseThemeAttr(item)}>
       <div class="staff-card__meta">
         <span class="resource-chip ${status.className}">${status.label}</span>
         <span class="resource-chip is-blue">${escapeHtml(item.teacherName || "Преподаватель")}</span>
@@ -4439,7 +4515,7 @@ function renderCuratorHomeworkPage(pageName, config, items) {
 
 function renderCuratorArchiveCard(config, item, typeLabel) {
   return `
-    <article class="staff-card staff-card--archived">
+    <article class="staff-card staff-card--archived"${getCourseThemeAttr(item)}>
       <div class="staff-card__meta">
         <span class="resource-chip is-green">${escapeHtml(typeLabel)}</span>
         <span class="resource-chip is-blue">${escapeHtml(item.teacherName || "Преподаватель")}</span>
@@ -4585,7 +4661,7 @@ function renderCuratorResourceCourseStep(pageName, items) {
         .map((summary) => {
           const complete = summary.total > 0 && summary.total === summary.reviewed;
           return `
-            <button class="staff-step-card ${complete ? "is-complete" : ""}" type="button" data-staff-open-course="${escapeHtml(pageName)}" data-course-id="${escapeHtml(summary.courseKey)}">
+            <button class="staff-step-card ${complete ? "is-complete" : ""}" type="button" data-staff-open-course="${escapeHtml(pageName)}" data-course-id="${escapeHtml(summary.courseKey)}"${getCourseThemeAttr(summary)}>
               <div class="staff-step-card__top">
                 <span>${escapeHtml(summary.teacherName || "Преподаватель")}</span>
                 <strong>${escapeHtml(summary.courseTitle || "Курс")}</strong>
@@ -4638,7 +4714,7 @@ function renderCuratorResourceItemsStep(pageName, config, courseSummary, items) 
               .map((item) => {
                 const reviewed = isCuratorReviewed(item);
                 return `
-                  <article class="staff-card ${reviewed ? "is-complete staff-card--checked" : "staff-card--pending"}">
+                  <article class="staff-card ${reviewed ? "is-complete staff-card--checked" : "staff-card--pending"}"${getCourseThemeAttr(item)}>
                     <div class="staff-card__meta">
                       <span class="resource-chip ${reviewed ? "is-green" : "is-yellow"}">${reviewed ? "Оценено" : "Ждёт оценки"}</span>
                       <span class="resource-chip is-blue">${escapeHtml(item.teacherName || "Преподаватель")}</span>
@@ -5115,7 +5191,7 @@ function renderAdminStudentCard(student) {
   const comments = student.comments || [];
 
   return `
-    <article class="staff-card admin-student-card admin-compact-card">
+    <article class="staff-card admin-student-card admin-compact-card"${courses.length === 1 ? getCourseThemeAttr(courses[0]) : ""}>
       <div class="staff-card__meta">
         <span class="resource-chip ${student.studentStatus === "Graduate" ? "is-green" : "is-blue"}">${student.studentStatus === "Graduate" ? "Выпускник" : "Ученик"}</span>
         <span class="resource-chip">${escapeHtml(student.grade ? `${student.grade} класс` : "класс не указан")}</span>
@@ -5141,7 +5217,7 @@ function renderAdminStudentCard(student) {
               ? courses
                   .map(
                     (course) => `
-                      <div class="staff-reviewed-note">
+                      <div class="staff-reviewed-note"${getCourseThemeAttr(course)}>
                         <strong>${escapeHtml(course.courseTitle)} · ${formatPercent(course.progressPercent)}</strong>
                         <span>${escapeHtml(course.teacherName || "Преподаватель не указан")} · ${escapeHtml(course.curatorName || "Куратор не указан")} · ДЗ ${formatNumber(course.homeworkSubmitted || 0)} / ${formatNumber(course.homeworkTotal || 0)}</span>
                         ${renderAdminEnrollmentForm(student, course)}
@@ -5464,7 +5540,7 @@ function renderAdminTeacherCard(teacher) {
                 ? courses
                     .map(
                       (course) => `
-                        <div class="staff-reviewed-note">
+                        <div class="staff-reviewed-note"${getCourseThemeAttr(course)}>
                           <strong>${escapeHtml(course.courseTitle)} · ${formatNumber(course.studentsCount || 0)} учен.</strong>
                           <span>${escapeHtml(course.curatorNames || "Куратор не указан")}</span>
                           ${renderAdminCourseStaffForm(course, { teacherId: teacher.teacherId, curatorId: course.courseCuratorId || "" })}
@@ -5488,7 +5564,7 @@ function renderAdminTeacherCard(teacher) {
                 ? students
                     .map(
                       (student) => `
-                        <div class="staff-reviewed-note">
+                        <div class="staff-reviewed-note"${getCourseThemeAttr(student)}>
                           <strong>${escapeHtml(student.studentName)} · ${escapeHtml(student.courseTitle)}</strong>
                           <span>${escapeHtml(student.curatorName || "Куратор не указан")}</span>
                           ${renderAdminEnrollmentForm(student, {
@@ -5548,7 +5624,7 @@ function renderAdminCuratorCard(curator) {
                 ? courses
                     .map(
                       (course) => `
-                        <div class="staff-reviewed-note">
+                        <div class="staff-reviewed-note"${getCourseThemeAttr(course)}>
                           <strong>${escapeHtml(course.courseTitle)} · ${formatNumber(course.studentsCount || 0)} учен.</strong>
                           <span>${escapeHtml(course.teacherNames || "Преподаватель не указан")}</span>
                           ${renderAdminCourseStaffForm(course, { teacherId: course.courseTeacherId || "", curatorId: curator.curatorId })}
@@ -5572,7 +5648,7 @@ function renderAdminCuratorCard(curator) {
                 ? students
                     .map(
                       (student) => `
-                        <div class="staff-reviewed-note">
+                        <div class="staff-reviewed-note"${getCourseThemeAttr(student)}>
                           <strong>${escapeHtml(student.studentName)} · ${escapeHtml(student.courseTitle)}</strong>
                           <span>${escapeHtml(student.teacherName || "Преподаватель не указан")}</span>
                           ${renderAdminEnrollmentForm(student, {

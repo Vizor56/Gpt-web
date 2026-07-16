@@ -793,6 +793,8 @@ async function seedDatabase() {
       [42, "anim_skate", "Анимация: скейт", "animation", 560, "skate", "Питомец едет на скейте по аватарке."],
       [43, "anim_volleyball", "Анимация: волейбол", "animation", 620, "volleyball", "Питомец отбивает мяч как после идеального разбора."],
       [44, "anim_float", "Анимация: левитация", "animation", 520, "float", "Спокойное парение для дзен-режима."],
+      [45, "theme_focus_mint", "Фокус-мята", "theme", 900, "theme-focus-mint", "Светлая спокойная тема с мятными акцентами для долгой учебы."],
+      [46, "theme_deep_graphite", "Графитовая ночь", "theme", 1200, "theme-deep-graphite", "Более собранная тема с графитовой базой и теплым учебным акцентом."],
     ];
 
     const staffShopItems = [
@@ -861,6 +863,7 @@ async function seedDatabase() {
           CASE item_type
             WHEN 'animal' THEN 320
             WHEN 'animation' THEN 500
+            WHEN 'theme' THEN 900
             WHEN 'scene' THEN 240
             WHEN 'outfit' THEN 300
             WHEN 'head' THEN 260
@@ -1438,6 +1441,7 @@ async function buildAccountPayload(studentId, authToken = "") {
   }
 
   const notifications = await getStudentNotifications(studentId);
+  const profileItemsMap = await getStudentProfileItemsMap([studentId]);
 
   return {
     source: "database",
@@ -1470,6 +1474,7 @@ async function buildAccountPayload(studentId, authToken = "") {
       progressPercent: Number(course.progressPercent || 0),
       lessons: lessonGroups.get(course.courseSlug) || [],
     })),
+    profileItems: profileItemsMap.get(Number(studentId)) || [],
     notifications,
   };
 }

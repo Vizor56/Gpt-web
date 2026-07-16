@@ -24,6 +24,40 @@
   --focus-ring: 0 0 0 4px rgba(20, 92, 89, 0.13);
 }
 
+body[data-site-theme="theme-focus-mint"] {
+  --bg: #eef8f4;
+  --surface: #fffef9;
+  --surface-soft: #e1f4ef;
+  --ink: #1d302f;
+  --text: #263f3d;
+  --muted: #607976;
+  --line: #cfe6de;
+  --line-soft: #deeee8;
+  --blue: #116b64;
+  --blue-dark: #0b4f4a;
+  --green: #2f946f;
+  --gold: #e7b447;
+  --mint: #59d1c3;
+  --focus-ring: 0 0 0 4px rgba(17, 107, 100, 0.14);
+}
+
+body[data-site-theme="theme-deep-graphite"] {
+  --bg: #eef0ec;
+  --surface: #fffdf5;
+  --surface-soft: #e6eeea;
+  --ink: #20292b;
+  --text: #273437;
+  --muted: #637073;
+  --line: #cfd7d2;
+  --line-soft: #e0e5df;
+  --blue: #315f61;
+  --blue-dark: #24494b;
+  --green: #4a856b;
+  --gold: #d8a43f;
+  --mint: #8bc9bf;
+  --focus-ring: 0 0 0 4px rgba(49, 95, 97, 0.15);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -119,8 +153,22 @@ a > svg {
   min-height: 100vh;
   background:
     radial-gradient(circle at 92% 7%, rgba(88, 201, 191, 0.12), transparent 28%),
-    linear-gradient(180deg, #fffdf8 0%, #f7f6f2 100%),
+    linear-gradient(180deg, var(--surface) 0%, var(--bg) 100%),
     var(--bg);
+}
+
+body[data-site-theme="theme-focus-mint"] .app {
+  background:
+    radial-gradient(circle at 88% 6%, rgba(89, 209, 195, 0.16), transparent 26%),
+    radial-gradient(circle at 14% 88%, rgba(241, 184, 75, 0.08), transparent 24%),
+    linear-gradient(180deg, #fffef9 0%, #eef8f4 100%);
+}
+
+body[data-site-theme="theme-deep-graphite"] .app {
+  background:
+    radial-gradient(circle at 86% 8%, rgba(49, 95, 97, 0.18), transparent 27%),
+    radial-gradient(circle at 12% 90%, rgba(216, 164, 63, 0.09), transparent 25%),
+    linear-gradient(180deg, #fffdf5 0%, #eef0ec 100%);
 }
 
 .sidebar {
@@ -6639,6 +6687,71 @@ button.stream-chat-avatar {
     0 10px 20px rgba(30, 58, 105, 0.07);
 }
 
+.shop-item__preview--theme {
+  overflow: hidden;
+  padding: 8px;
+}
+
+.shop-theme-preview {
+  position: relative;
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  grid-template-rows: 16px 1fr 12px;
+  gap: 6px;
+  width: 70px;
+  height: 70px;
+  padding: 8px;
+  border: 2px solid #1f365c;
+  border-radius: 10px;
+  background: #fffdf8;
+  box-shadow: inset 0 -10px 0 rgba(20, 92, 89, 0.07);
+}
+
+.shop-theme-preview i,
+.shop-theme-preview strong,
+.shop-theme-preview em {
+  display: block;
+  border-radius: 3px;
+}
+
+.shop-theme-preview i {
+  grid-row: 1 / 4;
+  background: #145c59;
+}
+
+.shop-theme-preview strong {
+  background: #58c9bf;
+}
+
+.shop-theme-preview em {
+  grid-column: 2;
+  background: #f1b84b;
+}
+
+.shop-theme-preview[data-site-theme-preview="theme-focus-mint"] {
+  background: linear-gradient(180deg, #fffef9, #eef8f4);
+}
+
+.shop-theme-preview[data-site-theme-preview="theme-focus-mint"] i {
+  background: #116b64;
+}
+
+.shop-theme-preview[data-site-theme-preview="theme-focus-mint"] strong {
+  background: #59d1c3;
+}
+
+.shop-theme-preview[data-site-theme-preview="theme-deep-graphite"] {
+  background: linear-gradient(180deg, #fffdf5, #e5ebe5);
+}
+
+.shop-theme-preview[data-site-theme-preview="theme-deep-graphite"] i {
+  background: #315f61;
+}
+
+.shop-theme-preview[data-site-theme-preview="theme-deep-graphite"] strong {
+  background: #24494b;
+}
+
 .shop-preview-pet {
   position: relative;
   display: grid;
@@ -8182,6 +8295,112 @@ button.stream-chat-avatar {
     linear-gradient(30deg, transparent 0 49%, rgba(var(--course-rgb), 0.2) 50% 52%, transparent 53%) center / 190px 132px no-repeat,
     linear-gradient(150deg, transparent 0 49%, rgba(var(--course-rgb), 0.16) 50% 52%, transparent 53%) 50px 64px / 138px 98px no-repeat,
     linear-gradient(90deg, rgba(var(--course-rgb), 0.16) 0 2px, transparent 2px) 40px 156px / 160px 2px no-repeat;
+}
+
+:is(.staff-step-card, .staff-lesson-summary, .staff-card, .staff-panel, .staff-reviewed-note, .staff-teacher-lesson-row, .staff-course-card)[data-course-theme] {
+  --course-accent: var(--blue);
+  --course-rgb: 20, 92, 89;
+  --course-wash: #e5f4f1;
+  --course-warm: #fff8df;
+  --course-line: rgba(var(--course-rgb), 0.18);
+  --course-pattern:
+    linear-gradient(90deg, rgba(var(--course-rgb), 0.1) 1px, transparent 1px) 0 0 / 34px 34px,
+    linear-gradient(0deg, rgba(var(--course-rgb), 0.08) 1px, transparent 1px) 0 0 / 34px 34px;
+  --course-art:
+    linear-gradient(135deg, transparent 0 46%, rgba(var(--course-rgb), 0.2) 47% 49%, transparent 50%) center / 190px 190px no-repeat,
+    radial-gradient(circle at 50% 50%, transparent 0 36%, rgba(var(--course-rgb), 0.14) 37% 39%, transparent 40%) center / 170px 170px no-repeat;
+}
+
+:is(.staff-step-card, .staff-lesson-summary, .staff-card, .staff-panel, .staff-reviewed-note, .staff-teacher-lesson-row, .staff-course-card)[data-course-theme="math"] {
+  --course-accent: #145c59;
+  --course-rgb: 20, 92, 89;
+  --course-wash: #e5f4f1;
+  --course-warm: #fff8df;
+}
+
+:is(.staff-step-card, .staff-lesson-summary, .staff-card, .staff-panel, .staff-reviewed-note, .staff-teacher-lesson-row, .staff-course-card)[data-course-theme="russian"] {
+  --course-accent: #8e514a;
+  --course-rgb: 142, 81, 74;
+  --course-wash: #f7ebe8;
+  --course-warm: #fff6ea;
+}
+
+:is(.staff-step-card, .staff-lesson-summary, .staff-card, .staff-panel, .staff-reviewed-note, .staff-teacher-lesson-row, .staff-course-card)[data-course-theme="informatics"] {
+  --course-accent: #2f637b;
+  --course-rgb: 47, 99, 123;
+  --course-wash: #e7f2f6;
+  --course-warm: #edf7f4;
+}
+
+:is(.staff-step-card, .staff-lesson-summary, .staff-card, .staff-panel, .staff-reviewed-note, .staff-teacher-lesson-row, .staff-course-card)[data-course-theme="physics"] {
+  --course-accent: #4a5280;
+  --course-rgb: 74, 82, 128;
+  --course-wash: #eeeff8;
+  --course-warm: #f8f4ea;
+}
+
+:is(.staff-step-card, .staff-lesson-summary, .staff-card, .staff-panel, .staff-reviewed-note, .staff-teacher-lesson-row, .staff-course-card)[data-course-theme="english"] {
+  --course-accent: #586b47;
+  --course-rgb: 88, 107, 71;
+  --course-wash: #edf3e8;
+  --course-warm: #f8f6ea;
+}
+
+:is(.staff-step-card, .staff-lesson-summary, .staff-card, .staff-panel, .staff-reviewed-note, .staff-teacher-lesson-row, .staff-course-card)[data-course-theme="ogeMath"] {
+  --course-accent: #806b34;
+  --course-rgb: 128, 107, 52;
+  --course-wash: #f4efdf;
+  --course-warm: #fff9ea;
+}
+
+:is(.staff-step-card, .staff-lesson-summary, .staff-card, .staff-panel, .staff-reviewed-note, .staff-teacher-lesson-row, .staff-course-card)[data-course-theme] {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(var(--course-rgb), 0.18);
+  background:
+    linear-gradient(135deg, rgba(var(--course-rgb), 0.075), transparent 52%),
+    var(--course-pattern),
+    var(--surface);
+}
+
+:is(.staff-step-card, .staff-lesson-summary, .staff-card, .staff-panel, .staff-reviewed-note, .staff-teacher-lesson-row, .staff-course-card)[data-course-theme]::before {
+  position: absolute;
+  right: -48px;
+  bottom: -58px;
+  width: 156px;
+  height: 132px;
+  background: var(--course-art);
+  content: "";
+  opacity: 0.16;
+  pointer-events: none;
+}
+
+:is(.staff-step-card, .staff-lesson-summary, .staff-card, .staff-panel, .staff-reviewed-note, .staff-teacher-lesson-row, .staff-course-card)[data-course-theme] > * {
+  position: relative;
+  z-index: 1;
+}
+
+:is(.staff-step-card, .staff-lesson-summary, .staff-card, .staff-panel, .staff-reviewed-note, .staff-teacher-lesson-row, .staff-course-card)[data-course-theme]:hover,
+:is(.staff-card, .staff-panel)[data-course-theme]:focus-within {
+  border-color: rgba(var(--course-rgb), 0.32);
+}
+
+:is(.staff-step-card, .staff-lesson-summary, .staff-card, .staff-panel, .staff-reviewed-note, .staff-teacher-lesson-row, .staff-course-card)[data-course-theme] :is(h2, h3, strong) {
+  color: var(--course-accent);
+}
+
+:is(.staff-step-card, .staff-lesson-summary, .staff-card, .staff-panel, .staff-reviewed-note, .staff-teacher-lesson-row, .staff-course-card)[data-course-theme] .resource-chip.is-blue {
+  color: var(--course-accent);
+  background: rgba(var(--course-rgb), 0.11);
+}
+
+:is(.staff-step-card, .staff-lesson-summary, .staff-card, .staff-panel, .staff-reviewed-note, .staff-teacher-lesson-row, .staff-course-card)[data-course-theme].is-complete,
+:is(.staff-card, .staff-step-card)[data-course-theme].staff-card--checked {
+  border-color: rgba(47, 143, 111, 0.36);
+  background:
+    linear-gradient(135deg, rgba(47, 143, 111, 0.09), transparent 54%),
+    var(--course-pattern),
+    var(--surface);
 }
 
 .course-card[data-course],
