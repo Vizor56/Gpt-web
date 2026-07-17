@@ -10744,6 +10744,7 @@ body[data-site-theme] :is(.capybara-shop-panel, .staff-shop-panel, .staff-panel:
   pointer-events: none;
   transform-origin: 50% 100%;
   image-rendering: pixelated;
+  background-repeat: no-repeat;
   filter: drop-shadow(2px 2px 0 rgba(17, 24, 39, 0.26));
 }
 
@@ -10775,55 +10776,129 @@ body[data-site-theme] :is(.capybara-shop-panel, .staff-shop-panel, .staff-panel:
 }
 
 .capybara[data-head="wizard-hat"] {
-  --pet-hat-right: 20px;
-  --pet-hat-bottom: 108px;
-  --pet-hat-width: 72px;
-  --pet-hat-height: 56px;
+  --pet-hat-right: 18px;
+  --pet-hat-bottom: 110px;
+  --pet-hat-width: 74px;
+  --pet-hat-height: 54px;
 }
 
 .capybara[data-head="wizard-hat"] .capybara__headwear {
   background:
-    radial-gradient(circle at 62% 25%, #facc15 0 3px, transparent 4px),
-    radial-gradient(circle at 41% 54%, #ffffff 0 3px, transparent 4px),
-    linear-gradient(0deg, #2e1a78 0 9px, transparent 9px),
-    linear-gradient(135deg, transparent 0 34%, #7c3aed 35% 72%, #4c1d95 73% 100%);
-  clip-path: polygon(47% 0, 68% 47%, 96% 70%, 72% 79%, 82% 100%, 2% 100%, 11% 79%, 31% 59%);
+    linear-gradient(#facc15 0 0) 39px 8px / 7px 7px,
+    linear-gradient(#fef3c7 0 0) 29px 25px / 6px 6px,
+    linear-gradient(#4c1d95 0 0) 20px 41px / 43px 7px,
+    linear-gradient(#7c3aed 0 0) 10px 45px / 60px 8px,
+    linear-gradient(135deg, transparent 0 31%, #8b5cf6 32% 58%, #4c1d95 59% 100%) 24px 2px / 36px 43px;
+  background-repeat: no-repeat;
+  clip-path: none;
+  border-radius: 0 0 10px 10px;
   box-shadow: none;
 }
 
+.capybara[data-head="wizard-hat"] .capybara__headwear::before {
+  position: absolute;
+  content: "";
+  left: 12px;
+  bottom: 3px;
+  width: 56px;
+  height: 7px;
+  background: #312e81;
+  box-shadow: 7px -5px 0 -1px #6d28d9;
+}
+
+.capybara[data-head="wizard-hat"] .capybara__headwear::after {
+  position: absolute;
+  content: "";
+  left: 35px;
+  top: 18px;
+  width: 5px;
+  height: 5px;
+  background: #facc15;
+  box-shadow: -11px 13px 0 #ffffff, 15px 8px 0 #fde68a;
+}
+
 .capybara[data-head="red-cap"] {
-  --pet-hat-right: 18px;
-  --pet-hat-bottom: 104px;
+  --pet-hat-right: 17px;
+  --pet-hat-bottom: 106px;
   --pet-hat-width: 78px;
-  --pet-hat-height: 27px;
+  --pet-hat-height: 31px;
 }
 
 .capybara[data-head="red-cap"] .capybara__headwear {
   background:
-    linear-gradient(#b91c1c 0 0) 16px 4px / 46px 12px,
-    linear-gradient(#ef4444 0 0) 7px 10px / 58px 11px,
-    linear-gradient(#fecaca 0 0) 57px 13px / 19px 7px,
-    linear-gradient(#7f1d1d 0 0) 12px 20px / 44px 5px;
+    linear-gradient(#b91c1c 0 0) 18px 5px / 34px 8px,
+    linear-gradient(#ef4444 0 0) 11px 11px / 47px 13px,
+    linear-gradient(#fecaca 0 0) 31px 8px / 9px 5px,
+    linear-gradient(#7f1d1d 0 0) 13px 23px / 43px 5px,
+    linear-gradient(#ef4444 0 0) 55px 18px / 20px 7px,
+    linear-gradient(#991b1b 0 0) 61px 24px / 12px 4px;
   background-repeat: no-repeat;
+  border-radius: 18px 18px 7px 7px;
   box-shadow: none;
+}
+
+.capybara[data-head="red-cap"] .capybara__headwear::before {
+  position: absolute;
+  content: "";
+  left: 25px;
+  top: 6px;
+  width: 4px;
+  height: 18px;
+  background: #991b1b;
+  box-shadow: 18px 3px 0 -1px #f87171;
+}
+
+.capybara[data-head="red-cap"] .capybara__headwear::after {
+  position: absolute;
+  content: "";
+  left: 55px;
+  top: 17px;
+  width: 18px;
+  height: 8px;
+  background: #dc2626;
+  border-radius: 0 10px 8px 0;
+  box-shadow: 5px 5px 0 -2px #7f1d1d;
 }
 
 .capybara[data-head="ninja-band"] {
   --pet-hat-right: 18px;
-  --pet-hat-bottom: 95px;
-  --pet-hat-width: 82px;
-  --pet-hat-height: 20px;
+  --pet-hat-bottom: 100px;
+  --pet-hat-width: 78px;
+  --pet-hat-height: 25px;
 }
 
 .capybara[data-head="ninja-band"] .capybara__headwear {
   background:
-    linear-gradient(#7f1d1d 0 0) 0 5px / 58px 9px,
-    linear-gradient(#ef4444 0 0) 10px 2px / 49px 12px,
-    linear-gradient(#fecaca 0 0) 46px 5px / 10px 5px,
-    linear-gradient(#b91c1c 0 0) 57px 9px / 21px 7px,
-    linear-gradient(#ef4444 0 0) 65px 15px / 13px 5px;
+    linear-gradient(#991b1b 0 0) 7px 14px / 51px 4px,
+    linear-gradient(#ef4444 0 0) 5px 7px / 54px 10px,
+    linear-gradient(#fecaca 0 0) 25px 9px / 13px 4px,
+    linear-gradient(#7f1d1d 0 0) 58px 9px / 9px 9px,
+    linear-gradient(#b91c1c 0 0) 63px 12px / 12px 5px,
+    linear-gradient(#ef4444 0 0) 66px 18px / 10px 5px;
   background-repeat: no-repeat;
+  border-radius: 9px 10px 6px 6px;
   box-shadow: none;
+}
+
+.capybara[data-head="ninja-band"] .capybara__headwear::before {
+  position: absolute;
+  content: "";
+  left: 57px;
+  top: 8px;
+  width: 8px;
+  height: 8px;
+  background: #dc2626;
+  box-shadow: 7px 3px 0 -1px #991b1b, 12px 9px 0 -2px #ef4444;
+}
+
+.capybara[data-head="ninja-band"] .capybara__headwear::after {
+  position: absolute;
+  content: "";
+  left: 9px;
+  top: 8px;
+  width: 48px;
+  height: 4px;
+  background: rgba(254, 202, 202, 0.78);
 }
 
 .capybara[data-animal="cat"][data-head="gold-crown"],
@@ -10841,7 +10916,7 @@ body[data-site-theme] :is(.capybara-shop-panel, .staff-shop-panel, .staff-panel:
 .capybara[data-animal="panda"][data-head="wizard-hat"],
 .capybara[data-animal="penguin"][data-head="wizard-hat"] {
   --pet-hat-right: 19px;
-  --pet-hat-bottom: 111px;
+  --pet-hat-bottom: 112px;
 }
 
 .capybara[data-animal="cat"][data-head="red-cap"],
@@ -10849,8 +10924,8 @@ body[data-site-theme] :is(.capybara-shop-panel, .staff-shop-panel, .staff-panel:
 .capybara[data-animal="dog"][data-head="red-cap"],
 .capybara[data-animal="panda"][data-head="red-cap"],
 .capybara[data-animal="penguin"][data-head="red-cap"] {
-  --pet-hat-right: 18px;
-  --pet-hat-bottom: 107px;
+  --pet-hat-right: 17px;
+  --pet-hat-bottom: 109px;
 }
 
 .capybara[data-animal="cat"][data-head="ninja-band"],
@@ -10859,7 +10934,7 @@ body[data-site-theme] :is(.capybara-shop-panel, .staff-shop-panel, .staff-panel:
 .capybara[data-animal="panda"][data-head="ninja-band"],
 .capybara[data-animal="penguin"][data-head="ninja-band"] {
   --pet-hat-right: 18px;
-  --pet-hat-bottom: 98px;
+  --pet-hat-bottom: 103px;
 }
 
 .capybara[data-animal="frog"][data-head="gold-crown"] {
@@ -10868,18 +10943,18 @@ body[data-site-theme] :is(.capybara-shop-panel, .staff-shop-panel, .staff-panel:
 }
 
 .capybara[data-animal="frog"][data-head="wizard-hat"] {
-  --pet-hat-right: 20px;
-  --pet-hat-bottom: 110px;
+  --pet-hat-right: 19px;
+  --pet-hat-bottom: 112px;
 }
 
 .capybara[data-animal="frog"][data-head="red-cap"] {
-  --pet-hat-right: 19px;
-  --pet-hat-bottom: 106px;
+  --pet-hat-right: 18px;
+  --pet-hat-bottom: 112px;
 }
 
 .capybara[data-animal="frog"][data-head="ninja-band"] {
-  --pet-hat-right: 19px;
-  --pet-hat-bottom: 96px;
+  --pet-hat-right: 18px;
+  --pet-hat-bottom: 107px;
 }
 
 .capybara[data-animal="bunny"][data-head="gold-crown"] {
@@ -10888,18 +10963,18 @@ body[data-site-theme] :is(.capybara-shop-panel, .staff-shop-panel, .staff-panel:
 }
 
 .capybara[data-animal="bunny"][data-head="wizard-hat"] {
-  --pet-hat-right: 24px;
-  --pet-hat-bottom: 111px;
+  --pet-hat-right: 23px;
+  --pet-hat-bottom: 113px;
 }
 
 .capybara[data-animal="bunny"][data-head="red-cap"] {
-  --pet-hat-right: 22px;
-  --pet-hat-bottom: 107px;
+  --pet-hat-right: 21px;
+  --pet-hat-bottom: 109px;
 }
 
 .capybara[data-animal="bunny"][data-head="ninja-band"] {
-  --pet-hat-right: 22px;
-  --pet-hat-bottom: 98px;
+  --pet-hat-right: 21px;
+  --pet-hat-bottom: 103px;
 }
 
 .capybara[data-animal="teacher-owl"][data-head="gold-crown"] {
@@ -10908,18 +10983,18 @@ body[data-site-theme] :is(.capybara-shop-panel, .staff-shop-panel, .staff-panel:
 }
 
 .capybara[data-animal="teacher-owl"][data-head="wizard-hat"] {
-  --pet-hat-right: 41px;
-  --pet-hat-bottom: 120px;
+  --pet-hat-right: 40px;
+  --pet-hat-bottom: 121px;
 }
 
 .capybara[data-animal="teacher-owl"][data-head="red-cap"] {
-  --pet-hat-right: 38px;
-  --pet-hat-bottom: 116px;
+  --pet-hat-right: 39px;
+  --pet-hat-bottom: 117px;
 }
 
 .capybara[data-animal="teacher-owl"][data-head="ninja-band"] {
-  --pet-hat-right: 39px;
-  --pet-hat-bottom: 106px;
+  --pet-hat-right: 40px;
+  --pet-hat-bottom: 111px;
 }
 
 .capybara[data-animal="teacher-lion"][data-head="gold-crown"],
@@ -10935,7 +11010,7 @@ body[data-site-theme] :is(.capybara-shop-panel, .staff-shop-panel, .staff-panel:
 .capybara[data-animal="curator-otter"][data-head="wizard-hat"],
 .capybara[data-animal="admin-robot"][data-head="wizard-hat"],
 .capybara[data-animal="admin-raven"][data-head="wizard-hat"] {
-  --pet-hat-bottom: 112px;
+  --pet-hat-bottom: 113px;
 }
 
 .capybara[data-animal="teacher-lion"][data-head="red-cap"],
@@ -10943,7 +11018,7 @@ body[data-site-theme] :is(.capybara-shop-panel, .staff-shop-panel, .staff-panel:
 .capybara[data-animal="curator-otter"][data-head="red-cap"],
 .capybara[data-animal="admin-robot"][data-head="red-cap"],
 .capybara[data-animal="admin-raven"][data-head="red-cap"] {
-  --pet-hat-bottom: 108px;
+  --pet-hat-bottom: 109px;
 }
 
 .capybara[data-animal="teacher-lion"][data-head="ninja-band"],
@@ -10951,7 +11026,7 @@ body[data-site-theme] :is(.capybara-shop-panel, .staff-shop-panel, .staff-panel:
 .capybara[data-animal="curator-otter"][data-head="ninja-band"],
 .capybara[data-animal="admin-robot"][data-head="ninja-band"],
 .capybara[data-animal="admin-raven"][data-head="ninja-band"] {
-  --pet-hat-bottom: 98px;
+  --pet-hat-bottom: 103px;
 }
 
 .capybara[data-animation="dance"] .capybara__headwear {
