@@ -1386,6 +1386,8 @@ function applyAccountToCourseCards(account = latestAccount) {
     card.querySelector(".progress-track span").style.width = progress;
     card.querySelector(".progress-percent").textContent = progress;
   });
+
+  setStudyTab(courseGrid?.dataset.activeTab || "owned");
 }
 
 function applyCourseDetailProgress(courseKey = currentCourseKey, accountCourse = getAccountCourse(courseKey)) {

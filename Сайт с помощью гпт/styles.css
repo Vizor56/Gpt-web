@@ -10370,6 +10370,10 @@ body[data-site-theme] :is(.capybara-shop-panel, .staff-shop-panel, .staff-panel:
     linear-gradient(180deg, rgba(255, 253, 248, 0.9), rgba(241, 184, 75, 0.14));
 }
 
+.course-card[data-course] .course-badge.is-hidden {
+  display: none;
+}
+
 .course-card[data-course] .course-illustration {
   width: 132px;
   height: 150px;
