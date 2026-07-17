@@ -2028,7 +2028,7 @@ body[data-site-theme] :is(.shop-section-tabs button.is-active, .account-tabs but
 
 .lesson-row {
   display: grid;
-  grid-template-columns: 48px minmax(180px, 1fr) minmax(126px, 150px) minmax(300px, 44%);
+  grid-template-columns: 48px minmax(180px, 1fr) minmax(160px, 220px) minmax(300px, 44%);
   gap: 12px;
   align-items: center;
   min-height: 112px;
@@ -2092,7 +2092,8 @@ body[data-site-theme] :is(.shop-section-tabs button.is-active, .account-tabs but
   border-radius: 7px;
   font-size: 13px;
   font-weight: 800;
-  white-space: nowrap;
+  line-height: 1.16;
+  text-align: center;
 }
 
 .lesson-status svg {
@@ -12045,7 +12046,7 @@ body[data-site-theme] :is(.capybara-shop-panel, .staff-shop-panel, .staff-panel:
   }
 
   .lesson-row {
-    grid-template-columns: 54px minmax(180px, 1fr) 150px;
+    grid-template-columns: 54px minmax(180px, 1fr) minmax(170px, 220px);
   }
 
   .lesson-actions {

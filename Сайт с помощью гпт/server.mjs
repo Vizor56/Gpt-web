@@ -1274,24 +1274,67 @@ async function insertCorrectionPoints(client, correctionId, studentId) {
   );
 }
 
+function scoreSql(alias) {
+  return `(
+    CASE
+      WHEN ${alias}.score IS NULL THEN NULL
+      WHEN ${alias}.score > 10 AND ${alias}.score <= 100 THEN ROUND(${alias}.score::numeric / 10, 1)
+      WHEN ${alias}.score > 100 THEN 10
+      ELSE ${alias}.score::numeric
+    END
+  )`;
+}
+
+function passedCheckedSql(alias) {
+  return `(${alias}.status = 'Checked' AND ${scoreSql(alias)} >= 5)`;
+}
+
+function lessonPassedSql(submissionAlias = "hs", correctionAlias = "hc") {
+  return `(COALESCE(${passedCheckedSql(submissionAlias)}, FALSE) OR COALESCE(${passedCheckedSql(correctionAlias)}, FALSE))`;
+}
+
+function lessonLearningStatusSql(lessonAlias = "l", assignmentAlias = "ha", submissionAlias = "hs", correctionAlias = "hc") {
+  const homeworkScore = scoreSql(submissionAlias);
+  const correctionScore = scoreSql(correctionAlias);
+
+  return `
+    CASE
+      WHEN ${lessonPassedSql(submissionAlias, correctionAlias)} THEN 'Done'
+      WHEN ${correctionAlias}.status = 'Submitted' THEN 'Correction_Check'
+      WHEN ${correctionAlias}.id IS NOT NULL
+        AND (
+          ${correctionAlias}.status = 'Required'
+          OR (${correctionAlias}.status = 'Checked' AND COALESCE(${correctionScore}, 0) < 5)
+        )
+        THEN 'Correction_Required'
+      WHEN ${submissionAlias}.status = 'Checked' AND COALESCE(${homeworkScore}, 0) < 5 THEN 'Correction_Required'
+      WHEN ${submissionAlias}.status = 'Submitted' OR ${assignmentAlias}.status = 'Submitted' THEN 'Homework_Check'
+      WHEN ${assignmentAlias}.id IS NOT NULL OR ${lessonAlias}.status = 'Open' THEN 'Open'
+      ELSE ${lessonAlias}.status
+    END
+  `;
+}
+
 async function refreshEnrollmentProgress(client, enrollmentId) {
   await client.query(
     `
       UPDATE course_enrollments ce
-      SET progress_percent = COALESCE(stats.progress_percent, 0)
-      FROM (
-        SELECT
-          enrollment_id,
-          CASE
-            WHEN COUNT(*) = 0 THEN 0
-            ELSE ROUND(100.0 * SUM(CASE WHEN status = 'Checked' THEN 1 ELSE 0 END) / COUNT(*), 2)
-          END AS progress_percent
-        FROM homework_assignments
-        WHERE enrollment_id = $1
-          AND status <> 'Cancelled'
-        GROUP BY enrollment_id
-      ) stats
-      WHERE ce.id = stats.enrollment_id
+      SET progress_percent = COALESCE(
+        (
+          SELECT
+            CASE
+              WHEN COUNT(*) = 0 THEN 0
+              ELSE ROUND(100.0 * SUM(CASE WHEN ${lessonPassedSql("hs", "hc")} THEN 1 ELSE 0 END) / COUNT(*), 2)
+            END
+          FROM homework_assignments ha
+          LEFT JOIN homework_submissions hs ON hs.assignment_id = ha.id
+          LEFT JOIN homework_corrections hc ON hc.assignment_id = ha.id AND hc.status <> 'Cancelled'
+          WHERE ha.enrollment_id = ce.id
+            AND ha.status <> 'Cancelled'
+        ),
+        0
+      )
+      WHERE ce.id = $1
     `,
     [enrollmentId],
   );
@@ -1301,19 +1344,21 @@ async function refreshAllProgress(client) {
   await client.query(
     `
       UPDATE course_enrollments ce
-      SET progress_percent = COALESCE(stats.progress_percent, 0)
-      FROM (
-        SELECT
-          enrollment_id,
-          CASE
-            WHEN COUNT(*) = 0 THEN 0
-            ELSE ROUND(100.0 * SUM(CASE WHEN status = 'Checked' THEN 1 ELSE 0 END) / COUNT(*), 2)
-          END AS progress_percent
-        FROM homework_assignments
-        WHERE status <> 'Cancelled'
-        GROUP BY enrollment_id
-      ) stats
-      WHERE ce.id = stats.enrollment_id
+      SET progress_percent = COALESCE(
+        (
+          SELECT
+            CASE
+              WHEN COUNT(*) = 0 THEN 0
+              ELSE ROUND(100.0 * SUM(CASE WHEN ${lessonPassedSql("hs", "hc")} THEN 1 ELSE 0 END) / COUNT(*), 2)
+            END
+          FROM homework_assignments ha
+          LEFT JOIN homework_submissions hs ON hs.assignment_id = ha.id
+          LEFT JOIN homework_corrections hc ON hc.assignment_id = ha.id AND hc.status <> 'Cancelled'
+          WHERE ha.enrollment_id = ce.id
+            AND ha.status <> 'Cancelled'
+        ),
+        0
+      )
     `,
   );
 }
@@ -1376,7 +1421,7 @@ async function buildAccountPayload(studentId, authToken = "") {
         c.short_description AS "courseDescription",
         c.total_lessons AS "totalLessons",
         COUNT(DISTINCT l.id)::integer AS "lessonsTotal",
-        COUNT(DISTINCT CASE WHEN ha.status = 'Checked' THEN l.id END)::integer AS "lessonsCompleted",
+        COUNT(DISTINCT CASE WHEN ${lessonPassedSql("hs", "hc")} THEN l.id END)::integer AS "lessonsCompleted",
         ce.id AS "enrollmentId",
         ce.status AS "enrollmentStatus",
         COALESCE(ce.curator_id, c.curator_id) AS "curatorId",
@@ -1396,7 +1441,10 @@ async function buildAccountPayload(studentId, authToken = "") {
       LEFT JOIN lessons l ON l.course_id = c.id
       LEFT JOIN course_enrollments ce ON ce.course_id = c.id AND ce.student_id = $1 AND ce.status = 'Active'
       LEFT JOIN curators cu ON cu.id = COALESCE(ce.curator_id, c.curator_id)
-      LEFT JOIN homework_assignments ha ON ha.enrollment_id = ce.id AND ha.status <> 'Cancelled'
+      LEFT JOIN homework_templates ht ON ht.lesson_id = l.id AND ht.course_id = c.id AND ht.active = TRUE
+      LEFT JOIN homework_assignments ha ON ha.template_id = ht.id AND ha.enrollment_id = ce.id AND ha.status <> 'Cancelled'
+      LEFT JOIN homework_submissions hs ON hs.assignment_id = ha.id
+      LEFT JOIN homework_corrections hc ON hc.assignment_id = ha.id AND hc.status <> 'Cancelled'
       WHERE c.status = 'Active'
       GROUP BY c.id, ce.id, cu.id
       ORDER BY c.id
@@ -1411,9 +1459,9 @@ async function buildAccountPayload(studentId, authToken = "") {
         l.id AS "lessonId",
         l.lesson_number AS "lessonNumber",
         l.title AS "lessonTitle",
-        l.status AS "lessonStatus",
+        ${lessonLearningStatusSql("l", "ha", "hs", "hc")} AS "lessonStatus",
         COALESCE(lp.watch_percent, 0) AS "watchPercent",
-        COALESCE(lp.is_completed, ha.status = 'Checked', FALSE) AS "isCompleted",
+        ${lessonPassedSql("hs", "hc")} AS "isCompleted",
         lp.completed_at AS "completedAt"
       FROM course_enrollments ce
       JOIN courses c ON c.id = ce.course_id
@@ -1421,6 +1469,8 @@ async function buildAccountPayload(studentId, authToken = "") {
       LEFT JOIN lesson_progress lp ON lp.course_enrollment_id = ce.id AND lp.lesson_id = l.id
       LEFT JOIN homework_templates ht ON ht.lesson_id = l.id AND ht.course_id = c.id AND ht.active = TRUE
       LEFT JOIN homework_assignments ha ON ha.template_id = ht.id AND ha.student_id = ce.student_id
+      LEFT JOIN homework_submissions hs ON hs.assignment_id = ha.id
+      LEFT JOIN homework_corrections hc ON hc.assignment_id = ha.id AND hc.status <> 'Cancelled'
       WHERE ce.student_id = $1
         AND ce.status = 'Active'
         AND c.status = 'Active'
@@ -1724,7 +1774,8 @@ async function getCourseLessons(slug, studentId = 0) {
         l.video_url AS "videoUrl",
         l.notes_url AS "notesUrl",
         l.homework_url AS "homeworkUrl",
-        l.status AS "lessonStatus",
+        ${lessonLearningStatusSql("l", "ha", "hs", "hc")} AS "lessonStatus",
+        ${lessonPassedSql("hs", "hc")} AS "isCompleted",
         ht.id AS "homeworkTemplateId",
         ht.title AS "homeworkTitle",
         ht.description AS "homeworkDescription",
@@ -1775,6 +1826,7 @@ async function getCourseLessons(slug, studentId = 0) {
     lessonTitle: row.lessonTitle,
     topic: row.topic,
     lessonStatus: row.lessonStatus,
+    isCompleted: Boolean(row.isCompleted),
     videoUrl: row.videoUrl,
     notesUrl: row.notesUrl,
     homeworkUrl: row.homeworkTaskUrl || row.homeworkUrl,
@@ -1834,11 +1886,13 @@ async function getCourseLessons(slug, studentId = 0) {
         correctionScore: null,
         correctionFeedbackText: null,
         correctionCheckedAt: null,
+        isCompleted: false,
       }));
 
   const homeworkTotal = lessons.filter((lesson) => lesson.homeworkTemplateId || lesson.homeworkAssignmentId).length;
   const homeworkSubmitted = lessons.filter((lesson) => ["Submitted", "Checked"].includes(lesson.homeworkStatus) || ["Submitted", "Checked"].includes(lesson.submissionStatus)).length;
   const homeworkChecked = lessons.filter((lesson) => lesson.homeworkStatus === "Checked" || lesson.submissionStatus === "Checked").length;
+  const lessonsCompleted = lessons.filter((lesson) => lesson.isCompleted).length;
 
   return {
     source: "database",
@@ -1852,10 +1906,11 @@ async function getCourseLessons(slug, studentId = 0) {
       isOwned,
       curatorId: first.curatorId,
       curatorName: first.curatorName,
-      progressPercent: homeworkTotal > 0 ? Math.round((homeworkChecked * 10000) / homeworkTotal) / 100 : 0,
+      progressPercent: homeworkTotal > 0 ? Math.round((lessonsCompleted * 10000) / homeworkTotal) / 100 : 0,
       homeworkTotal,
       homeworkSubmitted,
       homeworkChecked,
+      lessonsCompleted,
     },
     lessons,
   };
@@ -1887,6 +1942,7 @@ async function getHomeworks(slug = "", studentId = 0) {
         l.id AS "lessonId",
         l.lesson_number AS "lessonNumber",
         l.title AS "lessonTitle",
+        ${lessonLearningStatusSql("l", "ha", "hs", "hc")} AS "lessonStatus",
         ht.id AS "homeworkTemplateId",
         ht.title AS "homeworkTitle",
         ht.description AS "homeworkDescription",
@@ -1902,13 +1958,21 @@ async function getHomeworks(slug = "", studentId = 0) {
         hs.feedback_text AS "feedbackText",
         ha.teacher_comment AS "teacherComment",
         hs.score AS "homeworkScore",
-        hs.checked_at AS "checkedAt"
+        hs.checked_at AS "checkedAt",
+        hc.id AS "correctionId",
+        hc.status AS "correctionStatus",
+        hc.file_url AS "correctionSubmittedUrl",
+        hc.submitted_at AS "correctionSubmittedAt",
+        hc.score AS "correctionScore",
+        hc.feedback_text AS "correctionFeedbackText",
+        hc.checked_at AS "correctionCheckedAt"
       FROM homework_templates ht
       JOIN courses c ON c.id = ht.course_id
       LEFT JOIN lessons l ON l.id = ht.lesson_id
       LEFT JOIN course_enrollments ce ON ce.course_id = c.id AND ce.student_id = $2 AND ce.status = 'Active'
       LEFT JOIN homework_assignments ha ON ha.template_id = ht.id AND ha.student_id = $2 AND ha.enrollment_id = ce.id
       LEFT JOIN homework_submissions hs ON hs.assignment_id = ha.id
+      LEFT JOIN homework_corrections hc ON hc.assignment_id = ha.id AND hc.status <> 'Cancelled'
       WHERE ht.active = TRUE
         AND c.status = 'Active'
         AND ($1 = '' OR c.slug = $1)
@@ -1919,7 +1983,13 @@ async function getHomeworks(slug = "", studentId = 0) {
 
   return {
     source: "database",
-    items: result.rows.map((row) => ({ ...row, homeworkDueAt: toDateText(row.homeworkDueAt), checkedAt: toDateText(row.checkedAt) })),
+    items: result.rows.map((row) => ({
+      ...row,
+      homeworkDueAt: toDateText(row.homeworkDueAt),
+      checkedAt: toDateText(row.checkedAt),
+      correctionSubmittedAt: toDateText(row.correctionSubmittedAt),
+      correctionCheckedAt: toDateText(row.correctionCheckedAt),
+    })),
   };
 }
 
@@ -2028,7 +2098,13 @@ app.post(
       await client.query("BEGIN");
       const correction = await client.query(
         `
-          SELECT hc.id, hc.assignment_id, hc.student_id, hc.enrollment_id, hc.status
+          SELECT
+            hc.id,
+            hc.assignment_id,
+            hc.student_id,
+            hc.enrollment_id,
+            hc.status,
+            hc.score
           FROM homework_corrections hc
           WHERE hc.assignment_id = $1
             AND hc.student_id = $2
@@ -2042,8 +2118,8 @@ app.post(
       }
 
       const row = correction.rows[0];
-      if (row.status === "Checked") {
-        throw createHttpError(409, "Проверенную работу над ошибками нельзя заменить.");
+      if (row.status === "Checked" && Number(row.score || 0) >= 5) {
+        throw createHttpError(409, "Успешно проверенную работу над ошибками нельзя заменить.");
       }
 
       const updated = await client.query(
@@ -5420,6 +5496,7 @@ app.post(
       }
 
       await client.query("UPDATE courses SET total_lessons = (SELECT COUNT(*) FROM lessons WHERE course_id = $1) WHERE id = $1", [courseId]);
+      await refreshAllProgress(client);
       await client.query("COMMIT");
       response.json({ ok: true, source: "database", lessonId: savedLessonId });
     } catch (error) {
