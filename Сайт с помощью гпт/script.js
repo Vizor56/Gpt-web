@@ -1750,6 +1750,8 @@ const shopItemTones = {
   theme_academy_paper: ["#145c59", "#f8f3e7", "#ded2ba"],
   theme_pixel_twilight: ["#5e3ad7", "#f2efff", "#d7c8ff"],
   theme_formula_lab: ["#2f637b", "#edf7f6", "#bfdde1"],
+  theme_ocean_focus: ["#0f5d73", "#edf8fb", "#b9dde6"],
+  theme_sunrise_notebook: ["#a8582a", "#fff5e8", "#edcfa8"],
   teacher_pet_owl: ["#8b6f47", "#fff4dd", "#e5cca0"],
   teacher_pet_lion: ["#c78337", "#fff0dd", "#efc79b"],
   teacher_fur_graphite: ["#526070", "#f1f5f8", "#cad3dc"],
