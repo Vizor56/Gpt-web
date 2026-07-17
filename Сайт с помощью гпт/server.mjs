@@ -1258,7 +1258,7 @@ async function insertCorrectionPoints(client, correctionId, studentId) {
   await client.query(
     `
       INSERT INTO point_transactions (student_id, enrollment_id, homework_assignment_id, correction_id, points, reason)
-      SELECT hc.student_id, hc.enrollment_id, hc.assignment_id, hc.id, 25, 'Р‘Р°Р»Р»С‹ Р·Р° СЂР°Р±РѕС‚Сѓ РЅР°Рґ РѕС€РёР±РєР°РјРё'
+      SELECT hc.student_id, hc.enrollment_id, hc.assignment_id, hc.id, 25, 'Баллы за работу над ошибками'
       FROM homework_corrections hc
       WHERE hc.id = $1
         AND hc.student_id = $2
@@ -1267,7 +1267,7 @@ async function insertCorrectionPoints(client, correctionId, studentId) {
           FROM point_transactions pt
           WHERE pt.correction_id = hc.id
             AND pt.student_id = hc.student_id
-            AND pt.reason = 'Р‘Р°Р»Р»С‹ Р·Р° СЂР°Р±РѕС‚Сѓ РЅР°Рґ РѕС€РёР±РєР°РјРё'
+            AND pt.reason = 'Баллы за работу над ошибками'
         )
     `,
     [correctionId, studentId],
@@ -1492,7 +1492,21 @@ async function getStudentNotifications(studentId) {
         SELECT
           CONCAT('homework-', hs.id) AS "notificationId",
           'ДЗ проверено' AS title,
-          CONCAT(c.title, ' · Урок ', l.lesson_number, '. ', ht.title, ' · ', hs.score, '/10 баллов') AS text,
+          CONCAT(
+            c.title,
+            ' · Урок ',
+            l.lesson_number,
+            '. ',
+            ht.title,
+            ' · ',
+            CASE
+              WHEN hs.score IS NULL THEN 'оценка не указана'
+              WHEN hs.score > 10 AND hs.score <= 100 THEN ROUND(hs.score::numeric / 10, 1)::text
+              WHEN hs.score > 100 THEN '10'
+              ELSE hs.score::text
+            END,
+            '/10 баллов'
+          ) AS text,
           'Homework' AS type,
           CONCAT('#course-', c.slug) AS link,
           hs.checked_at AS "createdAt",
@@ -1510,8 +1524,22 @@ async function getStudentNotifications(studentId) {
 
         SELECT
           CONCAT('correction-', hc.id) AS "notificationId",
-          'Р Р°Р±РѕС‚Р° РЅР°Рґ РѕС€РёР±РєР°РјРё РїСЂРѕРІРµСЂРµРЅР°' AS title,
-          CONCAT(c.title, ' В· РЈСЂРѕРє ', l.lesson_number, '. ', ht.title, ' В· ', hc.score, '/10 Р±Р°Р»Р»РѕРІ') AS text,
+          'Работа над ошибками проверена' AS title,
+          CONCAT(
+            c.title,
+            ' · Урок ',
+            l.lesson_number,
+            '. ',
+            ht.title,
+            ' · ',
+            CASE
+              WHEN hc.score IS NULL THEN 'оценка не указана'
+              WHEN hc.score > 10 AND hc.score <= 100 THEN ROUND(hc.score::numeric / 10, 1)::text
+              WHEN hc.score > 100 THEN '10'
+              ELSE hc.score::text
+            END,
+            '/10 баллов'
+          ) AS text,
           'Correction' AS type,
           CONCAT('#course-', c.slug) AS link,
           hc.checked_at AS "createdAt",
@@ -1987,11 +2015,11 @@ app.post(
     const correctionLink = normalizeLink(request.body.correctionLink || request.body.homeworkLink);
 
     if (!assignmentId) {
-      throw createHttpError(400, "РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РґРѕРјР°С€РЅРµРіРѕ Р·Р°РґР°РЅРёСЏ.");
+      throw createHttpError(400, "Некорректный ID домашнего задания.");
     }
 
     if (!isGoogleDriveLikeUrl(correctionLink)) {
-      throw createHttpError(400, "РќСѓР¶РЅР° СЃСЃС‹Р»РєР° РЅР° Google Drive.");
+      throw createHttpError(400, "Нужна ссылка на Google Drive.");
     }
 
     const client = await requireDatabase().connect();
@@ -2010,19 +2038,19 @@ app.post(
       );
 
       if (correction.rowCount === 0) {
-        throw createHttpError(404, "Р Р°Р±РѕС‚Р° РЅР°Рґ РѕС€РёР±РєР°РјРё РґР»СЏ СЌС‚РѕРіРѕ Р”Р— РЅРµ РЅР°Р·РЅР°С‡РµРЅР°.");
+        throw createHttpError(404, "Работа над ошибками для этого ДЗ не назначена.");
       }
 
       const row = correction.rows[0];
       if (row.status === "Checked") {
-        throw createHttpError(409, "РџСЂРѕРІРµСЂРµРЅРЅСѓСЋ СЂР°Р±РѕС‚Сѓ РЅР°Рґ РѕС€РёР±РєР°РјРё РЅРµР»СЊР·СЏ Р·Р°РјРµРЅРёС‚СЊ.");
+        throw createHttpError(409, "Проверенную работу над ошибками нельзя заменить.");
       }
 
       const updated = await client.query(
         `
           UPDATE homework_corrections
           SET status = 'Submitted',
-              student_text = 'РЎСЃС‹Р»РєР° РЅР° СЂР°Р±РѕС‚Сѓ РЅР°Рґ РѕС€РёР±РєР°РјРё РїСЂРёРєСЂРµРїР»РµРЅР° СЃ СЃР°Р№С‚Р°.',
+              student_text = 'Ссылка на работу над ошибками прикреплена с сайта.',
               file_url = $2,
               submitted_at = NOW(),
               checked_by_teacher_id = NULL,
@@ -4748,7 +4776,7 @@ async function buildStaffWorkspace(staff) {
         l.id AS "lessonId",
         l.lesson_number AS "lessonNumber",
         l.title AS "lessonTitle",
-        CONCAT('Р Р°Р±РѕС‚Р° РЅР°Рґ РѕС€РёР±РєР°РјРё: ', ht.title) AS "homeworkTitle",
+        CONCAT('Работа над ошибками: ', ht.title) AS "homeworkTitle",
         ht.description AS "homeworkDescription",
         ht.file_url AS "taskLink",
         ha.due_at AS "dueAt",
@@ -4915,7 +4943,7 @@ async function buildStaffWorkspace(staff) {
         l.lesson_number AS "lessonNumber",
         l.title AS "lessonTitle",
         ht.id AS "homeworkTemplateId",
-        CONCAT('Р Р°Р±РѕС‚Р° РЅР°Рґ РѕС€РёР±РєР°РјРё: ', ht.title) AS "homeworkTitle",
+        CONCAT('Работа над ошибками: ', ht.title) AS "homeworkTitle",
         COUNT(hc.id)::integer AS "homeworkTotal",
         COUNT(DISTINCT hc.student_id)::integer AS "studentsTotal",
         SUM(CASE WHEN hc.status IN ('Submitted', 'Checked') THEN 1 ELSE 0 END)::integer AS "submittedTotal",
@@ -5200,15 +5228,15 @@ app.post(
   asyncRoute(async (request, response) => {
     const staff = await getStaffByToken(request);
     if (staff.role !== "Teacher" || !staff.teacherId) {
-      throw createHttpError(403, "РџСЂРѕРІРµСЂСЏС‚СЊ СЂР°Р±РѕС‚Сѓ РЅР°Рґ РѕС€РёР±РєР°РјРё РјРѕР¶РµС‚ С‚РѕР»СЊРєРѕ РїСЂРµРїРѕРґР°РІР°С‚РµР»СЊ.");
+      throw createHttpError(403, "Проверять работу над ошибками может только преподаватель.");
     }
 
     const correctionId = toInt(request.params.id, 0);
     const score = toInt(request.body.score, 0);
-    const feedbackText = cleanText(request.body.feedbackText || request.body.comment, 2000) || "Р Р°Р±РѕС‚Р° РЅР°Рґ РѕС€РёР±РєР°РјРё РїСЂРѕРІРµСЂРµРЅР°.";
+    const feedbackText = cleanText(request.body.feedbackText || request.body.comment, 2000) || "Работа над ошибками проверена.";
 
     if (!correctionId || score < 1 || score > 10) {
-      throw createHttpError(400, "РћС†РµРЅРєР° РґРѕР»Р¶РЅР° Р±С‹С‚СЊ РѕС‚ 1 РґРѕ 10.");
+      throw createHttpError(400, "Оценка должна быть от 1 до 10.");
     }
 
     const client = await requireDatabase().connect();
@@ -5237,16 +5265,16 @@ app.post(
       );
 
       if (correction.rowCount === 0) {
-        throw createHttpError(404, "Р Р°Р±РѕС‚Р° РЅР°Рґ РѕС€РёР±РєР°РјРё РЅРµРґРѕСЃС‚СѓРїРЅР° СЌС‚РѕРјСѓ РїСЂРµРїРѕРґР°РІР°С‚РµР»СЋ.");
+        throw createHttpError(404, "Работа над ошибками недоступна этому преподавателю.");
       }
 
       const row = correction.rows[0];
       if (row.status === "Checked") {
-        throw createHttpError(409, "Р­С‚Р° СЂР°Р±РѕС‚Р° РЅР°Рґ РѕС€РёР±РєР°РјРё СѓР¶Рµ РїСЂРѕРІРµСЂРµРЅР°.");
+        throw createHttpError(409, "Эта работа над ошибками уже проверена.");
       }
 
       if (row.status !== "Submitted" || !row.file_url) {
-        throw createHttpError(400, "РЈС‡РµРЅРёРє РµС‰Рµ РЅРµ РїСЂРёРєСЂРµРїРёР» СЃСЃС‹Р»РєСѓ РЅР° СЂР°Р±РѕС‚Сѓ РЅР°Рґ РѕС€РёР±РєР°РјРё.");
+        throw createHttpError(400, "Ученик ещё не прикрепил ссылку на работу над ошибками.");
       }
 
       await client.query(

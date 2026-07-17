@@ -76,7 +76,7 @@ const fallbackLessons = {
       homeworkTitle: "ДЗ: Производная",
       submittedHomeworkUrl: "https://drive.google.com/file/d/1t-o_WwgJSQILFXRXWk7w3KZz4uPU1Oew",
       submissionStatus: "Checked",
-      homeworkScore: 86,
+      homeworkScore: 8.6,
     },
     {
       lessonNumber: 2,
@@ -128,7 +128,7 @@ const fallbackLessons = {
       homeworkTitle: "ДЗ: Орфоэпия и ударения",
       submittedHomeworkUrl: "https://drive.google.com/file/d/1t-o_WwgJSQILFXRXWk7w3KZz4uPU1Oew",
       submissionStatus: "Checked",
-      homeworkScore: 92,
+      homeworkScore: 9.2,
     },
     {
       lessonNumber: 2,
@@ -180,7 +180,7 @@ const fallbackLessons = {
       homeworkTitle: "ДЗ: Кодирование информации",
       submittedHomeworkUrl: "https://drive.google.com/file/d/1t-o_WwgJSQILFXRXWk7w3KZz4uPU1Oew",
       submissionStatus: "Checked",
-      homeworkScore: 88,
+      homeworkScore: 8.8,
     },
     {
       lessonNumber: 2,
@@ -232,7 +232,7 @@ const fallbackLessons = {
       homeworkTitle: "ДЗ: Кинематика",
       submittedHomeworkUrl: "https://drive.google.com/file/d/1t-o_WwgJSQILFXRXWk7w3KZz4uPU1Oew",
       submissionStatus: "Checked",
-      homeworkScore: 84,
+      homeworkScore: 8.4,
     },
     {
       lessonNumber: 2,
@@ -321,7 +321,7 @@ const fallbackLessons = {
       homeworkTitle: "ДЗ: Проценты и доли",
       submittedHomeworkUrl: "https://drive.google.com/file/d/1t-o_WwgJSQILFXRXWk7w3KZz4uPU1Oew",
       submissionStatus: "Checked",
-      homeworkScore: 90,
+      homeworkScore: 9,
     },
     {
       lessonNumber: 2,
@@ -3141,12 +3141,12 @@ function renderHomeworkLessonWorkspace(pageName, courseSummary, lessonSummary, i
 }
 
 function renderTeacherCheckedHomeworkNote(item) {
-  const score = item.score ?? "";
+  const scoreText = formatTenPointScoreText(item.score);
   const feedback = item.feedbackText || item.teacherComment || "Комментарий не указан.";
 
   return `
     <div class="staff-reviewed-note is-success">
-      <strong>Вы уже проверили эту работу${score !== "" ? `: ${escapeHtml(score)} / 10 баллов` : "."}</strong>
+      <strong>Вы уже проверили эту работу${scoreText ? `: ${scoreText}` : "."}</strong>
       <span>${escapeHtml(feedback)}</span>
     </div>
   `;
@@ -3166,12 +3166,12 @@ function renderCuratorReviewNote(item) {
 
 function renderHomeworkTeacherResult(item) {
   if (isStaffHomeworkChecked(item)) {
-    const score = item.score ?? "";
+    const scoreText = formatTenPointScoreText(item.score);
     const comment = item.feedbackText || item.teacherComment || "Комментарий преподавателя не указан.";
 
     return `
       <div class="staff-reviewed-note is-success">
-        <strong>Проверено преподавателем${score !== "" ? `: ${escapeHtml(score)} / 10 баллов` : ""}</strong>
+        <strong>Проверено преподавателем${scoreText ? `: ${scoreText}` : ""}</strong>
         <span>${escapeHtml(comment)}</span>
       </div>
     `;
@@ -3649,6 +3649,7 @@ function renderTeacherHomeworkLegacy() {
               .map((item) => {
                 const status = getHomeworkStaffStatus(item);
                 const canOpenSubmission = Boolean(item.submissionLink);
+                const reviewScoreValue = getTenPointScoreValue(item.score) ?? "";
                 return `
                   <article class="staff-card ${isStaffHomeworkSubmitted(item) ? "staff-card--pending" : "staff-card--muted"}">
                     <div class="staff-card__meta">
@@ -3668,7 +3669,7 @@ function renderTeacherHomeworkLegacy() {
                           <form class="staff-review-form" data-staff-homework-review-form data-homework-assignment-id="${escapeHtml(item.homeworkAssignmentId)}">
                             <label>
                               Оценка
-                              <input name="score" type="number" min="1" max="10" value="${escapeHtml(item.score ?? "")}" placeholder="1-10" required />
+                              <input name="score" type="number" min="1" max="10" value="${escapeHtml(reviewScoreValue)}" placeholder="1-10" required />
                             </label>
                             <label>
                               Комментарий
@@ -3704,6 +3705,7 @@ function renderTeacherHomeworkCard(item) {
   const isSubmitted = isStaffHomeworkSubmitted(item);
   const canReview = isSubmitted && !isChecked;
   const canOpenSubmission = Boolean(item.submissionLink);
+  const reviewScoreValue = getTenPointScoreValue(item.score) ?? "";
 
   return `
     <article class="staff-card ${isChecked ? "staff-card--checked is-complete" : isSubmitted ? "staff-card--pending" : "staff-card--muted"}"${getCourseThemeAttr(item)}>
@@ -3726,7 +3728,7 @@ function renderTeacherHomeworkCard(item) {
               <form class="staff-review-form" data-staff-homework-review-form data-homework-assignment-id="${escapeHtml(item.homeworkAssignmentId)}">
                 <label>
                   Оценка
-                  <input name="score" type="number" min="1" max="10" value="${escapeHtml(item.score ?? "")}" placeholder="1-10" required />
+                  <input name="score" type="number" min="1" max="10" value="${escapeHtml(reviewScoreValue)}" placeholder="1-10" required />
                 </label>
                 <label>
                   Комментарий
@@ -3783,6 +3785,7 @@ function renderTeacherCorrectionCard(item) {
   const isSubmitted = isStaffHomeworkSubmitted(item);
   const canReview = isSubmitted && !isChecked;
   const canOpenSubmission = Boolean(item.submissionLink);
+  const reviewScoreValue = getTenPointScoreValue(item.score) ?? "";
 
   return `
     <article class="staff-card ${isChecked ? "staff-card--checked is-complete" : isSubmitted ? "staff-card--pending" : "staff-card--muted"}"${getCourseThemeAttr(item)}>
@@ -3806,7 +3809,7 @@ function renderTeacherCorrectionCard(item) {
               <form class="staff-review-form" data-staff-correction-review-form data-correction-id="${escapeHtml(item.correctionId)}">
                 <label>
                   Оценка
-                  <input name="score" type="number" min="1" max="10" value="${escapeHtml(item.score ?? "")}" placeholder="1-10" required />
+                  <input name="score" type="number" min="1" max="10" value="${escapeHtml(reviewScoreValue)}" placeholder="1-10" required />
                 </label>
                 <label>
                   Комментарий
@@ -7343,9 +7346,7 @@ function getEffectiveHomeworkStatus(lesson) {
   return lesson?.homeworkStatus || "Assigned";
 }
 
-function getHomeworkScoreValue(lesson) {
-  const rawScore = lesson?.homeworkScore ?? lesson?.score;
-
+function getTenPointScoreValue(rawScore) {
   if (rawScore === null || rawScore === undefined || rawScore === "") {
     return null;
   }
@@ -7356,17 +7357,28 @@ function getHomeworkScoreValue(lesson) {
     return String(rawScore).trim() || null;
   }
 
-  return Number.isInteger(numericScore) ? numericScore : Number(numericScore.toFixed(1));
+  const normalizedScore = numericScore > 10 ? (numericScore <= 100 ? numericScore / 10 : 10) : numericScore;
+  const boundedScore = Math.min(10, Math.max(0, normalizedScore));
+
+  return Number.isInteger(boundedScore) ? boundedScore : Number(boundedScore.toFixed(1));
 }
 
-function formatHomeworkScoreText(lesson) {
-  const score = getHomeworkScoreValue(lesson);
+function formatTenPointScoreText(rawScore) {
+  const score = getTenPointScoreValue(rawScore);
 
   if (score === null) {
     return "";
   }
 
   return `${escapeHtml(score)} / 10 баллов`;
+}
+
+function getHomeworkScoreValue(lesson) {
+  return getTenPointScoreValue(lesson?.homeworkScore ?? lesson?.score);
+}
+
+function formatHomeworkScoreText(lesson) {
+  return formatTenPointScoreText(lesson?.homeworkScore ?? lesson?.score);
 }
 
 function getCheckedHomeworkScoreText(lesson) {
@@ -7415,15 +7427,7 @@ function getCorrectionStatusMeta(status, score = null) {
 }
 
 function getCorrectionScoreText(lesson) {
-  const rawScore = lesson?.correctionScore;
-
-  if (rawScore === null || rawScore === undefined || rawScore === "") {
-    return "";
-  }
-
-  const numericScore = Number(rawScore);
-  const score = Number.isFinite(numericScore) ? (Number.isInteger(numericScore) ? numericScore : Number(numericScore.toFixed(1))) : String(rawScore).trim();
-  return `${escapeHtml(score)} / 10 баллов`;
+  return formatTenPointScoreText(lesson?.correctionScore);
 }
 
 function renderCorrectionResult(lesson) {
