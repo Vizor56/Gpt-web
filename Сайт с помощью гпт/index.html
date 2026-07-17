@@ -859,9 +859,20 @@
 
             <aside class="right-column">
               <section class="panel account-auth-panel">
-                <h2>Вход</h2>
+                <div class="auth-panel-heading">
+                  <span class="auth-panel-kicker">Единый вход</span>
+                  <h2>Вход в школу</h2>
+                  <p>Ученики, преподаватели, кураторы и администраторы входят здесь.</p>
+                </div>
+                <div class="auth-mode-toggle" role="tablist" aria-label="Тип аккаунта">
+                  <button class="is-active" type="button" data-auth-mode="student" role="tab" aria-selected="true">Ученик</button>
+                  <button type="button" data-auth-mode="staff" role="tab" aria-selected="false">Команда</button>
+                </div>
                 <div class="account-session" id="account-session-status">
                   <span>Вы пока не вошли</span>
+                </div>
+                <div class="account-session staff-session is-hidden" id="staff-session-status">
+                  <span>Куратор, преподаватель или администратор пока не вошёл</span>
                 </div>
                 <form class="account-form" id="login-form">
                   <label>
@@ -919,14 +930,8 @@
                   Выйти из аккаунта
                 </button>
                 <p class="auth-status" id="auth-status" aria-live="polite"></p>
-              </section>
 
-              <section class="panel account-auth-panel staff-auth-panel">
-                <h2>Вход для команды</h2>
-                <div class="account-session" id="staff-session-status">
-                  <span>Куратор, преподаватель или администратор пока не вошёл</span>
-                </div>
-                <form class="account-form" id="staff-login-form">
+                <form class="account-form staff-login-form is-hidden" id="staff-login-form">
                   <label>
                     Роль
                     <select name="role" required>
@@ -945,13 +950,13 @@
                   </label>
                   <button class="submit-button" type="submit">
                     <svg><use href="#icon-user" /></svg>
-                    Войти в команду
+                    Войти
                   </button>
                 </form>
                 <button class="account-logout is-hidden" id="staff-logout-button" type="button">
                   Выйти из команды
                 </button>
-                <p class="auth-status" id="staff-auth-status" aria-live="polite"></p>
+                <p class="auth-status is-hidden" id="staff-auth-status" aria-live="polite"></p>
               </section>
             </aside>
           </section>

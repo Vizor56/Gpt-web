@@ -2799,12 +2799,67 @@ body[data-site-theme] :is(.shop-section-tabs button.is-active, .account-tabs but
   display: grid;
   gap: 18px;
   padding: 28px;
+  overflow: hidden;
+  border-color: rgba(20, 92, 89, 0.16);
+  background:
+    linear-gradient(135deg, rgba(88, 201, 191, 0.13), rgba(255, 255, 255, 0) 42%),
+    #fff;
 }
 
 .account-auth-panel h2 {
   color: var(--ink);
-  font-size: 24px;
-  font-weight: 800;
+  font-size: clamp(24px, 3vw, 34px);
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.auth-panel-heading {
+  display: grid;
+  gap: 6px;
+}
+
+.auth-panel-heading p {
+  max-width: 32ch;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.auth-panel-kicker {
+  width: max-content;
+  padding: 5px 9px;
+  color: #145c59;
+  border: 1px solid rgba(20, 92, 89, 0.16);
+  border-radius: 999px;
+  background: rgba(88, 201, 191, 0.14);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.auth-mode-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid rgba(20, 92, 89, 0.14);
+  border-radius: 8px;
+  background: rgba(247, 246, 242, 0.86);
+}
+
+.auth-mode-toggle button {
+  min-height: 42px;
+  color: var(--muted);
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.auth-mode-toggle button.is-active {
+  color: #fff;
+  background: #145c59;
+  box-shadow: 0 10px 22px rgba(20, 92, 89, 0.16);
 }
 
 .account-session {
@@ -2834,7 +2889,9 @@ body[data-site-theme] :is(.shop-section-tabs button.is-active, .account-tabs but
 }
 
 .account-form.is-hidden,
+.account-session.is-hidden,
 .auth-divider.is-hidden,
+.auth-status.is-hidden,
 .account-logout.is-hidden {
   display: none;
 }
@@ -2863,13 +2920,18 @@ body[data-site-theme] :is(.shop-section-tabs button.is-active, .account-tabs but
   width: 100%;
   min-width: 0;
   height: 46px;
-  padding: 0 13px;
+  padding: 0 42px 0 13px;
   color: var(--ink);
   border: 1px solid var(--line);
   border-radius: 7px;
-  background: #fff;
+  background:
+    linear-gradient(45deg, transparent 50%, #145c59 50%) right 18px center / 7px 7px no-repeat,
+    linear-gradient(135deg, #145c59 50%, transparent 50%) right 13px center / 7px 7px no-repeat,
+    #fff;
   font: inherit;
   font-weight: 700;
+  appearance: none;
+  cursor: pointer;
 }
 
 .account-form input:focus {
@@ -2923,10 +2985,6 @@ body[data-site-theme] :is(.shop-section-tabs button.is-active, .account-tabs but
 
 .auth-status.is-error {
   color: #e32626;
-}
-
-.staff-auth-panel {
-  margin-top: 18px;
 }
 
 .capybara-shop-panel {
@@ -5330,6 +5388,103 @@ button:disabled {
   font-weight: 750;
 }
 
+.application-form select,
+.support-form select,
+.library-filter select,
+.conversation-start-form select,
+.message-form select,
+.staff-inline-form select,
+.staff-lesson-form select,
+.staff-stream-form select,
+.staff-filterbar select,
+.admin-edit-form select {
+  color: var(--ink);
+  border-color: rgba(20, 92, 89, 0.18);
+  background:
+    linear-gradient(45deg, transparent 50%, #145c59 50%) right 18px center / 7px 7px no-repeat,
+    linear-gradient(135deg, #145c59 50%, transparent 50%) right 13px center / 7px 7px no-repeat,
+    linear-gradient(180deg, #fff, #f8fbfa);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  appearance: none;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+}
+
+.application-form select:not([multiple]),
+.support-form select:not([multiple]),
+.library-filter select:not([multiple]),
+.conversation-start-form select:not([multiple]),
+.message-form select:not([multiple]),
+.staff-inline-form select:not([multiple]),
+.staff-lesson-form select:not([multiple]),
+.staff-stream-form select:not([multiple]),
+.staff-filterbar select:not([multiple]),
+.admin-edit-form select:not([multiple]) {
+  padding-right: 42px;
+}
+
+.application-form select:hover,
+.support-form select:hover,
+.library-filter select:hover,
+.conversation-start-form select:hover,
+.message-form select:hover,
+.staff-inline-form select:hover,
+.staff-lesson-form select:hover,
+.staff-stream-form select:hover,
+.staff-filterbar select:hover,
+.admin-edit-form select:hover {
+  border-color: rgba(20, 92, 89, 0.34);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 8px 18px rgba(20, 92, 89, 0.08);
+}
+
+.application-form select:focus,
+.support-form select:focus,
+.library-filter select:focus-visible,
+.conversation-start-form select:focus,
+.message-form select:focus,
+.staff-inline-form select:focus,
+.staff-lesson-form select:focus,
+.staff-stream-form select:focus,
+.staff-filterbar select:focus,
+.admin-edit-form select:focus {
+  border-color: #58c9bf !important;
+  outline: 3px solid rgba(88, 201, 191, 0.18);
+}
+
+.staff-inline-form select[multiple],
+.staff-lesson-form select[multiple],
+.admin-edit-form select[multiple] {
+  overflow: auto;
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(88, 201, 191, 0.1), rgba(255, 255, 255, 0) 38%),
+    #fff;
+  scrollbar-color: rgba(20, 92, 89, 0.34) transparent;
+}
+
+.staff-inline-form select[multiple] option,
+.staff-lesson-form select[multiple] option,
+.admin-edit-form select[multiple] option {
+  min-height: 32px;
+  margin: 2px 0;
+  padding: 7px 9px;
+  border-radius: 6px;
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.staff-inline-form select[multiple] option:checked,
+.staff-lesson-form select[multiple] option:checked,
+.admin-edit-form select[multiple] option:checked {
+  color: #fff;
+  background: #145c59;
+}
+
 .staff-inline-form select[multiple],
 .staff-lesson-form select[multiple],
 .admin-edit-form select[multiple] {
@@ -5348,6 +5503,13 @@ button:disabled {
   min-height: 38px;
   padding: 0 10px;
   font-size: 14px;
+}
+
+.staff-inline-form select:not([multiple]),
+.staff-lesson-form select:not([multiple]),
+.staff-stream-form select:not([multiple]),
+.staff-filterbar select:not([multiple]) {
+  padding-right: 42px;
 }
 
 .staff-inline-form textarea,
@@ -11137,6 +11299,31 @@ body[data-site-theme] .notification-button {
   .study-page,
   .course-page {
     padding: 22px 14px;
+  }
+
+  .page-grid,
+  .primary-column,
+  .right-column,
+  .account-auth-panel,
+  .account-form,
+  .account-session {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .account-auth-panel {
+    padding: 20px 14px;
+  }
+
+  .auth-mode-toggle {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .auth-mode-toggle button {
+    min-width: 0;
+    padding: 0 8px;
+    font-size: 14px;
   }
 
   .staff-workspace-page {

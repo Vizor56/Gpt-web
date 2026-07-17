@@ -470,6 +470,7 @@ const staffLoginForm = document.querySelector("#staff-login-form");
 const staffLogoutButton = document.querySelector("#staff-logout-button");
 const staffAuthStatus = document.querySelector("#staff-auth-status");
 const staffSessionStatus = document.querySelector("#staff-session-status");
+const authModeButtons = document.querySelectorAll("[data-auth-mode]");
 const conversationList = document.querySelector("#conversation-list");
 const messageList = document.querySelector("#message-list");
 const messageForm = document.querySelector("#message-form");
@@ -488,6 +489,7 @@ let latestLibraryNotes = [];
 let currentLibraryCourse = "all";
 let currentAccount = readStoredAccount();
 let currentStaff = readStoredStaff();
+let currentAuthMode = hasAuthenticatedStaff(currentStaff) ? "staff" : "student";
 let latestAccount = null;
 let latestShop = null;
 let latestMessages = null;
@@ -638,6 +640,63 @@ function hasAuthenticatedAccount(account = currentAccount) {
   const studentId = Number(account?.student?.studentId);
   const authToken = account?.account?.authToken || account?.authToken || "";
   return Number.isFinite(studentId) && studentId > 0 && Boolean(authToken);
+}
+
+function syncAuthPanelUi() {
+  const mode = currentAuthMode === "staff" ? "staff" : "student";
+  const hasStudentSession = hasAuthenticatedAccount();
+  const hasStaffSession = hasAuthenticatedStaff();
+
+  authModeButtons.forEach((button) => {
+    const isActive = button.dataset.authMode === mode;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-selected", String(isActive));
+  });
+
+  if (accountSessionStatus) {
+    accountSessionStatus.classList.toggle("is-hidden", mode !== "student");
+  }
+
+  if (staffSessionStatus) {
+    staffSessionStatus.classList.toggle("is-hidden", mode !== "staff");
+  }
+
+  if (loginForm) {
+    loginForm.classList.toggle("is-hidden", mode !== "student" || hasStudentSession);
+  }
+
+  if (registerForm) {
+    registerForm.classList.toggle("is-hidden", mode !== "student" || hasStudentSession);
+  }
+
+  if (authDivider) {
+    authDivider.classList.toggle("is-hidden", mode !== "student" || hasStudentSession);
+  }
+
+  if (logoutButton) {
+    logoutButton.classList.toggle("is-hidden", mode !== "student" || !hasStudentSession);
+  }
+
+  if (staffLoginForm) {
+    staffLoginForm.classList.toggle("is-hidden", mode !== "staff" || hasStaffSession);
+  }
+
+  if (staffLogoutButton) {
+    staffLogoutButton.classList.toggle("is-hidden", mode !== "staff" || !hasStaffSession);
+  }
+
+  if (authStatus) {
+    authStatus.classList.toggle("is-hidden", mode !== "student");
+  }
+
+  if (staffAuthStatus) {
+    staffAuthStatus.classList.toggle("is-hidden", mode !== "staff");
+  }
+}
+
+function setAuthMode(mode = "student") {
+  currentAuthMode = mode === "staff" ? "staff" : "student";
+  syncAuthPanelUi();
 }
 
 function getStudentFullName(student) {
@@ -1135,6 +1194,8 @@ function updateProfileSummary(account = latestAccount) {
   if (authDivider) {
     authDivider.classList.toggle("is-hidden", hasSession);
   }
+
+  syncAuthPanelUi();
 }
 
 function updatePointsPanels(account = latestAccount) {
@@ -1228,6 +1289,8 @@ function applyGuestUi(message = "Войдите или создайте акка
   if (authDivider) {
     authDivider.classList.remove("is-hidden");
   }
+
+  syncAuthPanelUi();
 
   renderShopEmpty("Войдите в аккаунт, чтобы покупать одежду для капибары.");
 
@@ -2300,6 +2363,7 @@ async function submitAuthForm(event, endpoint, pendingText, successText) {
     }
 
     saveStoredAccount(account);
+    setAuthMode("student");
     applyAccountToUi(account);
     form.reset();
     setAuthStatus(successText, "success");
@@ -2351,6 +2415,8 @@ function updateStaffSessionUi(staff = currentStaff) {
   if (staffLogoutButton) {
     staffLogoutButton.classList.toggle("is-hidden", !hasSession);
   }
+
+  syncAuthPanelUi();
 }
 
 function getStaffProfile(staff = currentStaff) {
@@ -5977,6 +6043,7 @@ async function submitStaffLogin(event) {
     }
 
     saveStoredStaff(staff);
+    setAuthMode("staff");
     updateStaffSessionUi(staff);
     form.reset();
     setStaffAuthStatus("Вход команды выполнен.", "success");
@@ -8655,6 +8722,12 @@ if (shopItemsList) {
     }
   });
 }
+
+authModeButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    setAuthMode(button.dataset.authMode);
+  });
+});
 
 if (loginForm) {
   loginForm.addEventListener("submit", (event) => {
