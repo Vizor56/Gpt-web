@@ -11150,36 +11150,373 @@ body[data-site-theme] :is(.capybara-shop-panel, .staff-shop-panel, .staff-panel:
   background: rgba(255, 255, 255, 0.12);
 }
 
-.capybara[data-animal="frog"] {
-  --pet-clothes-left: 46px;
+/* Outfit tailoring: each pet silhouette gets its own body fit and detail anchors. */
+.capybara[data-outfit] {
+  --pet-outfit-radius: 0;
+  --pet-hood-right: 18px;
+  --pet-hood-top: -8px;
+  --pet-hood-width: 42px;
+  --pet-hood-height: 19px;
+  --pet-pocket-left: calc(50% - 19px);
+  --pet-pocket-bottom: 8px;
+  --pet-pocket-width: 38px;
+  --pet-pocket-height: 16px;
+  --pet-collar-left: calc(50% - 24px);
+  --pet-collar-width: 48px;
+  --pet-collar-height: 24px;
+  --pet-detail-right: 14px;
+  --pet-detail-bottom: 10px;
+  --pet-cape-left-offset: -14px;
+  --pet-cape-bottom-offset: -4px;
+  --pet-cape-width-extra: 28px;
+  --pet-cape-height-extra: 9px;
+}
+
+.capybara[data-outfit] .capybara__clothes {
+  border-radius: var(--pet-outfit-radius);
+}
+
+.capybara[data-animal="cat"][data-outfit] {
+  --pet-clothes-left: 47px;
+  --pet-clothes-bottom: 37px;
+  --pet-clothes-width: 104px;
+  --pet-clothes-height: 50px;
+  --pet-hood-right: 10px;
+  --pet-hood-width: 38px;
+  --pet-pocket-bottom: 7px;
+  --pet-pocket-width: 34px;
+  --pet-cape-left-offset: -9px;
+  --pet-cape-width-extra: 18px;
+}
+
+.capybara[data-animal="fox"][data-outfit] {
+  --pet-clothes-left: 35px;
+  --pet-clothes-bottom: 37px;
+  --pet-clothes-width: 120px;
+  --pet-clothes-height: 52px;
+  --pet-hood-right: 15px;
+  --pet-pocket-bottom: 7px;
+  --pet-cape-left-offset: -13px;
+  --pet-cape-width-extra: 26px;
+}
+
+.capybara[data-animal="dog"][data-outfit] {
+  --pet-clothes-left: 38px;
+  --pet-clothes-bottom: 37px;
+  --pet-clothes-width: 116px;
+  --pet-clothes-height: 52px;
+  --pet-hood-right: 14px;
+  --pet-hood-width: 40px;
+  --pet-cape-left-offset: -12px;
+  --pet-cape-width-extra: 24px;
+}
+
+.capybara[data-animal="panda"][data-outfit] {
+  --pet-clothes-left: 38px;
+  --pet-clothes-bottom: 37px;
+  --pet-clothes-width: 118px;
+  --pet-clothes-height: 53px;
+  --pet-hood-right: 14px;
+  --pet-cape-left-offset: -11px;
+  --pet-cape-width-extra: 22px;
+}
+
+.capybara[data-animal="penguin"][data-outfit] {
+  --pet-clothes-left: 40px;
   --pet-clothes-bottom: 38px;
-  --pet-clothes-width: 108px;
-  --pet-clothes-height: 48px;
+  --pet-clothes-width: 114px;
+  --pet-clothes-height: 54px;
+  --pet-hood-right: 13px;
+  --pet-hood-width: 38px;
+  --pet-pocket-width: 34px;
+  --pet-cape-left-offset: -10px;
+  --pet-cape-width-extra: 20px;
 }
 
-.capybara[data-animal="bunny"] {
+.capybara[data-animal="frog"][data-outfit] {
+  --pet-clothes-left: 47px;
+  --pet-clothes-bottom: 39px;
+  --pet-clothes-width: 106px;
+  --pet-clothes-height: 46px;
+  --pet-hood-right: 10px;
+  --pet-hood-width: 36px;
+  --pet-hood-height: 17px;
+  --pet-pocket-bottom: 6px;
+  --pet-pocket-width: 32px;
+  --pet-cape-left-offset: -8px;
+  --pet-cape-width-extra: 16px;
+  --pet-cape-height-extra: 7px;
+}
+
+.capybara[data-animal="bunny"][data-outfit] {
+  --pet-clothes-left: 37px;
+  --pet-clothes-bottom: 37px;
+  --pet-clothes-width: 108px;
+  --pet-clothes-height: 52px;
+  --pet-hood-right: 10px;
+  --pet-hood-width: 36px;
+  --pet-pocket-width: 32px;
+  --pet-cape-left-offset: -8px;
+  --pet-cape-width-extra: 18px;
+}
+
+.capybara[data-animal="teacher-owl"][data-outfit] {
+  --pet-clothes-left: 51px;
+  --pet-clothes-bottom: 37px;
+  --pet-clothes-width: 100px;
+  --pet-clothes-height: 58px;
+  --pet-hood-right: 8px;
+  --pet-hood-width: 34px;
+  --pet-collar-width: 42px;
+  --pet-pocket-left: calc(50% - 15px);
+  --pet-pocket-width: 30px;
+  --pet-cape-left-offset: -8px;
+  --pet-cape-width-extra: 18px;
+  --pet-cape-height-extra: 6px;
+}
+
+.capybara[data-animal="teacher-lion"][data-outfit],
+.capybara[data-animal="curator-deer"][data-outfit] {
+  --pet-clothes-left: 38px;
+  --pet-clothes-bottom: 37px;
+  --pet-clothes-width: 118px;
+  --pet-clothes-height: 53px;
+  --pet-hood-right: 14px;
+  --pet-cape-left-offset: -12px;
+  --pet-cape-width-extra: 24px;
+}
+
+.capybara[data-animal="curator-otter"][data-outfit] {
+  --pet-clothes-left: 40px;
+  --pet-clothes-bottom: 37px;
+  --pet-clothes-width: 114px;
+  --pet-clothes-height: 51px;
+  --pet-hood-right: 12px;
+  --pet-hood-width: 38px;
+  --pet-cape-left-offset: -10px;
+  --pet-cape-width-extra: 20px;
+}
+
+.capybara[data-animal="admin-robot"][data-outfit] {
   --pet-clothes-left: 36px;
-  --pet-clothes-bottom: 36px;
-  --pet-clothes-width: 108px;
-  --pet-clothes-height: 55px;
+  --pet-clothes-bottom: 38px;
+  --pet-clothes-width: 124px;
+  --pet-clothes-height: 54px;
+  --pet-outfit-radius: 1px;
+  --pet-hood-right: 16px;
+  --pet-cape-left-offset: -10px;
+  --pet-cape-width-extra: 20px;
 }
 
-.capybara[data-animal="teacher-owl"] {
-  --pet-clothes-left: 52px;
-  --pet-clothes-bottom: 36px;
-  --pet-clothes-width: 98px;
-  --pet-clothes-height: 56px;
+.capybara[data-animal="admin-raven"][data-outfit] {
+  --pet-clothes-left: 38px;
+  --pet-clothes-bottom: 37px;
+  --pet-clothes-width: 116px;
+  --pet-clothes-height: 53px;
+  --pet-hood-right: 13px;
+  --pet-cape-left-offset: -11px;
+  --pet-cape-width-extra: 22px;
 }
 
-.capybara[data-animal="teacher-owl"][data-outfit="purple-cape"] .capybara__clothes {
-  left: 42px;
-  width: 118px;
+.capybara[data-outfit="green-hoodie"] .capybara__clothes,
+.capybara[data-outfit="curator-hoodie"] .capybara__clothes {
+  background:
+    linear-gradient(#ffffff 0 0) calc(50% - 5px) 6px / 10px calc(100% - 18px),
+    linear-gradient(var(--pet-outfit-border) 0 0) calc(50% - 1px) 4px / 4px calc(100% - 12px),
+    linear-gradient(rgba(255, 255, 255, 0.32) 0 0) 13% 24% / 17% 12%,
+    linear-gradient(90deg, var(--pet-outfit-side, #1f8f55) 0 15%, var(--pet-outfit-main, #4ade80) 16% 43%, rgba(255, 255, 255, 0.82) 44% 51%, var(--pet-outfit-main, #4ade80) 52% 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent 38%);
+  background-repeat: no-repeat;
 }
 
-.capybara[data-animal="frog"][data-outfit="purple-cape"] .capybara__clothes,
-.capybara[data-animal="bunny"][data-outfit="purple-cape"] .capybara__clothes {
-  left: calc(var(--pet-clothes-left) - 10px);
-  width: calc(var(--pet-clothes-width) + 22px);
+.capybara[data-outfit="green-hoodie"] .capybara__clothes {
+  --pet-outfit-main: #4ade80;
+  --pet-outfit-side: #1f8f55;
+}
+
+.capybara[data-outfit="curator-hoodie"] .capybara__clothes {
+  --pet-outfit-main: #a78bfa;
+  --pet-outfit-side: #7c3aed;
+}
+
+.capybara[data-outfit="green-hoodie"] .capybara__clothes::before,
+.capybara[data-outfit="curator-hoodie"] .capybara__clothes::before {
+  right: var(--pet-hood-right);
+  top: var(--pet-hood-top);
+  width: var(--pet-hood-width);
+  height: var(--pet-hood-height);
+  border: 2px solid var(--pet-outfit-border);
+  background:
+    linear-gradient(90deg, var(--pet-outfit-border) 0 5px, transparent 5px calc(100% - 5px), var(--pet-outfit-border) calc(100% - 5px)),
+    var(--pet-outfit-main);
+}
+
+.capybara[data-outfit="green-hoodie"] .capybara__clothes::after,
+.capybara[data-outfit="curator-hoodie"] .capybara__clothes::after {
+  left: var(--pet-pocket-left);
+  bottom: var(--pet-pocket-bottom);
+  width: var(--pet-pocket-width);
+  height: var(--pet-pocket-height);
+  border: 2px solid var(--pet-outfit-border);
+  background:
+    linear-gradient(90deg, transparent 0 calc(50% - 2px), var(--pet-outfit-border) calc(50% - 2px) calc(50% + 2px), transparent calc(50% + 2px)),
+    rgba(255, 255, 255, 0.16);
+}
+
+.capybara[data-outfit="lab-coat"] .capybara__clothes {
+  background:
+    linear-gradient(#dbe5ee 0 0) 13% 14% / 19% 14%,
+    linear-gradient(#dbe5ee 0 0) 68% 14% / 19% 14%,
+    linear-gradient(#145c59 0 0) calc(50% - 1px) 3px / 4px calc(100% - 9px),
+    linear-gradient(90deg, #ffffff 0 38%, #edf2f7 39% 48%, #ffffff 49% 100%);
+  background-repeat: no-repeat;
+}
+
+.capybara[data-outfit="lab-coat"] .capybara__clothes::before {
+  left: var(--pet-collar-left);
+  top: 0;
+  width: var(--pet-collar-width);
+  height: var(--pet-collar-height);
+}
+
+.capybara[data-outfit="lab-coat"] .capybara__clothes::after {
+  right: var(--pet-detail-right);
+  bottom: var(--pet-detail-bottom);
+}
+
+.capybara[data-outfit="purple-cape"] .capybara__clothes {
+  left: calc(var(--pet-clothes-left, 36px) + var(--pet-cape-left-offset));
+  bottom: calc(var(--pet-clothes-bottom, 36px) + var(--pet-cape-bottom-offset));
+  width: calc(var(--pet-clothes-width, 124px) + var(--pet-cape-width-extra));
+  height: calc(var(--pet-clothes-height, 56px) + var(--pet-cape-height-extra));
+  background:
+    linear-gradient(#facc15 0 0) 72% 31% / 9px 9px,
+    linear-gradient(100deg, #4c1d95 0 18%, #7c3aed 19% 62%, #a78bfa 63% 100%);
+  background-repeat: no-repeat;
+  clip-path: polygon(13% 8%, 84% 8%, 98% 100%, 3% 100%);
+}
+
+.capybara[data-outfit="purple-cape"] .capybara__clothes::before {
+  right: calc(var(--pet-hood-right) + 3px);
+  top: -2px;
+  width: var(--pet-hood-width);
+  height: 17px;
+}
+
+.capybara[data-outfit="purple-cape"] .capybara__clothes::after {
+  right: calc(var(--pet-hood-right) + 15px);
+  top: 16px;
+}
+
+.capybara[data-outfit="tracksuit"] .capybara__clothes {
+  background:
+    linear-gradient(#ffffff 0 0) calc(50% - 4px) 0 / 8px 100%,
+    linear-gradient(#93c5fd 0 0) 13% 18% / 19% 11%,
+    linear-gradient(#1e3a8a 0 0) calc(50% + 1px) 2px / 3px calc(100% - 8px),
+    linear-gradient(90deg, #1d4ed8 0 47%, #2563eb 48% 100%);
+  background-repeat: no-repeat;
+}
+
+.capybara[data-outfit="tracksuit"] .capybara__clothes::before {
+  left: 9%;
+  bottom: 8px;
+  width: 82%;
+}
+
+.capybara[data-outfit="tracksuit"] .capybara__clothes::after {
+  left: 8%;
+  width: 84%;
+}
+
+.capybara[data-outfit="teacher-blazer"] .capybara__clothes,
+.capybara[data-outfit="curator-vest"] .capybara__clothes,
+.capybara[data-outfit="admin-suit"] .capybara__clothes {
+  background:
+    linear-gradient(var(--pet-shirt-color, #ffffff) 0 0) calc(50% - 13px) 0 / 26px 100%,
+    linear-gradient(var(--pet-tie-color, #f1b84b) 0 0) calc(50% - 2px) 11px / 4px calc(100% - 22px),
+    linear-gradient(115deg, var(--pet-jacket-color, #1f365c) 0 42%, transparent 43%) 0 0 / 50% 100%,
+    linear-gradient(245deg, var(--pet-jacket-color, #1f365c) 0 42%, transparent 43%) 100% 0 / 50% 100%,
+    var(--pet-jacket-color, #1f365c);
+  background-repeat: no-repeat;
+}
+
+.capybara[data-outfit="teacher-blazer"] .capybara__clothes {
+  --pet-shirt-color: #ffffff;
+  --pet-tie-color: #f1b84b;
+  --pet-jacket-color: #1f365c;
+}
+
+.capybara[data-outfit="curator-vest"] .capybara__clothes {
+  --pet-shirt-color: #ecfdf5;
+  --pet-tie-color: #047857;
+  --pet-jacket-color: #10b981;
+}
+
+.capybara[data-outfit="admin-suit"] .capybara__clothes {
+  --pet-shirt-color: #f8fafc;
+  --pet-tie-color: #0f172a;
+  --pet-jacket-color: #334155;
+}
+
+.capybara[data-outfit="teacher-blazer"] .capybara__clothes::before,
+.capybara[data-outfit="admin-suit"] .capybara__clothes::before {
+  left: var(--pet-collar-left);
+  width: var(--pet-collar-width);
+}
+
+.capybara[data-outfit="teacher-blazer"] .capybara__clothes::after,
+.capybara[data-outfit="curator-vest"] .capybara__clothes::after,
+.capybara[data-outfit="admin-suit"] .capybara__clothes::after {
+  right: var(--pet-detail-right);
+  bottom: calc(var(--pet-detail-bottom) + 2px);
+}
+
+.capybara[data-outfit="teacher-cardigan"] .capybara__clothes {
+  background:
+    linear-gradient(#fef3c7 0 0) calc(50% - 13px) 0 / 26px 100%,
+    linear-gradient(#7c2d12 0 0) calc(50% - 2px) 0 / 4px 100%,
+    linear-gradient(0deg, rgba(124, 45, 18, 0.22) 0 4px, transparent 4px 12px),
+    linear-gradient(90deg, #b45309 0 47%, #d97706 48% 100%);
+  background-repeat: no-repeat;
+}
+
+.capybara[data-outfit="teacher-cardigan"] .capybara__clothes::before {
+  left: 12%;
+  top: 10px;
+  box-shadow:
+    calc(var(--pet-clothes-width, 124px) - 44px) 0 0 #fbbf24,
+    calc(var(--pet-clothes-width, 124px) / 2 - 14px) 17px 0 -1px #fef3c7;
+}
+
+.capybara[data-outfit="teacher-cardigan"] .capybara__clothes::after {
+  left: 8%;
+  width: 84%;
+}
+
+.capybara[data-outfit="curator-vest"] .capybara__clothes::before {
+  left: 13%;
+  width: 19%;
+  box-shadow:
+    calc(var(--pet-clothes-width, 124px) - 54px) 0 0 -2px rgba(255, 255, 255, 0.2),
+    calc(var(--pet-clothes-width, 124px) - 54px) 0 0 0 #047857;
+}
+
+.capybara[data-outfit="admin-jacket"] .capybara__clothes {
+  background:
+    linear-gradient(#22d3ee 0 0) 13% 18% / 18% 11%,
+    linear-gradient(#38bdf8 0 0) calc(50% - 2px) 1px / 5px calc(100% - 8px),
+    linear-gradient(#0f172a 0 0) calc(50% - 12px) 0 / 24px 100%,
+    linear-gradient(90deg, #111827 0 47%, #1e293b 48% 100%);
+  background-repeat: no-repeat;
+}
+
+.capybara[data-outfit="admin-jacket"] .capybara__clothes::before {
+  right: var(--pet-detail-right);
+}
+
+.capybara[data-outfit="admin-jacket"] .capybara__clothes::after {
+  left: 8%;
+  width: 84%;
 }
 
 .capybara[data-animation="grade"] .capybara__clothes,
