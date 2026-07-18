@@ -1375,6 +1375,26 @@ function correctionAttemptsJsonSql(assignmentAlias = "ha") {
   ), '[]'::json)`;
 }
 
+function studentHomeworkAssignmentJoinSql(studentParam = "$2", alias = "ha") {
+  return `
+      LEFT JOIN LATERAL (
+        SELECT ${alias}_pick.*
+        FROM homework_assignments ${alias}_pick
+        WHERE ${alias}_pick.template_id = ht.id
+          AND ${alias}_pick.student_id = ${studentParam}
+          AND ${alias}_pick.status <> 'Cancelled'
+        ORDER BY
+          CASE
+            WHEN ce.id IS NOT NULL AND ${alias}_pick.enrollment_id = ce.id THEN 0
+            WHEN ${alias}_pick.enrollment_id IS NULL THEN 1
+            ELSE 2
+          END,
+          ${alias}_pick.id DESC
+        LIMIT 1
+      ) ${alias} ON TRUE
+  `;
+}
+
 function lessonLearningStatusSql(lessonAlias = "l", assignmentAlias = "ha", submissionAlias = "hs", correctionAlias = "hc") {
   const homeworkScore = scoreSql(submissionAlias);
   const correctionScore = scoreSql(correctionAlias);
@@ -1900,7 +1920,7 @@ async function getCourseLessons(slug, studentId = 0) {
       LEFT JOIN course_enrollments ce ON ce.course_id = c.id AND ce.student_id = $2 AND ce.status = 'Active'
       LEFT JOIN curators cu ON cu.id = COALESCE(ce.curator_id, c.curator_id)
       LEFT JOIN homework_templates ht ON ht.lesson_id = l.id AND ht.course_id = c.id AND ht.active = TRUE
-      LEFT JOIN homework_assignments ha ON ha.template_id = ht.id AND ha.student_id = $2 AND ha.enrollment_id = ce.id
+      ${studentHomeworkAssignmentJoinSql("$2", "ha")}
       LEFT JOIN homework_submissions hs ON hs.assignment_id = ha.id
       ${activeCorrectionJoinSql("ha", "hc")}
       WHERE c.slug = $1
@@ -2075,7 +2095,7 @@ async function getHomeworks(slug = "", studentId = 0) {
       JOIN courses c ON c.id = ht.course_id
       LEFT JOIN lessons l ON l.id = ht.lesson_id
       LEFT JOIN course_enrollments ce ON ce.course_id = c.id AND ce.student_id = $2 AND ce.status = 'Active'
-      LEFT JOIN homework_assignments ha ON ha.template_id = ht.id AND ha.student_id = $2 AND ha.enrollment_id = ce.id
+      ${studentHomeworkAssignmentJoinSql("$2", "ha")}
       LEFT JOIN homework_submissions hs ON hs.assignment_id = ha.id
       ${activeCorrectionJoinSql("ha", "hc")}
       WHERE ht.active = TRUE
