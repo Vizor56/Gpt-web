@@ -16107,3 +16107,123 @@ textarea:focus,
     padding-top: 22px;
   }
 }
+
+/* Fixed page scrollbar and theme-independent YT mark. */
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(20, 92, 89, 0.5) rgba(247, 246, 242, 0.82);
+}
+
+body {
+  min-height: 100vh;
+  overflow-y: visible;
+}
+
+.sidebar,
+.side-nav,
+.staff-side-nav,
+.conversation-list,
+.message-list,
+.notification-popover,
+.nearest-list,
+.home-stream-list,
+.shop-items,
+.library-list {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(20, 92, 89, 0.48) rgba(247, 246, 242, 0.78);
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+.sidebar::-webkit-scrollbar,
+.side-nav::-webkit-scrollbar,
+.staff-side-nav::-webkit-scrollbar,
+.conversation-list::-webkit-scrollbar,
+.message-list::-webkit-scrollbar,
+.notification-popover::-webkit-scrollbar,
+.nearest-list::-webkit-scrollbar,
+.home-stream-list::-webkit-scrollbar,
+.shop-items::-webkit-scrollbar,
+.library-list::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track,
+.sidebar::-webkit-scrollbar-track,
+.side-nav::-webkit-scrollbar-track,
+.staff-side-nav::-webkit-scrollbar-track,
+.conversation-list::-webkit-scrollbar-track,
+.message-list::-webkit-scrollbar-track,
+.notification-popover::-webkit-scrollbar-track,
+.nearest-list::-webkit-scrollbar-track,
+.home-stream-list::-webkit-scrollbar-track,
+.shop-items::-webkit-scrollbar-track,
+.library-list::-webkit-scrollbar-track {
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.94), rgba(238, 248, 246, 0.82));
+  border-radius: 999px;
+}
+
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb,
+.sidebar::-webkit-scrollbar-thumb,
+.side-nav::-webkit-scrollbar-thumb,
+.staff-side-nav::-webkit-scrollbar-thumb,
+.conversation-list::-webkit-scrollbar-thumb,
+.message-list::-webkit-scrollbar-thumb,
+.notification-popover::-webkit-scrollbar-thumb,
+.nearest-list::-webkit-scrollbar-thumb,
+.home-stream-list::-webkit-scrollbar-thumb,
+.shop-items::-webkit-scrollbar-thumb,
+.library-list::-webkit-scrollbar-thumb {
+  min-height: 46px;
+  border: 3px solid rgba(247, 246, 242, 0.92);
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(88, 201, 191, 0.82), rgba(20, 92, 89, 0.88));
+  box-shadow: inset 0 0 0 1px rgba(255, 253, 248, 0.36);
+}
+
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover,
+.sidebar::-webkit-scrollbar-thumb:hover,
+.side-nav::-webkit-scrollbar-thumb:hover,
+.staff-side-nav::-webkit-scrollbar-thumb:hover,
+.conversation-list::-webkit-scrollbar-thumb:hover,
+.message-list::-webkit-scrollbar-thumb:hover,
+.notification-popover::-webkit-scrollbar-thumb:hover,
+.nearest-list::-webkit-scrollbar-thumb:hover,
+.home-stream-list::-webkit-scrollbar-thumb:hover,
+.shop-items::-webkit-scrollbar-thumb:hover,
+.library-list::-webkit-scrollbar-thumb:hover {
+  background:
+    linear-gradient(180deg, rgba(88, 201, 191, 0.98), rgba(15, 71, 69, 0.98));
+}
+
+body[data-site-theme] {
+  scrollbar-color: rgba(20, 92, 89, 0.52) rgba(247, 246, 242, 0.84);
+}
+
+.brand__mark,
+body[data-site-theme] .brand__mark,
+.app.is-staff-mode .brand__mark {
+  color: #145c59;
+  border: 1px solid rgba(32, 42, 45, 0.16);
+  background:
+    linear-gradient(135deg, #ffffff 0%, #eef0ec 42%, #cfd5d1 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -3px 0 rgba(32, 42, 45, 0.08),
+    0 10px 22px rgba(32, 42, 45, 0.08);
+}
+
+.brand__mark > span,
+body[data-site-theme] .brand__mark > span,
+.app.is-staff-mode .brand__mark > span {
+  color: #145c59;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.64);
+}
