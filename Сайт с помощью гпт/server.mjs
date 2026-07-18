@@ -2488,7 +2488,27 @@ app.post(
         throw createHttpError(400, "Недостаточно баллов.");
       }
 
-      await client.query("INSERT INTO student_shop_items (student_id, item_id, is_equipped) VALUES ($1, $2, FALSE)", [student.studentId, item.rows[0].id]);
+      const shouldAutoEquip = item.rows[0].item_type === "theme";
+
+      if (shouldAutoEquip) {
+        await client.query(
+          `
+            UPDATE student_shop_items ssi
+            SET is_equipped = FALSE
+            FROM shop_items i
+            WHERE ssi.item_id = i.id
+              AND ssi.student_id = $1
+              AND i.item_type = 'theme'
+          `,
+          [student.studentId],
+        );
+      }
+
+      await client.query("INSERT INTO student_shop_items (student_id, item_id, is_equipped) VALUES ($1, $2, $3)", [
+        student.studentId,
+        item.rows[0].id,
+        shouldAutoEquip,
+      ]);
       await client.query(
         "INSERT INTO point_transactions (student_id, points, reason) VALUES ($1, $2, $3)",
         [student.studentId, -Number(item.rows[0].price_points), `Покупка: ${item.rows[0].item_name}`],
@@ -2675,10 +2695,28 @@ app.post(
         throw createHttpError(400, "Недостаточно баллов.");
       }
 
-      await client.query("INSERT INTO staff_shop_items (staff_role, staff_id, item_id, is_equipped) VALUES ($1, $2, $3, FALSE)", [
+      const shouldAutoEquip = item.rows[0].item_type === "theme";
+
+      if (shouldAutoEquip) {
+        await client.query(
+          `
+            UPDATE staff_shop_items ssi
+            SET is_equipped = FALSE
+            FROM shop_items i
+            WHERE ssi.item_id = i.id
+              AND ssi.staff_role = $1
+              AND ssi.staff_id = $2
+              AND i.item_type = 'theme'
+          `,
+          [staff.role, staff.staffId],
+        );
+      }
+
+      await client.query("INSERT INTO staff_shop_items (staff_role, staff_id, item_id, is_equipped) VALUES ($1, $2, $3, $4)", [
         staff.role,
         staff.staffId,
         item.rows[0].id,
+        shouldAutoEquip,
       ]);
       await addStaffPoints(client, staff, -Number(item.rows[0].price_points), `Покупка: ${item.rows[0].item_name}`);
       await client.query("COMMIT");

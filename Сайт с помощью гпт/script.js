@@ -512,6 +512,58 @@ let currentAccountTab = "progress";
 let currentAccountMode = "profile";
 let currentShopSection = "all";
 let currentStaffShopSection = "all";
+const SITE_THEME_CACHE_KEY = "tutor-site-theme";
+
+function normalizeSiteThemeClass(themeClass = "") {
+  const value = String(themeClass || "").trim();
+  return /^theme-[a-z0-9-]+$/i.test(value) ? value : "";
+}
+
+function readCachedSiteTheme() {
+  try {
+    return normalizeSiteThemeClass(localStorage.getItem(SITE_THEME_CACHE_KEY));
+  } catch (error) {
+    return "";
+  }
+}
+
+function writeCachedSiteTheme(themeClass = "") {
+  const normalized = normalizeSiteThemeClass(themeClass);
+
+  try {
+    if (normalized) {
+      localStorage.setItem(SITE_THEME_CACHE_KEY, normalized);
+    } else {
+      localStorage.removeItem(SITE_THEME_CACHE_KEY);
+    }
+  } catch (error) {
+  }
+}
+
+function setSiteThemeAttribute(themeClass = "") {
+  const normalized = normalizeSiteThemeClass(themeClass);
+  const targets = [document.documentElement, document.body].filter(Boolean);
+
+  targets.forEach((target) => {
+    if (normalized) {
+      target.dataset.siteTheme = normalized;
+    } else {
+      delete target.dataset.siteTheme;
+    }
+  });
+
+  return normalized;
+}
+
+function applyCachedSiteTheme() {
+  const cachedTheme = readCachedSiteTheme();
+
+  if (cachedTheme) {
+    setSiteThemeAttribute(cachedTheme);
+  }
+}
+
+applyCachedSiteTheme();
 
 function readAccountCookie() {
   let cookie = "";
@@ -1597,7 +1649,9 @@ function applyAccountToUi(account = latestAccount) {
   }
 
   latestAccount = account;
-  applySiteTheme(account.profileItems || []);
+  if (Array.isArray(account.profileItems)) {
+    applySiteTheme(account.profileItems);
+  }
   updateProfileSummary(account);
   updatePointsPanels(account);
   applyAccountToCourseCards(account);
@@ -1868,12 +1922,9 @@ function getEquippedSiteTheme(items = []) {
 
 function applySiteTheme(items = []) {
   const themeClass = getEquippedSiteTheme(items);
+  const appliedTheme = setSiteThemeAttribute(themeClass);
 
-  if (themeClass) {
-    document.body.dataset.siteTheme = themeClass;
-  } else {
-    delete document.body.dataset.siteTheme;
-  }
+  writeCachedSiteTheme(appliedTheme);
 }
 
 function getPixelPetAttributes(items = []) {
@@ -2101,11 +2152,12 @@ function renderShop(shop) {
           ${sectionItems
             .map((item) => {
               const canBuy = !item.isOwned && Number(shop.pointsTotal) >= Number(item.pricePoints);
+              const buyLabel = getShopSlot(item.itemType) === "theme" ? "Купить и применить" : "Купить";
               const action = item.isOwned
                 ? item.isEquipped
                   ? `<button type="button" data-shop-unequip="${escapeHtml(item.itemCode)}">Снять</button>`
                   : `<button type="button" data-shop-equip="${escapeHtml(item.itemCode)}">Надеть</button>`
-                : `<button type="button" data-shop-buy="${escapeHtml(item.itemCode)}" ${canBuy ? "" : "disabled"}>Купить</button>`;
+                : `<button type="button" data-shop-buy="${escapeHtml(item.itemCode)}" ${canBuy ? "" : "disabled"}>${escapeHtml(buyLabel)}</button>`;
 
               return `
                 <article class="shop-item"${getShopItemAttrs(item)}>
@@ -2258,6 +2310,18 @@ async function sendStaffShopAction(endpoint, itemCode, extraPayload = {}) {
 
     if (!response.ok) {
       throw new Error(result.message || result.error || "Не удалось обновить магазин команды.");
+    }
+
+    if (Array.isArray(result.items)) {
+      latestStaffWorkspace = {
+        ...(latestStaffWorkspace || {}),
+        staffShop: {
+          pointsTotal: Number(result.pointsTotal || 0),
+          items: result.items,
+        },
+      };
+      applySiteTheme(result.items);
+      renderStaffPage(currentStaffPage);
     }
 
     await loadStaffWorkspace();
@@ -2581,9 +2645,13 @@ function updateStaffWorkspaceHeader(pageName) {
   const title = document.querySelector("#staff-workspace-title");
   const eyebrow = document.querySelector("#staff-workspace-eyebrow");
   const staffHeaderProfile = document.querySelector("#staff-header-profile");
-  const staffShopItems = latestStaffWorkspace?.staffShop?.items || [];
-  const staffEquippedItems = staffShopItems.filter((item) => item.isEquipped);
-  applySiteTheme(staffShopItems);
+  const staffShopItems = Array.isArray(latestStaffWorkspace?.staffShop?.items) ? latestStaffWorkspace.staffShop.items : null;
+  const staffShopItemsForRender = staffShopItems || [];
+  const staffEquippedItems = staffShopItemsForRender.filter((item) => item.isEquipped);
+
+  if (staffShopItems) {
+    applySiteTheme(staffShopItems);
+  }
 
   if (title) {
     title.textContent = getStaffPageTitle(pageName);
@@ -3256,11 +3324,12 @@ function renderStaffPoints() {
           ${sectionItems
             .map((item) => {
               const canBuy = !item.isOwned && Number(shop.pointsTotal || 0) >= Number(item.pricePoints || 0);
+              const buyLabel = getShopSlot(item.itemType) === "theme" ? "Купить и применить" : "Купить";
               const action = item.isOwned
                 ? item.isEquipped
                   ? `<button type="button" data-staff-shop-unequip="${escapeHtml(item.itemCode)}">Снять</button>`
                   : `<button type="button" data-staff-shop-equip="${escapeHtml(item.itemCode)}">Надеть</button>`
-                : `<button type="button" data-staff-shop-buy="${escapeHtml(item.itemCode)}" ${canBuy ? "" : "disabled"}>Купить</button>`;
+                : `<button type="button" data-staff-shop-buy="${escapeHtml(item.itemCode)}" ${canBuy ? "" : "disabled"}>${escapeHtml(buyLabel)}</button>`;
               return `
                 <article class="shop-item"${getShopItemAttrs(item)}>
                   ${renderShopItemPreview(item, equippedItems)}
