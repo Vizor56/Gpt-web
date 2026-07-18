@@ -7569,6 +7569,10 @@ function getLessonLearningStatus(lesson = {}) {
     Boolean(lesson.needsHomeworkReview) ||
     (correctionAttempt >= 2 && lesson.correctionStatus === "Checked" && !isPassingScore(lesson.correctionScore));
 
+  if (needsHomeworkReview) {
+    return "Review_Required";
+  }
+
   if (lesson.correctionStatus === "Submitted") {
     return correctionAttempt >= 2 ? "Correction2_Check" : "Correction_Check";
   }
@@ -7578,7 +7582,7 @@ function getLessonLearningStatus(lesson = {}) {
       return "Done";
     }
 
-    return needsHomeworkReview ? "Review_Required" : correctionAttempt >= 2 ? "Correction2_Required" : "Correction_Required";
+    return correctionAttempt >= 2 ? "Correction2_Required" : "Correction_Required";
   }
 
   if (lesson.correctionId && (!lesson.correctionStatus || lesson.correctionStatus === "Required")) {
