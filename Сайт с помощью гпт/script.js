@@ -61,6 +61,15 @@ const courseData = {
   },
 };
 
+const courseKeyAliases = {
+  code: "informatics",
+};
+
+function normalizeCourseKey(courseKey) {
+  const key = String(courseKey || "").trim();
+  return courseKeyAliases[key] || key;
+}
+
 const fallbackLessons = {
   math: [
     {
@@ -805,11 +814,12 @@ function getLessonGenitiveWord(count) {
 }
 
 function getFallbackLessonCount(courseKey) {
+  courseKey = normalizeCourseKey(courseKey);
   return (fallbackLessons[courseKey] || fallbackLessons.math).length;
 }
 
 function getCourseThemeKey(courseKey = currentCourseKey, fallbackText = "") {
-  const key = String(courseKey || "").trim();
+  const key = normalizeCourseKey(courseKey);
 
   if (Object.prototype.hasOwnProperty.call(courseData, key)) {
     return key;
@@ -1188,6 +1198,7 @@ function getAccountCourses(account = latestAccount || currentAccount) {
 }
 
 function getAccountCourse(courseKey) {
+  courseKey = normalizeCourseKey(courseKey);
   return getAccountCourses().find((course) => course.courseSlug === courseKey);
 }
 
@@ -8655,6 +8666,7 @@ function openStudy(tabName = "owned") {
 }
 
 function findCourseCard(courseKey) {
+  courseKey = normalizeCourseKey(courseKey);
   return Array.from(studyCourseCards).find((card) => card.dataset.course === courseKey) || null;
 }
 
@@ -8686,6 +8698,7 @@ function showLockedCourseNotice(courseKey) {
 }
 
 async function openCourse(courseKey, viewName = "lessons") {
+  courseKey = normalizeCourseKey(courseKey);
   currentCourseKey = courseKey;
   currentCourseView = viewName;
   const course = courseData[courseKey] || courseData.math;
