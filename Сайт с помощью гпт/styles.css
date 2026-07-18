@@ -12023,6 +12023,1883 @@ body[data-site-theme] :is(.capybara-shop-panel, .staff-shop-panel, .staff-panel:
   animation: pet-scan 1.2s steps(2) infinite;
 }
 
+/* Shop pet system v2: one geometry map for every animal and wearable slot. */
+.capybara {
+  --pet-main: #9b6945;
+  --pet-light: #c78b5f;
+  --pet-dark: #4f321f;
+  --pet-soft: rgba(255, 255, 255, 0.18);
+  --pet-eye: #162033;
+  --pet-belly: rgba(255, 255, 255, 0.28);
+  --pet-mark: var(--pet-dark);
+  --pet-foot: var(--pet-dark);
+  --pet-tail-bg: var(--pet-main);
+  --pet-body-left: 31px;
+  --pet-body-bottom: 34px;
+  --pet-body-width: 134px;
+  --pet-body-height: 66px;
+  --pet-body-radius: 30px 28px 20px 22px;
+  --pet-head-right: 17px;
+  --pet-head-bottom: 60px;
+  --pet-head-width: 74px;
+  --pet-head-height: 58px;
+  --pet-head-radius: 24px 26px 18px 18px;
+  --pet-ear-width: 17px;
+  --pet-ear-height: 18px;
+  --pet-ear-left-right: 71px;
+  --pet-ear-left-bottom: 108px;
+  --pet-ear-right-right: 30px;
+  --pet-ear-right-bottom: 109px;
+  --pet-ear-radius: 8px 8px 5px 5px;
+  --pet-eye-width: 7px;
+  --pet-eye-height: 7px;
+  --pet-eye-left-right: 61px;
+  --pet-eye-left-bottom: 87px;
+  --pet-eye-right-right: 35px;
+  --pet-eye-right-bottom: 87px;
+  --pet-nose-right: 17px;
+  --pet-nose-bottom: 70px;
+  --pet-nose-width: 18px;
+  --pet-nose-height: 11px;
+  --pet-nose-radius: 3px;
+  --pet-tail-opacity: 0;
+  --pet-tail-left: 18px;
+  --pet-tail-bottom: 60px;
+  --pet-tail-width: 20px;
+  --pet-tail-height: 17px;
+  --pet-tail-radius: 7px;
+  --pet-tail-rotate: -10deg;
+  --pet-leg-bottom: 18px;
+  --pet-leg-width: 17px;
+  --pet-leg-height: 24px;
+  --pet-leg-radius: 0 0 6px 6px;
+  --pet-back-leg-left: 52px;
+  --pet-front-leg-left: 91px;
+  --pet-back-leg-shadow: 72px 0 0 -2px var(--pet-foot);
+  --pet-front-leg-shadow: 56px 0 0 -2px var(--pet-foot);
+  --pet-clothes-left: 36px;
+  --pet-clothes-bottom: 36px;
+  --pet-clothes-width: 126px;
+  --pet-clothes-height: 55px;
+  --pet-outfit-radius: 12px 11px 8px 8px;
+  --pet-hood-right: 18px;
+  --pet-hood-top: -8px;
+  --pet-hood-width: 42px;
+  --pet-hood-height: 18px;
+  --pet-hat-right: 25px;
+  --pet-hat-bottom: 110px;
+  --pet-hat-width: 64px;
+  --pet-hat-height: 32px;
+  --pet-face-right: 22px;
+  --pet-face-bottom: 82px;
+  --pet-face-width: 72px;
+  --pet-face-height: 26px;
+  --pet-neck-right: 47px;
+  --pet-neck-bottom: 59px;
+  --pet-neck-width: 78px;
+  --pet-neck-height: 18px;
+  --pet-hand-right: 5px;
+  --pet-hand-bottom: 34px;
+  --pet-hand-width: 38px;
+  --pet-hand-height: 38px;
+  width: 222px;
+  height: 170px;
+  isolation: isolate;
+  image-rendering: pixelated;
+}
+
+.capybara > span {
+  position: absolute;
+  display: block;
+  box-sizing: border-box;
+  image-rendering: pixelated;
+}
+
+.capybara__shadow {
+  left: 34px;
+  bottom: 14px;
+  z-index: 0;
+  width: 150px;
+  height: 16px;
+  border-radius: 0;
+  background:
+    linear-gradient(90deg, transparent 0 7%, rgba(15, 23, 42, 0.18) 8% 92%, transparent 93%),
+    rgba(15, 23, 42, 0.08);
+}
+
+.capybara__body {
+  left: var(--pet-body-left);
+  bottom: var(--pet-body-bottom);
+  z-index: 2;
+  overflow: visible;
+  width: var(--pet-body-width);
+  height: var(--pet-body-height);
+  border: 2px solid var(--pet-dark);
+  border-radius: var(--pet-body-radius);
+  background: var(
+    --pet-body-bg,
+    linear-gradient(90deg, rgba(255, 255, 255, 0.14) 0 8px, transparent 8px 18px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent 48%),
+    var(--pet-main)
+  );
+  box-shadow:
+    inset 0 -7px 0 rgba(15, 23, 42, 0.1),
+    inset 0 7px 0 rgba(255, 255, 255, 0.13);
+}
+
+.capybara__body::before,
+.capybara__body::after,
+.capybara__head::before,
+.capybara__head::after,
+.capybara__ear::before,
+.capybara__ear::after,
+.capybara__nose::before,
+.capybara__nose::after {
+  content: none;
+}
+
+.capybara__head {
+  right: var(--pet-head-right);
+  bottom: var(--pet-head-bottom);
+  z-index: 5;
+  width: var(--pet-head-width);
+  height: var(--pet-head-height);
+  border: 2px solid var(--pet-dark);
+  border-radius: var(--pet-head-radius);
+  background: var(
+    --pet-head-bg,
+    linear-gradient(90deg, rgba(255, 255, 255, 0.14) 0 6px, transparent 6px 14px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.17), transparent 52%),
+    var(--pet-light)
+  );
+  box-shadow:
+    inset 0 -6px 0 rgba(15, 23, 42, 0.08),
+    inset 0 7px 0 rgba(255, 255, 255, 0.13);
+}
+
+.capybara__tail {
+  left: var(--pet-tail-left);
+  bottom: var(--pet-tail-bottom);
+  z-index: 1;
+  width: var(--pet-tail-width);
+  height: var(--pet-tail-height);
+  border: 2px solid var(--pet-dark);
+  border-radius: var(--pet-tail-radius);
+  background: var(--pet-tail-bg);
+  opacity: var(--pet-tail-opacity);
+  transform: rotate(var(--pet-tail-rotate));
+  transform-origin: 90% 60%;
+}
+
+.capybara__leg {
+  bottom: var(--pet-leg-bottom);
+  z-index: 1;
+  width: var(--pet-leg-width);
+  height: var(--pet-leg-height);
+  border: 2px solid var(--pet-dark);
+  border-top: 0;
+  border-radius: var(--pet-leg-radius);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), transparent 42%),
+    var(--pet-foot);
+}
+
+.capybara__leg--back {
+  left: var(--pet-back-leg-left);
+  box-shadow: var(--pet-back-leg-shadow);
+}
+
+.capybara__leg--front {
+  left: var(--pet-front-leg-left);
+  box-shadow: var(--pet-front-leg-shadow);
+}
+
+.capybara__ear {
+  z-index: 4;
+  width: var(--pet-ear-width);
+  height: var(--pet-ear-height);
+  border: 2px solid var(--pet-dark);
+  border-radius: var(--pet-ear-radius);
+  background: var(
+    --pet-ear-bg,
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 56%),
+    var(--pet-light)
+  );
+}
+
+.capybara__ear--left {
+  right: var(--pet-ear-left-right);
+  bottom: var(--pet-ear-left-bottom);
+  transform: rotate(var(--pet-ear-left-rotate, -4deg));
+}
+
+.capybara__ear--right {
+  right: var(--pet-ear-right-right);
+  bottom: var(--pet-ear-right-bottom);
+  transform: rotate(var(--pet-ear-right-rotate, 5deg));
+}
+
+.capybara__eye {
+  z-index: 7;
+  width: var(--pet-eye-width);
+  height: var(--pet-eye-height);
+  border-radius: 999px;
+  background: var(--pet-eye);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.22),
+    inset 2px 0 0 rgba(255, 255, 255, 0.22);
+}
+
+.capybara__eye--left {
+  right: var(--pet-eye-left-right);
+  bottom: var(--pet-eye-left-bottom);
+}
+
+.capybara__eye--right {
+  right: var(--pet-eye-right-right);
+  bottom: var(--pet-eye-right-bottom);
+}
+
+.capybara__nose {
+  right: var(--pet-nose-right);
+  bottom: var(--pet-nose-bottom);
+  z-index: 7;
+  width: var(--pet-nose-width);
+  height: var(--pet-nose-height);
+  border-radius: var(--pet-nose-radius);
+  background: var(--pet-nose-bg, linear-gradient(90deg, rgba(255, 255, 255, 0.14) 0 4px, transparent 4px), #3b2418);
+}
+
+.capybara[data-animal="cat"] {
+  --pet-main: #b8794f;
+  --pet-light: #d79b69;
+  --pet-dark: #4f3020;
+  --pet-body-left: 51px;
+  --pet-body-bottom: 34px;
+  --pet-body-width: 98px;
+  --pet-body-height: 66px;
+  --pet-body-radius: 28px 26px 18px 19px;
+  --pet-head-right: 31px;
+  --pet-head-bottom: 68px;
+  --pet-head-width: 64px;
+  --pet-head-height: 58px;
+  --pet-head-radius: 18px 18px 15px 15px;
+  --pet-ear-width: 24px;
+  --pet-ear-height: 24px;
+  --pet-ear-left-right: 76px;
+  --pet-ear-left-bottom: 112px;
+  --pet-ear-right-right: 31px;
+  --pet-ear-right-bottom: 113px;
+  --pet-ear-radius: 2px;
+  --pet-eye-left-right: 70px;
+  --pet-eye-left-bottom: 93px;
+  --pet-eye-right-right: 48px;
+  --pet-eye-right-bottom: 93px;
+  --pet-nose-right: 55px;
+  --pet-nose-bottom: 78px;
+  --pet-nose-width: 16px;
+  --pet-nose-height: 9px;
+  --pet-tail-opacity: 1;
+  --pet-tail-left: 31px;
+  --pet-tail-bottom: 55px;
+  --pet-tail-width: 20px;
+  --pet-tail-height: 54px;
+  --pet-tail-radius: 12px 12px 3px 12px;
+  --pet-tail-rotate: -10deg;
+  --pet-back-leg-left: 60px;
+  --pet-front-leg-left: 98px;
+  --pet-back-leg-shadow: 56px 0 0 -2px var(--pet-foot);
+  --pet-front-leg-shadow: 35px 0 0 -2px var(--pet-foot);
+  --pet-clothes-left: 52px;
+  --pet-clothes-width: 96px;
+  --pet-clothes-height: 53px;
+  --pet-hood-right: 9px;
+  --pet-hood-width: 34px;
+  --pet-hat-right: 25px;
+  --pet-hat-bottom: 118px;
+  --pet-face-right: 37px;
+  --pet-face-bottom: 87px;
+  --pet-face-width: 64px;
+  --pet-neck-right: 48px;
+  --pet-neck-bottom: 65px;
+  --pet-neck-width: 70px;
+  --pet-hand-right: 15px;
+}
+
+.capybara[data-animal="cat"] .capybara__ear {
+  border: 0;
+  background:
+    linear-gradient(135deg, transparent 0 16%, var(--pet-dark) 17% 25%, var(--pet-light) 26% 78%, var(--pet-dark) 79% 100%);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.capybara[data-animal="cat"] .capybara__head::before {
+  position: absolute;
+  content: "";
+  right: 11px;
+  top: 25px;
+  width: 7px;
+  height: 2px;
+  background: var(--pet-dark);
+  box-shadow:
+    0 7px 0 var(--pet-dark),
+    33px 0 0 var(--pet-dark),
+    33px 7px 0 var(--pet-dark);
+  opacity: 0.7;
+}
+
+.capybara[data-animal="fox"] {
+  --pet-main: #d87633;
+  --pet-light: #f19a4d;
+  --pet-dark: #6a361c;
+  --pet-body-left: 37px;
+  --pet-body-width: 123px;
+  --pet-body-height: 62px;
+  --pet-head-right: 20px;
+  --pet-head-bottom: 64px;
+  --pet-head-width: 72px;
+  --pet-head-height: 55px;
+  --pet-head-radius: 18px 23px 12px 18px;
+  --pet-ear-width: 23px;
+  --pet-ear-height: 26px;
+  --pet-ear-left-right: 78px;
+  --pet-ear-right-right: 31px;
+  --pet-ear-left-bottom: 111px;
+  --pet-ear-right-bottom: 112px;
+  --pet-ear-radius: 2px;
+  --pet-eye-left-right: 66px;
+  --pet-eye-right-right: 39px;
+  --pet-eye-left-bottom: 91px;
+  --pet-eye-right-bottom: 91px;
+  --pet-nose-right: 14px;
+  --pet-nose-bottom: 74px;
+  --pet-nose-width: 18px;
+  --pet-tail-opacity: 1;
+  --pet-tail-left: 12px;
+  --pet-tail-bottom: 56px;
+  --pet-tail-width: 45px;
+  --pet-tail-height: 31px;
+  --pet-tail-radius: 22px 7px 14px 18px;
+  --pet-tail-rotate: -12deg;
+  --pet-back-leg-left: 48px;
+  --pet-front-leg-left: 90px;
+  --pet-clothes-left: 39px;
+  --pet-clothes-width: 118px;
+  --pet-hand-right: 6px;
+}
+
+.capybara[data-animal="fox"] .capybara__ear {
+  border: 0;
+  background:
+    linear-gradient(135deg, transparent 0 14%, var(--pet-dark) 15% 25%, var(--pet-light) 26% 75%, var(--pet-dark) 76% 100%);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.capybara[data-animal="fox"] .capybara__tail {
+  background:
+    linear-gradient(90deg, var(--pet-main) 0 58%, #fff3dc 59% 100%);
+}
+
+.capybara[data-animal="panda"] {
+  --pet-main: #f7f3e8;
+  --pet-light: #fffaf0;
+  --pet-dark: #222831;
+  --pet-mark: #222831;
+  --pet-foot: #222831;
+  --pet-body-left: 43px;
+  --pet-body-bottom: 32px;
+  --pet-body-width: 113px;
+  --pet-body-height: 74px;
+  --pet-body-radius: 34px 34px 25px 25px;
+  --pet-body-bg: linear-gradient(90deg, var(--pet-mark) 0 21%, var(--pet-main) 22% 78%, var(--pet-mark) 79%);
+  --pet-head-right: 31px;
+  --pet-head-bottom: 75px;
+  --pet-head-width: 73px;
+  --pet-head-height: 61px;
+  --pet-head-radius: 26px 26px 20px 20px;
+  --pet-ear-width: 23px;
+  --pet-ear-height: 23px;
+  --pet-ear-left-right: 78px;
+  --pet-ear-right-right: 29px;
+  --pet-ear-left-bottom: 123px;
+  --pet-ear-right-bottom: 123px;
+  --pet-ear-bg: var(--pet-mark);
+  --pet-eye-left-right: 67px;
+  --pet-eye-right-right: 41px;
+  --pet-eye-left-bottom: 99px;
+  --pet-eye-right-bottom: 99px;
+  --pet-nose-right: 50px;
+  --pet-nose-bottom: 86px;
+  --pet-leg-bottom: 17px;
+  --pet-clothes-left: 43px;
+  --pet-clothes-bottom: 37px;
+  --pet-clothes-width: 111px;
+  --pet-clothes-height: 58px;
+  --pet-hat-bottom: 126px;
+  --pet-face-right: 35px;
+  --pet-face-bottom: 94px;
+  --pet-neck-bottom: 70px;
+}
+
+.capybara[data-animal="panda"] .capybara__head::before {
+  position: absolute;
+  content: "";
+  right: 42px;
+  top: 20px;
+  width: 16px;
+  height: 15px;
+  border-radius: 9px;
+  background: var(--pet-mark);
+  box-shadow: 27px 0 0 var(--pet-mark);
+}
+
+.capybara[data-animal="dog"] {
+  --pet-main: #b86f37;
+  --pet-light: #d99757;
+  --pet-dark: #55341e;
+  --pet-body-left: 38px;
+  --pet-body-width: 119px;
+  --pet-body-height: 63px;
+  --pet-head-right: 22px;
+  --pet-head-bottom: 62px;
+  --pet-head-width: 70px;
+  --pet-head-height: 58px;
+  --pet-head-radius: 22px 22px 18px 18px;
+  --pet-ear-width: 20px;
+  --pet-ear-height: 33px;
+  --pet-ear-left-right: 75px;
+  --pet-ear-right-right: 27px;
+  --pet-ear-left-bottom: 98px;
+  --pet-ear-right-bottom: 99px;
+  --pet-ear-radius: 7px 7px 15px 15px;
+  --pet-eye-left-right: 63px;
+  --pet-eye-right-right: 38px;
+  --pet-nose-right: 19px;
+  --pet-nose-bottom: 72px;
+  --pet-tail-opacity: 1;
+  --pet-tail-left: 14px;
+  --pet-tail-bottom: 66px;
+  --pet-tail-width: 30px;
+  --pet-tail-height: 14px;
+  --pet-tail-radius: 9px 3px 3px 9px;
+  --pet-tail-rotate: -20deg;
+  --pet-clothes-left: 40px;
+  --pet-clothes-width: 116px;
+}
+
+.capybara[data-animal="dog"] .capybara__ear {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent 44%),
+    var(--pet-main);
+}
+
+.capybara[data-animal="bunny"] {
+  --pet-main: #ead3c5;
+  --pet-light: #fff6ef;
+  --pet-dark: #8a665d;
+  --pet-body-left: 45px;
+  --pet-body-width: 104px;
+  --pet-body-height: 62px;
+  --pet-head-right: 32px;
+  --pet-head-bottom: 66px;
+  --pet-head-width: 66px;
+  --pet-head-height: 58px;
+  --pet-head-radius: 23px 23px 18px 18px;
+  --pet-ear-width: 16px;
+  --pet-ear-height: 47px;
+  --pet-ear-left-right: 76px;
+  --pet-ear-right-right: 42px;
+  --pet-ear-left-bottom: 116px;
+  --pet-ear-right-bottom: 118px;
+  --pet-ear-radius: 9px 9px 3px 3px;
+  --pet-eye-left-right: 65px;
+  --pet-eye-right-right: 43px;
+  --pet-nose-right: 52px;
+  --pet-nose-bottom: 78px;
+  --pet-tail-opacity: 1;
+  --pet-tail-left: 28px;
+  --pet-tail-bottom: 61px;
+  --pet-tail-width: 22px;
+  --pet-tail-height: 22px;
+  --pet-tail-radius: 999px;
+  --pet-tail-bg: var(--pet-light);
+  --pet-back-leg-left: 56px;
+  --pet-front-leg-left: 94px;
+  --pet-clothes-left: 46px;
+  --pet-clothes-width: 102px;
+  --pet-hat-right: 27px;
+  --pet-hat-bottom: 126px;
+  --pet-face-right: 34px;
+  --pet-face-bottom: 86px;
+  --pet-hand-right: 16px;
+}
+
+.capybara[data-animal="bunny"] .capybara__ear {
+  background:
+    linear-gradient(90deg, var(--pet-light) 0 30%, #f3adc7 31% 69%, var(--pet-light) 70%);
+}
+
+.capybara[data-animal="penguin"] {
+  --pet-main: #1f2937;
+  --pet-light: #f8fafc;
+  --pet-dark: #111827;
+  --pet-foot: #f59e0b;
+  --pet-body-left: 55px;
+  --pet-body-bottom: 27px;
+  --pet-body-width: 92px;
+  --pet-body-height: 92px;
+  --pet-body-radius: 36px 36px 24px 24px;
+  --pet-body-bg: radial-gradient(ellipse at 50% 55%, var(--pet-light) 0 33px, transparent 34px), var(--pet-main);
+  --pet-head-right: 47px;
+  --pet-head-bottom: 90px;
+  --pet-head-width: 70px;
+  --pet-head-height: 54px;
+  --pet-head-radius: 25px 25px 18px 18px;
+  --pet-head-bg: var(--pet-main);
+  --pet-ear-width: 17px;
+  --pet-ear-height: 48px;
+  --pet-ear-left-right: 117px;
+  --pet-ear-right-right: 47px;
+  --pet-ear-left-bottom: 56px;
+  --pet-ear-right-bottom: 56px;
+  --pet-ear-radius: 10px;
+  --pet-ear-bg: var(--pet-main);
+  --pet-eye-left-right: 91px;
+  --pet-eye-right-right: 67px;
+  --pet-eye-left-bottom: 113px;
+  --pet-eye-right-bottom: 113px;
+  --pet-nose-right: 72px;
+  --pet-nose-bottom: 100px;
+  --pet-nose-width: 20px;
+  --pet-nose-height: 11px;
+  --pet-nose-bg: linear-gradient(135deg, #f59e0b 0 50%, #d97706 51%);
+  --pet-tail-opacity: 0;
+  --pet-leg-bottom: 15px;
+  --pet-leg-width: 18px;
+  --pet-leg-height: 16px;
+  --pet-back-leg-left: 75px;
+  --pet-front-leg-left: 113px;
+  --pet-back-leg-shadow: none;
+  --pet-front-leg-shadow: none;
+  --pet-clothes-left: 57px;
+  --pet-clothes-bottom: 38px;
+  --pet-clothes-width: 88px;
+  --pet-clothes-height: 58px;
+  --pet-hat-right: 42px;
+  --pet-hat-bottom: 135px;
+  --pet-face-right: 45px;
+  --pet-face-bottom: 107px;
+  --pet-neck-right: 56px;
+  --pet-neck-bottom: 91px;
+  --pet-neck-width: 76px;
+  --pet-hand-right: 24px;
+  --pet-hand-bottom: 44px;
+}
+
+.capybara[data-animal="frog"] {
+  --pet-main: #55b96f;
+  --pet-light: #8bdc7d;
+  --pet-dark: #1f6f45;
+  --pet-eye: #102a1d;
+  --pet-body-left: 42px;
+  --pet-body-bottom: 31px;
+  --pet-body-width: 116px;
+  --pet-body-height: 58px;
+  --pet-body-radius: 34px 34px 20px 20px;
+  --pet-body-bg: radial-gradient(circle at 30% 62%, rgba(255, 255, 255, 0.22) 0 8px, transparent 9px), radial-gradient(circle at 70% 60%, rgba(255, 255, 255, 0.18) 0 7px, transparent 8px), var(--pet-main);
+  --pet-head-right: 24px;
+  --pet-head-bottom: 66px;
+  --pet-head-width: 78px;
+  --pet-head-height: 49px;
+  --pet-head-radius: 27px 27px 14px 14px;
+  --pet-head-bg: var(--pet-light);
+  --pet-ear-width: 26px;
+  --pet-ear-height: 26px;
+  --pet-ear-left-right: 73px;
+  --pet-ear-right-right: 27px;
+  --pet-ear-left-bottom: 103px;
+  --pet-ear-right-bottom: 103px;
+  --pet-ear-radius: 14px 14px 8px 8px;
+  --pet-ear-bg: radial-gradient(circle at 50% 48%, #ffffff 0 7px, var(--pet-eye) 8px 11px, transparent 12px), var(--pet-light);
+  --pet-eye-width: 0;
+  --pet-eye-height: 0;
+  --pet-nose-right: 30px;
+  --pet-nose-bottom: 77px;
+  --pet-nose-width: 32px;
+  --pet-nose-height: 10px;
+  --pet-nose-bg: linear-gradient(90deg, var(--pet-eye) 0 5px, transparent 5px 26px, var(--pet-eye) 26px), linear-gradient(0deg, transparent 0 7px, var(--pet-dark) 7px 9px, transparent 9px);
+  --pet-leg-bottom: 16px;
+  --pet-leg-width: 24px;
+  --pet-leg-height: 17px;
+  --pet-back-leg-left: 49px;
+  --pet-front-leg-left: 111px;
+  --pet-back-leg-shadow: none;
+  --pet-front-leg-shadow: none;
+  --pet-clothes-left: 46px;
+  --pet-clothes-bottom: 36px;
+  --pet-clothes-width: 108px;
+  --pet-clothes-height: 47px;
+  --pet-hat-right: 20px;
+  --pet-hat-bottom: 112px;
+  --pet-face-right: 27px;
+  --pet-face-bottom: 82px;
+  --pet-neck-right: 44px;
+  --pet-neck-bottom: 64px;
+  --pet-hand-right: 14px;
+}
+
+.capybara[data-animal="teacher-owl"] {
+  --pet-main: #8b6f47;
+  --pet-light: #d2b57b;
+  --pet-dark: #4b371f;
+  --pet-foot: #7c4f24;
+  --pet-body-left: 52px;
+  --pet-body-bottom: 29px;
+  --pet-body-width: 100px;
+  --pet-body-height: 87px;
+  --pet-body-radius: 33px 33px 24px 24px;
+  --pet-body-bg: radial-gradient(circle at 35% 24%, #fff8db 0 10px, transparent 11px), radial-gradient(circle at 65% 24%, #fff8db 0 10px, transparent 11px), linear-gradient(90deg, var(--pet-dark) 0 18%, var(--pet-main) 19% 81%, var(--pet-dark) 82%);
+  --pet-head-right: 38px;
+  --pet-head-bottom: 85px;
+  --pet-head-width: 82px;
+  --pet-head-height: 45px;
+  --pet-head-radius: 24px 24px 13px 13px;
+  --pet-ear-width: 19px;
+  --pet-ear-height: 24px;
+  --pet-ear-left-right: 100px;
+  --pet-ear-right-right: 45px;
+  --pet-ear-left-bottom: 119px;
+  --pet-ear-right-bottom: 119px;
+  --pet-ear-radius: 2px;
+  --pet-eye-width: 9px;
+  --pet-eye-height: 9px;
+  --pet-eye-left-right: 84px;
+  --pet-eye-right-right: 54px;
+  --pet-eye-left-bottom: 104px;
+  --pet-eye-right-bottom: 104px;
+  --pet-nose-right: 66px;
+  --pet-nose-bottom: 93px;
+  --pet-nose-width: 17px;
+  --pet-nose-height: 13px;
+  --pet-nose-bg: linear-gradient(135deg, #f59e0b 0 50%, #b45309 51%);
+  --pet-leg-bottom: 15px;
+  --pet-back-leg-left: 75px;
+  --pet-front-leg-left: 116px;
+  --pet-back-leg-shadow: none;
+  --pet-front-leg-shadow: none;
+  --pet-clothes-left: 54px;
+  --pet-clothes-bottom: 35px;
+  --pet-clothes-width: 96px;
+  --pet-clothes-height: 64px;
+  --pet-hat-right: 43px;
+  --pet-hat-bottom: 126px;
+  --pet-face-right: 42px;
+  --pet-face-bottom: 99px;
+  --pet-neck-right: 59px;
+  --pet-neck-bottom: 84px;
+  --pet-hand-right: 20px;
+  --pet-hand-bottom: 42px;
+}
+
+.capybara[data-animal="teacher-owl"] .capybara__ear {
+  border: 0;
+  background:
+    linear-gradient(135deg, transparent 0 14%, var(--pet-dark) 15% 100%);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.capybara[data-animal="teacher-owl"] .capybara__body::before {
+  position: absolute;
+  content: "";
+  left: 20px;
+  bottom: 14px;
+  width: 12px;
+  height: 32px;
+  background: rgba(75, 55, 31, 0.35);
+  box-shadow: 47px 0 0 rgba(75, 55, 31, 0.35);
+}
+
+.capybara[data-animal="teacher-lion"] {
+  --pet-main: #c78337;
+  --pet-light: #efb15c;
+  --pet-dark: #6b3f16;
+  --pet-mark: #8f4f1e;
+  --pet-body-left: 38px;
+  --pet-body-width: 120px;
+  --pet-head-right: 23px;
+  --pet-head-bottom: 62px;
+  --pet-head-width: 72px;
+  --pet-head-height: 62px;
+  --pet-head-radius: 24px 24px 17px 17px;
+  --pet-ear-left-bottom: 112px;
+  --pet-ear-right-bottom: 112px;
+  --pet-eye-left-right: 64px;
+  --pet-eye-right-right: 39px;
+  --pet-nose-right: 39px;
+  --pet-nose-bottom: 75px;
+  --pet-nose-width: 26px;
+  --pet-tail-opacity: 1;
+  --pet-tail-left: 15px;
+  --pet-tail-bottom: 65px;
+  --pet-tail-width: 29px;
+  --pet-tail-height: 14px;
+  --pet-tail-rotate: -17deg;
+  --pet-clothes-left: 40px;
+  --pet-clothes-width: 116px;
+}
+
+.capybara[data-animal="teacher-lion"] .capybara__head {
+  box-shadow:
+    0 0 0 9px var(--pet-mark),
+    inset 0 -6px 0 rgba(15, 23, 42, 0.08),
+    inset 0 7px 0 rgba(255, 255, 255, 0.13);
+}
+
+.capybara[data-animal="teacher-lion"] .capybara__tail::after {
+  position: absolute;
+  content: "";
+  right: -9px;
+  top: -4px;
+  width: 13px;
+  height: 14px;
+  background: var(--pet-mark);
+}
+
+.capybara[data-animal="curator-deer"] {
+  --pet-main: #b88955;
+  --pet-light: #d6aa72;
+  --pet-dark: #5f3b22;
+  --pet-body-left: 39px;
+  --pet-body-width: 119px;
+  --pet-head-right: 23px;
+  --pet-head-bottom: 64px;
+  --pet-head-width: 71px;
+  --pet-head-height: 58px;
+  --pet-ear-width: 19px;
+  --pet-ear-height: 24px;
+  --pet-ear-left-right: 76px;
+  --pet-ear-right-right: 31px;
+  --pet-ear-left-bottom: 112px;
+  --pet-ear-right-bottom: 112px;
+  --pet-eye-left-right: 64px;
+  --pet-eye-right-right: 39px;
+  --pet-nose-right: 37px;
+  --pet-nose-bottom: 75px;
+  --pet-nose-width: 26px;
+  --pet-tail-opacity: 1;
+  --pet-tail-left: 17px;
+  --pet-tail-bottom: 64px;
+  --pet-tail-width: 22px;
+  --pet-tail-height: 17px;
+  --pet-tail-radius: 999px;
+  --pet-clothes-left: 41px;
+  --pet-clothes-width: 115px;
+}
+
+.capybara[data-animal="curator-deer"] .capybara__ear::before,
+.capybara[data-animal="curator-deer"] .capybara__ear::after {
+  position: absolute;
+  content: "";
+  top: -17px;
+  width: 4px;
+  height: 20px;
+  background: var(--pet-dark);
+}
+
+.capybara[data-animal="curator-deer"] .capybara__ear::before {
+  left: -5px;
+  transform: rotate(-28deg);
+  box-shadow: -6px 8px 0 -1px var(--pet-dark);
+}
+
+.capybara[data-animal="curator-deer"] .capybara__ear::after {
+  right: -5px;
+  transform: rotate(28deg);
+  box-shadow: 6px 8px 0 -1px var(--pet-dark);
+}
+
+.capybara[data-animal="curator-otter"] {
+  --pet-main: #8a5c3b;
+  --pet-light: #bf8558;
+  --pet-dark: #442817;
+  --pet-body-left: 31px;
+  --pet-body-bottom: 32px;
+  --pet-body-width: 130px;
+  --pet-body-height: 58px;
+  --pet-head-right: 21px;
+  --pet-head-bottom: 58px;
+  --pet-head-width: 68px;
+  --pet-head-height: 54px;
+  --pet-ear-width: 15px;
+  --pet-ear-height: 15px;
+  --pet-ear-left-right: 69px;
+  --pet-ear-right-right: 34px;
+  --pet-ear-left-bottom: 105px;
+  --pet-ear-right-bottom: 106px;
+  --pet-eye-left-right: 62px;
+  --pet-eye-right-right: 39px;
+  --pet-nose-right: 38px;
+  --pet-nose-bottom: 68px;
+  --pet-nose-width: 25px;
+  --pet-tail-opacity: 1;
+  --pet-tail-left: 10px;
+  --pet-tail-bottom: 50px;
+  --pet-tail-width: 40px;
+  --pet-tail-height: 19px;
+  --pet-tail-radius: 18px 5px 12px 18px;
+  --pet-clothes-left: 35px;
+  --pet-clothes-bottom: 35px;
+  --pet-clothes-width: 122px;
+  --pet-clothes-height: 50px;
+}
+
+.capybara[data-animal="curator-otter"] .capybara__head::before {
+  position: absolute;
+  content: "";
+  right: 8px;
+  top: 30px;
+  width: 22px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow:
+    0 6px 0 rgba(255, 255, 255, 0.7),
+    -37px 0 0 rgba(255, 255, 255, 0.7),
+    -37px 6px 0 rgba(255, 255, 255, 0.7);
+}
+
+.capybara[data-animal="admin-robot"] {
+  --pet-main: #94a3b8;
+  --pet-light: #cbd5e1;
+  --pet-dark: #334155;
+  --pet-eye: #22d3ee;
+  --pet-foot: #475569;
+  --pet-body-left: 38px;
+  --pet-body-bottom: 31px;
+  --pet-body-width: 124px;
+  --pet-body-height: 67px;
+  --pet-body-radius: 5px;
+  --pet-body-bg: linear-gradient(90deg, rgba(255, 255, 255, 0.25) 0 8px, transparent 8px 18px), linear-gradient(0deg, rgba(15, 23, 42, 0.14) 0 5px, transparent 5px 18px), var(--pet-main);
+  --pet-head-right: 21px;
+  --pet-head-bottom: 64px;
+  --pet-head-width: 76px;
+  --pet-head-height: 54px;
+  --pet-head-radius: 5px;
+  --pet-head-bg: linear-gradient(90deg, rgba(255, 255, 255, 0.25) 0 7px, transparent 7px 18px), var(--pet-light);
+  --pet-ear-width: 13px;
+  --pet-ear-height: 24px;
+  --pet-ear-left-right: 94px;
+  --pet-ear-right-right: 13px;
+  --pet-ear-left-bottom: 78px;
+  --pet-ear-right-bottom: 78px;
+  --pet-ear-radius: 3px;
+  --pet-eye-width: 10px;
+  --pet-eye-height: 8px;
+  --pet-eye-left-right: 67px;
+  --pet-eye-right-right: 40px;
+  --pet-eye-left-bottom: 88px;
+  --pet-eye-right-bottom: 88px;
+  --pet-nose-right: 38px;
+  --pet-nose-bottom: 75px;
+  --pet-nose-width: 30px;
+  --pet-nose-height: 6px;
+  --pet-nose-bg: #0f172a;
+  --pet-leg-bottom: 16px;
+  --pet-leg-width: 19px;
+  --pet-leg-height: 22px;
+  --pet-back-leg-left: 55px;
+  --pet-front-leg-left: 112px;
+  --pet-back-leg-shadow: none;
+  --pet-front-leg-shadow: none;
+  --pet-clothes-left: 39px;
+  --pet-clothes-bottom: 36px;
+  --pet-clothes-width: 122px;
+  --pet-clothes-height: 54px;
+  --pet-outfit-radius: 4px;
+  --pet-hat-right: 25px;
+  --pet-hat-bottom: 114px;
+  --pet-face-right: 20px;
+  --pet-face-bottom: 81px;
+}
+
+.capybara[data-animal="admin-robot"] .capybara__head::before {
+  position: absolute;
+  content: "";
+  left: 35px;
+  top: -17px;
+  width: 6px;
+  height: 17px;
+  background: var(--pet-dark);
+  box-shadow: 0 -6px 0 2px var(--pet-eye);
+}
+
+.capybara[data-animal="admin-raven"] {
+  --pet-main: #1f2937;
+  --pet-light: #374151;
+  --pet-dark: #0f172a;
+  --pet-eye: #facc15;
+  --pet-body-left: 42px;
+  --pet-body-bottom: 31px;
+  --pet-body-width: 113px;
+  --pet-body-height: 70px;
+  --pet-body-radius: 36px 28px 22px 24px;
+  --pet-body-bg: linear-gradient(90deg, var(--pet-dark) 0 24%, var(--pet-main) 25% 100%);
+  --pet-head-right: 24px;
+  --pet-head-bottom: 67px;
+  --pet-head-width: 70px;
+  --pet-head-height: 56px;
+  --pet-head-radius: 22px 25px 15px 16px;
+  --pet-ear-width: 18px;
+  --pet-ear-height: 18px;
+  --pet-ear-left-right: 74px;
+  --pet-ear-right-right: 33px;
+  --pet-ear-left-bottom: 111px;
+  --pet-ear-right-bottom: 112px;
+  --pet-eye-left-right: 63px;
+  --pet-eye-right-right: 39px;
+  --pet-nose-right: 13px;
+  --pet-nose-bottom: 75px;
+  --pet-nose-width: 24px;
+  --pet-nose-height: 13px;
+  --pet-nose-bg: linear-gradient(135deg, #f59e0b 0 50%, #b45309 51%);
+  --pet-tail-opacity: 1;
+  --pet-tail-left: 18px;
+  --pet-tail-bottom: 58px;
+  --pet-tail-width: 35px;
+  --pet-tail-height: 28px;
+  --pet-tail-radius: 4px 16px 4px 18px;
+  --pet-tail-bg: var(--pet-dark);
+  --pet-leg-bottom: 15px;
+  --pet-back-leg-left: 67px;
+  --pet-front-leg-left: 114px;
+  --pet-back-leg-shadow: none;
+  --pet-front-leg-shadow: none;
+  --pet-clothes-left: 43px;
+  --pet-clothes-width: 111px;
+  --pet-hat-right: 25px;
+}
+
+/* Fur colors are late so every pet can be recolored while keeping species marks. */
+.capybara[data-fur="fur-choco"] {
+  --pet-main: #7c4a32;
+  --pet-light: #9f6842;
+  --pet-dark: #432615;
+  --pet-foot: #432615;
+}
+
+.capybara[data-fur="fur-cream"] {
+  --pet-main: #e5c38c;
+  --pet-light: #f3d6a5;
+  --pet-dark: #8e653a;
+  --pet-foot: #8e653a;
+}
+
+.capybara[data-fur="fur-gray"] {
+  --pet-main: #9ea8b1;
+  --pet-light: #bac3cc;
+  --pet-dark: #52606c;
+  --pet-foot: #52606c;
+}
+
+.capybara[data-fur="fur-midnight"] {
+  --pet-main: #24324a;
+  --pet-light: #3e5275;
+  --pet-dark: #101827;
+  --pet-foot: #101827;
+}
+
+.capybara[data-fur="fur-rose"] {
+  --pet-main: #d989a6;
+  --pet-light: #f1b5c8;
+  --pet-dark: #8b3f5c;
+  --pet-foot: #8b3f5c;
+}
+
+.capybara[data-fur="fur-gold"] {
+  --pet-main: #e0a83b;
+  --pet-light: #f6ca63;
+  --pet-dark: #8a5c17;
+  --pet-foot: #8a5c17;
+}
+
+.capybara[data-fur="fur-teacher-graphite"] {
+  --pet-main: #526070;
+  --pet-light: #788698;
+  --pet-dark: #263342;
+  --pet-foot: #263342;
+}
+
+.capybara[data-fur="fur-curator-mint"] {
+  --pet-main: #78cdb1;
+  --pet-light: #a2ead2;
+  --pet-dark: #2f705b;
+  --pet-foot: #2f705b;
+}
+
+.capybara[data-fur="fur-admin-steel"] {
+  --pet-main: #7f8ea3;
+  --pet-light: #a7b4c6;
+  --pet-dark: #334155;
+  --pet-foot: #334155;
+}
+
+.capybara:is([data-animal="panda"], [data-animal="penguin"], [data-animal="admin-raven"])[data-fur] {
+  --pet-mark: #202a2d;
+}
+
+.capybara[data-eyes="eyes-green"] {
+  --pet-eye: #11845b;
+}
+
+.capybara[data-eyes="eyes-blue"] {
+  --pet-eye: #1d65d8;
+}
+
+.capybara[data-eyes="eyes-neon"] {
+  --pet-eye: #00e5ff;
+}
+
+.capybara[data-eyes="eyes-teacher-amber"] {
+  --pet-eye: #f59e0b;
+}
+
+.capybara[data-eyes="eyes-curator-violet"] {
+  --pet-eye: #8b5cf6;
+}
+
+.capybara[data-eyes="eyes-admin-cyan"] {
+  --pet-eye: #06b6d4;
+}
+
+.capybara[data-eyes="eyes-star"] .capybara__eye {
+  width: 10px;
+  height: 10px;
+  background:
+    linear-gradient(90deg, transparent 0 3px, #ffd43b 3px 7px, transparent 7px),
+    linear-gradient(0deg, transparent 0 3px, #ffd43b 3px 7px, transparent 7px);
+  border-radius: 0;
+  box-shadow: 0 0 0 1px #7c5200;
+}
+
+.capybara[data-eyes="eyes-neon"] .capybara__eye,
+.capybara[data-eyes="eyes-teacher-amber"] .capybara__eye,
+.capybara[data-eyes="eyes-curator-violet"] .capybara__eye,
+.capybara[data-eyes="eyes-admin-cyan"] .capybara__eye {
+  box-shadow:
+    0 0 0 1px #111827,
+    0 0 8px var(--pet-eye);
+}
+
+.capybara__clothes,
+.capybara__neckwear,
+.capybara__face-item,
+.capybara__headwear,
+.capybara__hand-item {
+  pointer-events: none;
+  image-rendering: pixelated;
+}
+
+.capybara[data-outfit] .capybara__clothes {
+  left: var(--pet-clothes-left);
+  bottom: var(--pet-clothes-bottom);
+  z-index: 4;
+  width: var(--pet-clothes-width);
+  height: var(--pet-clothes-height);
+  overflow: visible;
+  border: 2px solid var(--pet-outfit-border, #145c59);
+  border-radius: var(--pet-outfit-radius);
+  background: var(--pet-outfit-bg, #58c9bf);
+  box-shadow:
+    inset 0 -7px 0 rgba(15, 23, 42, 0.12),
+    inset 0 7px 0 rgba(255, 255, 255, 0.16);
+}
+
+.capybara[data-outfit] .capybara__clothes::before,
+.capybara[data-outfit] .capybara__clothes::after,
+.capybara[data-head] .capybara__headwear::before,
+.capybara[data-head] .capybara__headwear::after {
+  position: absolute;
+  content: "";
+  box-sizing: border-box;
+}
+
+.capybara[data-outfit="green-hoodie"] .capybara__clothes,
+.capybara[data-outfit="curator-hoodie"] .capybara__clothes {
+  --pet-outfit-border: var(--hoodie-border, #11633a);
+  background:
+    linear-gradient(#ffffff 0 0) calc(50% - 5px) 7px / 10px calc(100% - 18px),
+    linear-gradient(var(--hoodie-border, #11633a) 0 0) calc(50% - 1px) 4px / 4px calc(100% - 12px),
+    linear-gradient(rgba(255, 255, 255, 0.32) 0 0) 13% 26% / 17% 12%,
+    linear-gradient(90deg, var(--hoodie-side, #1f8f55) 0 15%, var(--hoodie-main, #4ade80) 16% 43%, rgba(255, 255, 255, 0.82) 44% 51%, var(--hoodie-main, #4ade80) 52% 100%);
+  background-repeat: no-repeat;
+}
+
+.capybara[data-outfit="green-hoodie"] {
+  --hoodie-main: #4ade80;
+  --hoodie-side: #1f8f55;
+  --hoodie-border: #11633a;
+}
+
+.capybara[data-outfit="curator-hoodie"] {
+  --hoodie-main: #a78bfa;
+  --hoodie-side: #7c3aed;
+  --hoodie-border: #5b21b6;
+}
+
+.capybara[data-outfit="green-hoodie"] .capybara__clothes::before,
+.capybara[data-outfit="curator-hoodie"] .capybara__clothes::before {
+  right: var(--pet-hood-right);
+  top: var(--pet-hood-top);
+  width: var(--pet-hood-width);
+  height: var(--pet-hood-height);
+  border: 2px solid var(--hoodie-border, #11633a);
+  border-radius: 12px 12px 4px 4px;
+  background:
+    linear-gradient(90deg, var(--hoodie-border, #11633a) 0 5px, transparent 5px calc(100% - 5px), var(--hoodie-border, #11633a) calc(100% - 5px)),
+    var(--hoodie-main, #4ade80);
+}
+
+.capybara[data-outfit="green-hoodie"] .capybara__clothes::after,
+.capybara[data-outfit="curator-hoodie"] .capybara__clothes::after {
+  left: calc(50% - min(19px, calc(var(--pet-clothes-width) / 5)));
+  bottom: 8px;
+  width: min(38px, calc(var(--pet-clothes-width) * 0.35));
+  height: 15px;
+  border: 2px solid var(--hoodie-border, #11633a);
+  background:
+    linear-gradient(90deg, transparent 0 calc(50% - 2px), var(--hoodie-border, #11633a) calc(50% - 2px) calc(50% + 2px), transparent calc(50% + 2px)),
+    rgba(255, 255, 255, 0.16);
+}
+
+.capybara[data-outfit="lab-coat"] .capybara__clothes {
+  --pet-outfit-border: #91a0ae;
+  background:
+    linear-gradient(#dbe5ee 0 0) 14% 15% / 18% 13%,
+    linear-gradient(#dbe5ee 0 0) 68% 15% / 18% 13%,
+    linear-gradient(#145c59 0 0) calc(50% - 1px) 3px / 4px calc(100% - 9px),
+    linear-gradient(90deg, #ffffff 0 38%, #edf2f7 39% 48%, #ffffff 49% 100%);
+  background-repeat: no-repeat;
+}
+
+.capybara[data-outfit="lab-coat"] .capybara__clothes::before,
+.capybara[data-outfit="teacher-blazer"] .capybara__clothes::before,
+.capybara[data-outfit="admin-suit"] .capybara__clothes::before {
+  left: calc(50% - 24px);
+  top: 0;
+  width: 48px;
+  height: 24px;
+  background:
+    linear-gradient(135deg, rgba(226, 232, 240, 0.95) 0 44%, transparent 45%),
+    linear-gradient(225deg, rgba(226, 232, 240, 0.95) 0 44%, transparent 45%);
+}
+
+.capybara[data-outfit="lab-coat"] .capybara__clothes::after {
+  right: 12px;
+  bottom: 10px;
+  width: 20px;
+  height: 15px;
+  border: 2px solid #91a0ae;
+  background: #f8fafc;
+}
+
+.capybara[data-outfit="purple-cape"] .capybara__clothes {
+  left: calc(var(--pet-clothes-left) - 12px);
+  bottom: calc(var(--pet-clothes-bottom) - 5px);
+  width: calc(var(--pet-clothes-width) + 24px);
+  height: calc(var(--pet-clothes-height) + 8px);
+  --pet-outfit-border: #4c1d95;
+  border-radius: 12px 12px 8px 8px;
+  background:
+    linear-gradient(#facc15 0 0) 72% 32% / 9px 9px,
+    linear-gradient(100deg, #4c1d95 0 18%, #7c3aed 19% 62%, #a78bfa 63% 100%);
+  background-repeat: no-repeat;
+  clip-path: polygon(13% 8%, 84% 8%, 98% 100%, 3% 100%);
+}
+
+.capybara[data-outfit="purple-cape"] .capybara__clothes::before {
+  right: calc(var(--pet-hood-right) + 2px);
+  top: -1px;
+  width: var(--pet-hood-width);
+  height: 17px;
+  border: 2px solid #4c1d95;
+  background:
+    linear-gradient(90deg, #facc15 0 8px, transparent 8px calc(100% - 8px), #facc15 calc(100% - 8px)),
+    #7c3aed;
+}
+
+.capybara[data-outfit="purple-cape"] .capybara__clothes::after {
+  right: calc(var(--pet-hood-right) + 15px);
+  top: 16px;
+  width: 9px;
+  height: 9px;
+  background: #facc15;
+  box-shadow: 13px 0 0 #facc15;
+}
+
+.capybara[data-outfit="tracksuit"] .capybara__clothes {
+  --pet-outfit-border: #1e3a8a;
+  background:
+    linear-gradient(#ffffff 0 0) calc(50% - 4px) 0 / 8px 100%,
+    linear-gradient(#93c5fd 0 0) 13% 18% / 19% 11%,
+    linear-gradient(#1e3a8a 0 0) calc(50% + 1px) 2px / 3px calc(100% - 8px),
+    linear-gradient(90deg, #1d4ed8 0 47%, #2563eb 48% 100%);
+  background-repeat: no-repeat;
+}
+
+.capybara[data-outfit="tracksuit"] .capybara__clothes::before {
+  left: 9%;
+  bottom: 8px;
+  width: 82%;
+  height: 8px;
+  background:
+    linear-gradient(90deg, #bfdbfe 0 30%, transparent 31% 69%, #bfdbfe 70%);
+}
+
+.capybara[data-outfit="tracksuit"] .capybara__clothes::after {
+  left: 8%;
+  bottom: -2px;
+  width: 84%;
+  height: 8px;
+  background: #1e3a8a;
+}
+
+.capybara[data-outfit="teacher-blazer"] .capybara__clothes,
+.capybara[data-outfit="curator-vest"] .capybara__clothes,
+.capybara[data-outfit="admin-suit"] .capybara__clothes {
+  background:
+    linear-gradient(var(--pet-shirt-color, #ffffff) 0 0) calc(50% - 13px) 0 / 26px 100%,
+    linear-gradient(var(--pet-tie-color, #f1b84b) 0 0) calc(50% - 2px) 11px / 4px calc(100% - 22px),
+    linear-gradient(115deg, var(--pet-jacket-color, #1f365c) 0 42%, transparent 43%) 0 0 / 50% 100%,
+    linear-gradient(245deg, var(--pet-jacket-color, #1f365c) 0 42%, transparent 43%) 100% 0 / 50% 100%,
+    var(--pet-jacket-color, #1f365c);
+  background-repeat: no-repeat;
+}
+
+.capybara[data-outfit="teacher-blazer"] {
+  --pet-outfit-border: #172554;
+  --pet-shirt-color: #ffffff;
+  --pet-tie-color: #f1b84b;
+  --pet-jacket-color: #1f365c;
+}
+
+.capybara[data-outfit="curator-vest"] {
+  --pet-outfit-border: #047857;
+  --pet-shirt-color: #ecfdf5;
+  --pet-tie-color: #047857;
+  --pet-jacket-color: #10b981;
+}
+
+.capybara[data-outfit="admin-suit"] {
+  --pet-outfit-border: #1e293b;
+  --pet-shirt-color: #f8fafc;
+  --pet-tie-color: #0f172a;
+  --pet-jacket-color: #334155;
+}
+
+.capybara[data-outfit="teacher-blazer"] .capybara__clothes::after,
+.capybara[data-outfit="curator-vest"] .capybara__clothes::after,
+.capybara[data-outfit="admin-suit"] .capybara__clothes::after {
+  right: 13px;
+  bottom: 11px;
+  width: 18px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.48);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.capybara[data-outfit="teacher-cardigan"] .capybara__clothes {
+  --pet-outfit-border: #7c2d12;
+  background:
+    linear-gradient(#fef3c7 0 0) calc(50% - 13px) 0 / 26px 100%,
+    linear-gradient(#7c2d12 0 0) calc(50% - 2px) 0 / 4px 100%,
+    linear-gradient(0deg, rgba(124, 45, 18, 0.22) 0 4px, transparent 4px 12px),
+    linear-gradient(90deg, #b45309 0 47%, #d97706 48% 100%);
+  background-repeat: no-repeat;
+}
+
+.capybara[data-outfit="teacher-cardigan"] .capybara__clothes::before {
+  left: 12%;
+  top: 10px;
+  width: 18px;
+  height: 6px;
+  background: #fbbf24;
+  box-shadow:
+    calc(var(--pet-clothes-width) - 44px) 0 0 #fbbf24,
+    calc(var(--pet-clothes-width) / 2 - 14px) 17px 0 -1px #fef3c7;
+}
+
+.capybara[data-outfit="teacher-cardigan"] .capybara__clothes::after {
+  left: 8%;
+  bottom: 5px;
+  width: 84%;
+  height: 7px;
+  background: #7c2d12;
+}
+
+.capybara[data-outfit="curator-vest"] .capybara__clothes::before {
+  left: 13%;
+  top: 13px;
+  width: 19%;
+  height: 14px;
+  border: 2px solid #047857;
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow:
+    calc(var(--pet-clothes-width) - 54px) 0 0 -2px rgba(255, 255, 255, 0.2),
+    calc(var(--pet-clothes-width) - 54px) 0 0 0 #047857;
+}
+
+.capybara[data-outfit="admin-jacket"] .capybara__clothes {
+  --pet-outfit-border: #0f172a;
+  background:
+    linear-gradient(#22d3ee 0 0) 13% 18% / 18% 11%,
+    linear-gradient(#38bdf8 0 0) calc(50% - 2px) 1px / 5px calc(100% - 8px),
+    linear-gradient(#0f172a 0 0) calc(50% - 12px) 0 / 24px 100%,
+    linear-gradient(90deg, #111827 0 47%, #1e293b 48% 100%);
+  background-repeat: no-repeat;
+}
+
+.capybara[data-outfit="admin-jacket"] .capybara__clothes::before {
+  right: 13px;
+  top: 12px;
+  width: 25px;
+  height: 15px;
+  border: 2px solid #22d3ee;
+  background:
+    linear-gradient(90deg, #22d3ee 0 5px, transparent 5px 12px, #22c55e 12px 18px, transparent 18px),
+    rgba(15, 23, 42, 0.72);
+}
+
+.capybara[data-outfit="admin-jacket"] .capybara__clothes::after {
+  left: 8%;
+  bottom: 6px;
+  width: 84%;
+  height: 6px;
+  background: #38bdf8;
+  box-shadow: 0 -28px 0 -2px rgba(56, 189, 248, 0.28);
+}
+
+.capybara[data-head] .capybara__headwear {
+  right: var(--pet-hat-right);
+  bottom: var(--pet-hat-bottom);
+  z-index: 8;
+  width: var(--pet-hat-width);
+  height: var(--pet-hat-height);
+  background-repeat: no-repeat;
+  filter: drop-shadow(2px 2px 0 rgba(17, 24, 39, 0.22));
+  transform-origin: 50% 100%;
+}
+
+.capybara[data-head="gold-crown"] {
+  --pet-hat-width: 56px;
+  --pet-hat-height: 28px;
+}
+
+.capybara[data-head="gold-crown"] .capybara__headwear {
+  background:
+    linear-gradient(135deg, transparent 0 15%, #facc15 16% 31%, transparent 32% 42%, #facc15 43% 58%, transparent 59% 69%, #facc15 70%),
+    linear-gradient(0deg, #a16207 0 5px, #f59e0b 5px 10px, #facc15 10px 18px, transparent 18px);
+  box-shadow: 0 3px 0 rgba(120, 53, 15, 0.24);
+}
+
+.capybara[data-head="gold-crown"] .capybara__headwear::after {
+  left: 11px;
+  bottom: 7px;
+  width: 5px;
+  height: 5px;
+  background: #ef4444;
+  box-shadow: 15px 0 0 #3b82f6, 30px 0 0 #10b981;
+}
+
+.capybara[data-head="wizard-hat"] {
+  --pet-hat-right: 18px;
+  --pet-hat-bottom: 112px;
+  --pet-hat-width: 74px;
+  --pet-hat-height: 54px;
+}
+
+.capybara[data-head="wizard-hat"] .capybara__headwear {
+  background:
+    linear-gradient(#facc15 0 0) 39px 8px / 7px 7px,
+    linear-gradient(#fef3c7 0 0) 29px 25px / 6px 6px,
+    linear-gradient(#4c1d95 0 0) 20px 41px / 43px 7px,
+    linear-gradient(#7c3aed 0 0) 10px 45px / 60px 8px,
+    linear-gradient(135deg, transparent 0 31%, #8b5cf6 32% 58%, #4c1d95 59% 100%) 24px 2px / 36px 43px;
+  background-repeat: no-repeat;
+  box-shadow: none;
+}
+
+.capybara[data-head="wizard-hat"] .capybara__headwear::before {
+  left: 12px;
+  bottom: 3px;
+  width: 56px;
+  height: 7px;
+  background: #312e81;
+  box-shadow: 7px -5px 0 -1px #6d28d9;
+}
+
+.capybara[data-head="wizard-hat"] .capybara__headwear::after {
+  left: 35px;
+  top: 18px;
+  width: 5px;
+  height: 5px;
+  background: #facc15;
+  box-shadow: -11px 13px 0 #ffffff, 15px 8px 0 #fde68a;
+}
+
+.capybara[data-head="red-cap"] {
+  --pet-hat-right: 18px;
+  --pet-hat-bottom: 107px;
+  --pet-hat-width: 76px;
+  --pet-hat-height: 30px;
+}
+
+.capybara[data-head="red-cap"] .capybara__headwear {
+  border-radius: 15px 16px 7px 7px;
+  background:
+    linear-gradient(#b91c1c 0 0) 18px 5px / 34px 8px,
+    linear-gradient(#ef4444 0 0) 11px 11px / 47px 13px,
+    linear-gradient(#fecaca 0 0) 31px 8px / 9px 5px,
+    linear-gradient(#7f1d1d 0 0) 13px 23px / 43px 5px,
+    linear-gradient(#ef4444 0 0) 55px 18px / 18px 7px;
+  background-repeat: no-repeat;
+}
+
+.capybara[data-head="red-cap"] .capybara__headwear::before {
+  left: 25px;
+  top: 6px;
+  width: 4px;
+  height: 18px;
+  background: #991b1b;
+  box-shadow: 18px 3px 0 -1px #f87171;
+}
+
+.capybara[data-head="red-cap"] .capybara__headwear::after {
+  left: 54px;
+  top: 17px;
+  width: 18px;
+  height: 8px;
+  border-radius: 0 9px 7px 0;
+  background: #dc2626;
+  box-shadow: 5px 5px 0 -2px #7f1d1d;
+}
+
+.capybara[data-head="ninja-band"] {
+  --pet-hat-right: 18px;
+  --pet-hat-bottom: 100px;
+  --pet-hat-width: 78px;
+  --pet-hat-height: 25px;
+}
+
+.capybara[data-head="ninja-band"] .capybara__headwear {
+  border-radius: 9px 10px 6px 6px;
+  background:
+    linear-gradient(#991b1b 0 0) 7px 14px / 51px 4px,
+    linear-gradient(#ef4444 0 0) 5px 7px / 54px 10px,
+    linear-gradient(#fecaca 0 0) 25px 9px / 13px 4px,
+    linear-gradient(#7f1d1d 0 0) 58px 9px / 9px 9px,
+    linear-gradient(#b91c1c 0 0) 63px 12px / 12px 5px,
+    linear-gradient(#ef4444 0 0) 66px 18px / 10px 5px;
+  background-repeat: no-repeat;
+}
+
+.capybara[data-head="ninja-band"] .capybara__headwear::before {
+  left: 57px;
+  top: 8px;
+  width: 8px;
+  height: 8px;
+  background: #dc2626;
+  box-shadow: 7px 3px 0 -1px #991b1b, 12px 9px 0 -2px #ef4444;
+}
+
+.capybara[data-head="ninja-band"] .capybara__headwear::after {
+  left: 9px;
+  top: 8px;
+  width: 48px;
+  height: 4px;
+  background: rgba(254, 202, 202, 0.78);
+}
+
+.capybara[data-animal="cat"][data-head],
+.capybara[data-animal="bunny"][data-head] {
+  --pet-hat-bottom: 123px;
+}
+
+.capybara[data-animal="penguin"][data-head] {
+  --pet-hat-bottom: 136px;
+}
+
+.capybara[data-animal="teacher-owl"][data-head] {
+  --pet-hat-right: 42px;
+  --pet-hat-bottom: 127px;
+}
+
+.capybara[data-animal="frog"][data-head] {
+  --pet-hat-bottom: 113px;
+}
+
+.capybara[data-face] .capybara__face-item {
+  right: var(--pet-face-right);
+  bottom: var(--pet-face-bottom);
+  z-index: 9;
+  width: var(--pet-face-width);
+  height: var(--pet-face-height);
+}
+
+.capybara[data-face="round-glasses"] .capybara__face-item {
+  width: min(70px, var(--pet-face-width));
+  height: 20px;
+  border: 0;
+  background:
+    radial-gradient(circle at 22% 50%, rgba(255, 255, 255, 0.22) 0 8px, #16243d 9px 11px, transparent 12px),
+    radial-gradient(circle at 62% 50%, rgba(255, 255, 255, 0.22) 0 8px, #16243d 9px 11px, transparent 12px),
+    linear-gradient(#16243d 0 0) 31px 9px / 10px 3px;
+  background-repeat: no-repeat;
+  box-shadow: none;
+}
+
+.capybara[data-face="headphones"] .capybara__face-item,
+.capybara[data-face="curator-headset"] .capybara__face-item {
+  border: 0;
+  background:
+    linear-gradient(90deg, var(--headset-dark, #17223f) 0 10px, var(--headset-soft, #60a5fa) 10px 16px, transparent 16px calc(100% - 20px), var(--headset-soft, #60a5fa) calc(100% - 20px) calc(100% - 14px), var(--headset-dark, #17223f) calc(100% - 14px)),
+    linear-gradient(0deg, transparent 0 23px, var(--headset-dark, #17223f) 23px 27px, transparent 27px);
+  background-repeat: no-repeat;
+}
+
+.capybara[data-face="curator-headset"] {
+  --headset-dark: #5b21b6;
+  --headset-soft: #c4b5fd;
+}
+
+.capybara[data-face="curator-headset"] .capybara__face-item::after {
+  position: absolute;
+  content: "";
+  right: 8px;
+  bottom: 0;
+  width: 18px;
+  height: 4px;
+  background: var(--headset-dark, #5b21b6);
+  transform: rotate(16deg);
+}
+
+.capybara[data-face="anime-shades"] .capybara__face-item {
+  right: calc(var(--pet-face-right) + 4px);
+  bottom: calc(var(--pet-face-bottom) + 2px);
+  width: min(63px, var(--pet-face-width));
+  height: 16px;
+  background:
+    linear-gradient(135deg, #111827 0 37%, #22d3ee 38% 46%, #ffffff 47% 51%, #111827 52%),
+    #111827;
+  box-shadow: 0 5px 0 #111827;
+}
+
+.capybara[data-neck] .capybara__neckwear {
+  right: var(--pet-neck-right);
+  bottom: var(--pet-neck-bottom);
+  z-index: 7;
+  width: var(--pet-neck-width);
+  height: var(--pet-neck-height);
+}
+
+.capybara[data-neck="blue-scarf"] .capybara__neckwear {
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, #0f4fb8 0 15%, #60a5fa 16% 32%, #0f4fb8 33% 49%, #60a5fa 50% 66%, #0f4fb8 67%);
+  box-shadow:
+    42px 13px 0 -4px #0f4fb8,
+    50px 19px 0 -7px #60a5fa;
+}
+
+.capybara[data-neck="medal"] .capybara__neckwear {
+  right: calc(var(--pet-neck-right) + 24px);
+  bottom: calc(var(--pet-neck-bottom) - 13px);
+  width: 18px;
+  height: 38px;
+  background:
+    linear-gradient(90deg, #ef4444 0 35%, #ffffff 36% 64%, #1d65d8 65% 100%);
+  box-shadow:
+    0 22px 0 5px #f7c948,
+    0 22px 0 8px #8a5c17;
+}
+
+.capybara[data-neck="admin-keycard"] .capybara__neckwear {
+  right: calc(var(--pet-neck-right) + 22px);
+  bottom: calc(var(--pet-neck-bottom) - 13px);
+  width: 21px;
+  height: 37px;
+  background:
+    linear-gradient(#38bdf8 0 30%, #ffffff 31% 74%, #94a3b8 75% 100%);
+  box-shadow:
+    0 -16px 0 -6px #1f365c,
+    inset 0 0 0 2px #dbeafe;
+}
+
+.capybara[data-hand] .capybara__hand-item,
+.capybara[data-animation="volleyball"] .capybara__hand-item,
+.capybara[data-animation="skate"] .capybara__hand-item {
+  right: var(--pet-hand-right);
+  bottom: var(--pet-hand-bottom);
+  z-index: 9;
+  width: var(--pet-hand-width);
+  height: var(--pet-hand-height);
+}
+
+.capybara[data-hand="notebook"] .capybara__hand-item {
+  width: 34px;
+  height: 40px;
+  border: 2px solid #1d65d8;
+  background:
+    linear-gradient(90deg, #1d65d8 0 7px, transparent 7px),
+    linear-gradient(0deg, rgba(29, 101, 216, 0.22) 0 2px, transparent 2px 8px),
+    #ffffff;
+  box-shadow: inset 0 0 0 2px #d7e8ff;
+  transform: rotate(-4deg);
+}
+
+.capybara[data-hand="pencil"] .capybara__hand-item {
+  right: calc(var(--pet-hand-right) + 9px);
+  width: 10px;
+  height: 48px;
+  background:
+    linear-gradient(#fef08a 0 8%, #f2c94c 9% 71%, #f2994a 72% 88%, #3f2517 89% 100%);
+  box-shadow: 4px 0 0 -2px rgba(255, 255, 255, 0.35);
+  transform: rotate(27deg);
+  transform-origin: 50% 80%;
+}
+
+.capybara[data-hand="volleyball"] .capybara__hand-item,
+.capybara[data-animation="volleyball"] .capybara__hand-item {
+  right: calc(var(--pet-hand-right) + 2px);
+  bottom: calc(var(--pet-hand-bottom) + 38px);
+  width: 33px;
+  height: 33px;
+  border: 3px solid #111827;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 70% 25%, transparent 0 7px, #111827 8px 10px, transparent 11px),
+    linear-gradient(125deg, transparent 0 42%, #ef4444 43% 54%, transparent 55%),
+    linear-gradient(35deg, transparent 0 42%, #1d65d8 43% 54%, transparent 55%),
+    #ffffff;
+}
+
+.capybara[data-hand="skateboard"] .capybara__hand-item,
+.capybara[data-animation="skate"] .capybara__hand-item {
+  right: auto;
+  left: 34px;
+  bottom: 10px;
+  width: 142px;
+  height: 13px;
+  border-radius: 6px;
+  background:
+    linear-gradient(90deg, #ef4444 0 18%, #facc15 19% 37%, #22c55e 38% 56%, #3b82f6 57% 75%, #7c3aed 76%);
+  box-shadow:
+    18px 14px 0 -3px #111827,
+    100px 14px 0 -3px #111827,
+    18px 14px 0 0 #64748b,
+    100px 14px 0 0 #64748b;
+}
+
+.capybara[data-hand="teacher-pointer"] .capybara__hand-item {
+  right: calc(var(--pet-hand-right) - 6px);
+  bottom: calc(var(--pet-hand-bottom) + 16px);
+  width: 58px;
+  height: 5px;
+  background: #6b4f1d;
+  transform: rotate(-18deg);
+  transform-origin: 8% 50%;
+  box-shadow: 49px -10px 0 -1px #facc15;
+}
+
+.capybara[data-hand="teacher-book"] .capybara__hand-item,
+.capybara[data-hand="curator-planner"] .capybara__hand-item,
+.capybara[data-hand="admin-laptop"] .capybara__hand-item {
+  width: 38px;
+  height: 31px;
+  border: 2px solid #1f365c;
+  background:
+    linear-gradient(0deg, rgba(31, 54, 92, 0.16) 0 2px, transparent 2px 8px),
+    #ffffff;
+  transform: rotate(3deg);
+}
+
+.capybara[data-hand="teacher-book"] .capybara__hand-item {
+  background:
+    linear-gradient(90deg, #ef4444 0 8px, transparent 8px),
+    linear-gradient(0deg, rgba(31, 54, 92, 0.16) 0 2px, transparent 2px 8px),
+    #ffffff;
+}
+
+.capybara[data-hand="curator-planner"] .capybara__hand-item {
+  border-color: #7c3aed;
+  background:
+    linear-gradient(#7c3aed 0 7px, transparent 7px),
+    linear-gradient(0deg, rgba(124, 58, 237, 0.16) 0 2px, transparent 2px 8px),
+    #ffffff;
+}
+
+.capybara[data-hand="admin-laptop"] .capybara__hand-item {
+  width: 44px;
+  height: 28px;
+  border-color: #0f172a;
+  background:
+    linear-gradient(90deg, #22d3ee 0 6px, transparent 6px 13px, #22c55e 13px 19px, transparent 19px),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0 18%, transparent 19%),
+    #111827;
+  box-shadow: 0 12px 0 -7px #334155;
+}
+
+.capybara[data-animation="point"]:not([data-hand]) .capybara__hand-item {
+  right: calc(var(--pet-hand-right) - 6px);
+  bottom: calc(var(--pet-hand-bottom) + 16px);
+  z-index: 9;
+  width: 58px;
+  height: 5px;
+  background: #6b4f1d;
+  transform: rotate(-18deg);
+  transform-origin: 8% 50%;
+  box-shadow: 49px -10px 0 -1px #facc15;
+}
+
+.capybara[data-animation="grade"]:not([data-hand]) .capybara__hand-item {
+  right: calc(var(--pet-hand-right) + 3px);
+  bottom: calc(var(--pet-hand-bottom) + 5px);
+  z-index: 9;
+  width: 39px;
+  height: 32px;
+  border: 2px solid #145c59;
+  background:
+    linear-gradient(#58c9bf 0 7px, transparent 7px),
+    linear-gradient(90deg, transparent 0 10px, #145c59 10px 14px, transparent 14px),
+    #fffaf0;
+}
+
+.capybara[data-animation="checklist"]:not([data-hand]) .capybara__hand-item {
+  right: calc(var(--pet-hand-right) + 1px);
+  bottom: calc(var(--pet-hand-bottom) + 3px);
+  z-index: 9;
+  width: 38px;
+  height: 34px;
+  border: 2px solid #7c3aed;
+  background:
+    linear-gradient(#7c3aed 0 7px, transparent 7px),
+    linear-gradient(90deg, #22c55e 0 5px, transparent 5px 14px, #22c55e 14px 19px, transparent 19px),
+    linear-gradient(0deg, rgba(124, 58, 237, 0.16) 0 2px, transparent 2px 8px),
+    #ffffff;
+}
+
+.capybara[data-animation="call"]:not([data-hand]) .capybara__hand-item {
+  right: calc(var(--pet-hand-right) + 7px);
+  bottom: calc(var(--pet-hand-bottom) + 8px);
+  z-index: 9;
+  width: 26px;
+  height: 36px;
+  border: 2px solid #145c59;
+  border-radius: 7px;
+  background:
+    linear-gradient(#58c9bf 0 6px, transparent 6px 28px, #145c59 28px 32px),
+    #ffffff;
+  box-shadow: -14px -12px 0 -7px #58c9bf, -22px -19px 0 -10px #145c59;
+}
+
+.capybara[data-animation="deploy"]:not([data-hand]) .capybara__hand-item {
+  right: calc(var(--pet-hand-right) - 1px);
+  bottom: calc(var(--pet-hand-bottom) + 3px);
+  z-index: 9;
+  width: 44px;
+  height: 29px;
+  border: 2px solid #0f172a;
+  background:
+    linear-gradient(90deg, #22d3ee 0 6px, transparent 6px 13px, #22c55e 13px 19px, transparent 19px),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0 18%, transparent 19%),
+    #111827;
+  box-shadow: 0 12px 0 -7px #334155;
+}
+
+.capybara[data-animation="scan"]:not([data-hand]) .capybara__hand-item {
+  right: calc(var(--pet-hand-right) + 3px);
+  bottom: calc(var(--pet-hand-bottom) + 5px);
+  z-index: 9;
+  width: 38px;
+  height: 31px;
+  border: 2px solid #0f172a;
+  background:
+    linear-gradient(90deg, transparent 0 7px, #22d3ee 7px 15px, transparent 15px),
+    linear-gradient(0deg, #22d3ee 0 4px, transparent 4px),
+    #111827;
+  filter: drop-shadow(0 0 6px #22d3ee);
+}
+
+@keyframes pet-v2-dance {
+  0%,
+  100% {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+
+  25% {
+    translate: 0 -4px;
+    rotate: -2deg;
+  }
+
+  75% {
+    translate: 0 -4px;
+    rotate: 2deg;
+  }
+}
+
+@keyframes pet-v2-float {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+
+  50% {
+    translate: 0 -8px;
+  }
+}
+
+@keyframes pet-v2-volleyball {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+
+  50% {
+    translate: -10px -18px;
+  }
+}
+
+.capybara[data-animation="dance"] :is(.capybara__body, .capybara__head, .capybara__tail, .capybara__ear, .capybara__eye, .capybara__nose, .capybara__leg, .capybara__clothes, .capybara__neckwear, .capybara__face-item, .capybara__headwear, .capybara__hand-item) {
+  animation: pet-v2-dance 0.82s steps(2) infinite;
+}
+
+.capybara[data-animation="float"] :is(.capybara__body, .capybara__head, .capybara__tail, .capybara__ear, .capybara__eye, .capybara__nose, .capybara__leg, .capybara__clothes, .capybara__neckwear, .capybara__face-item, .capybara__headwear, .capybara__hand-item),
+.capybara[data-animation="skate"] :is(.capybara__body, .capybara__head, .capybara__tail, .capybara__ear, .capybara__eye, .capybara__nose, .capybara__leg, .capybara__clothes, .capybara__neckwear, .capybara__face-item, .capybara__headwear) {
+  animation: pet-v2-float 1.45s steps(3) infinite;
+}
+
+.capybara[data-animation="volleyball"] :is(.capybara__body, .capybara__head, .capybara__tail, .capybara__ear, .capybara__eye, .capybara__nose, .capybara__leg, .capybara__clothes, .capybara__neckwear, .capybara__face-item, .capybara__headwear) {
+  animation: pet-v2-float 0.95s steps(2) infinite;
+}
+
+.capybara[data-animation="volleyball"] .capybara__hand-item {
+  animation: pet-v2-volleyball 0.9s steps(4) infinite;
+}
+
+.capybara[data-animation="point"] .capybara__hand-item,
+.capybara[data-animation="checklist"] .capybara__hand-item,
+.capybara[data-animation="deploy"] .capybara__hand-item {
+  animation: pet-point 1.1s steps(3) infinite;
+}
+
+.capybara[data-animation="grade"] :is(.capybara__body, .capybara__head, .capybara__tail, .capybara__ear, .capybara__eye, .capybara__nose, .capybara__leg, .capybara__clothes, .capybara__neckwear, .capybara__face-item, .capybara__headwear),
+.capybara[data-animation="call"] :is(.capybara__body, .capybara__head, .capybara__tail, .capybara__ear, .capybara__eye, .capybara__nose, .capybara__leg, .capybara__clothes, .capybara__neckwear, .capybara__face-item, .capybara__headwear) {
+  animation: pet-grade 1s steps(3) infinite;
+}
+
+.capybara[data-animation="scan"] :is(.capybara__body, .capybara__head, .capybara__tail, .capybara__ear, .capybara__eye, .capybara__nose, .capybara__leg, .capybara__clothes, .capybara__neckwear, .capybara__face-item, .capybara__headwear, .capybara__hand-item) {
+  animation: pet-scan 1.2s steps(2) infinite;
+}
+
 @media (max-width: 1180px) {
   .home-method-steps {
     grid-template-columns: repeat(2, minmax(0, 1fr));

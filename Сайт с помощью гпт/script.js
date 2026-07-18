@@ -1968,6 +1968,8 @@ function renderPixelPetMarkup(items = [], { wrapperClass = "profile-pet-chip", p
         <span class="capybara__shadow"></span>
         <span class="capybara__tail"></span>
         <span class="capybara__body"></span>
+        <span class="capybara__leg capybara__leg--back"></span>
+        <span class="capybara__leg capybara__leg--front"></span>
         <span class="capybara__head"></span>
         <span class="capybara__ear capybara__ear--left"></span>
         <span class="capybara__ear capybara__ear--right"></span>
