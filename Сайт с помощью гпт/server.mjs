@@ -1481,16 +1481,48 @@ async function resetSequences(client) {
     "teachers",
     "curators",
     "students",
+    "parents",
+    "student_accounts",
+    "staff_accounts",
+    "admin_accounts",
     "courses",
+    "course_enrollments",
     "lessons",
+    "lesson_progress",
     "notes",
     "homework_templates",
+    "homework_assignments",
+    "homework_submissions",
+    "homework_corrections",
     "live_streams",
+    "live_stream_messages",
     "shop_items",
+    "student_shop_items",
+    "staff_shop_items",
+    "point_transactions",
+    "staff_point_transactions",
+    "profile_badges",
+    "staff_resource_reviews",
+    "student_staff_comments",
+    "course_applications",
+    "support_requests",
+    "chats",
+    "chat_messages",
+    "student_friend_requests",
+    "student_calls",
   ];
 
   for (const table of tables) {
-    await client.query(`SELECT setval(pg_get_serial_sequence('${table}', 'id'), COALESCE((SELECT MAX(id) FROM ${table}), 1), TRUE)`);
+    await client.query(
+      `
+        SELECT setval(
+          pg_get_serial_sequence($1, 'id'),
+          GREATEST(COALESCE((SELECT MAX(id) FROM ${table}), 0), 1),
+          COALESCE((SELECT MAX(id) FROM ${table}), 0) > 0
+        )
+      `,
+      [table],
+    );
   }
 }
 
@@ -3336,18 +3368,52 @@ app.post(
   asyncRoute(async (request, response) => {
     await requireAdmin(request);
     const applicationId = toInt(request.params.id, 0);
-    const studentName = cleanText(request.body.studentName || request.body.student_name, 150);
-    const phone = cleanText(request.body.phone, 80);
-    const email = cleanNullableText(request.body.email, 160);
-    const preferredSubject = cleanText(request.body.preferredSubject || request.body.preferred_subject, 160);
-    const grade = optionalInt(request.body.grade);
-    const commentText = cleanNullableText(request.body.commentText || request.body.comment_text, 2000);
-    const sourcePage = cleanNullableText(request.body.sourcePage || request.body.source_page, 200);
-    const adminNote = cleanNullableText(request.body.adminNote || request.body.admin_note, 2000);
-    const requestedStatus = cleanText(request.body.status, 30) || "New";
+    const body = request.body || {};
+    const hasStudentName = Object.prototype.hasOwnProperty.call(body, "studentName") || Object.prototype.hasOwnProperty.call(body, "student_name");
+    const hasPhone = Object.prototype.hasOwnProperty.call(body, "phone");
+    const hasEmail = Object.prototype.hasOwnProperty.call(body, "email");
+    const hasPreferredSubject = Object.prototype.hasOwnProperty.call(body, "preferredSubject") || Object.prototype.hasOwnProperty.call(body, "preferred_subject");
+    const hasGrade = Object.prototype.hasOwnProperty.call(body, "grade");
+    const hasCommentText = Object.prototype.hasOwnProperty.call(body, "commentText") || Object.prototype.hasOwnProperty.call(body, "comment_text");
+    const hasSourcePage = Object.prototype.hasOwnProperty.call(body, "sourcePage") || Object.prototype.hasOwnProperty.call(body, "source_page");
+    const adminNote = cleanNullableText(body.adminNote || body.admin_note, 2000);
+    const requestedStatus = cleanText(body.status, 30) || "New";
     const status = applicationStatuses.has(requestedStatus) ? requestedStatus : "New";
 
-    if (!applicationId || !studentName || !phone || !preferredSubject) {
+    if (!applicationId) {
+      throw createHttpError(400, "Application is required.");
+    }
+
+    const existing = await dbOne(
+      `
+        SELECT
+          id AS "applicationId",
+          student_name AS "studentName",
+          phone,
+          email,
+          preferred_subject AS "preferredSubject",
+          grade,
+          comment_text AS "commentText",
+          source_page AS "sourcePage"
+        FROM course_applications
+        WHERE id = $1
+      `,
+      [applicationId],
+    );
+
+    if (!existing) {
+      throw createHttpError(404, "Application not found.");
+    }
+
+    const studentName = hasStudentName ? cleanText(body.studentName || body.student_name, 150) : existing.studentName;
+    const phone = hasPhone ? cleanText(body.phone, 80) : existing.phone;
+    const email = hasEmail ? cleanNullableText(body.email, 160) : existing.email;
+    const preferredSubject = hasPreferredSubject ? cleanText(body.preferredSubject || body.preferred_subject, 160) : existing.preferredSubject;
+    const grade = hasGrade ? optionalInt(body.grade) : existing.grade;
+    const commentText = hasCommentText ? cleanNullableText(body.commentText || body.comment_text, 2000) : existing.commentText;
+    const sourcePage = hasSourcePage ? cleanNullableText(body.sourcePage || body.source_page, 200) : existing.sourcePage;
+
+    if (!studentName || !phone || !preferredSubject) {
       throw createHttpError(400, "Application, student name, phone and subject are required.");
     }
 
