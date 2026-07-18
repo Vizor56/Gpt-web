@@ -7429,7 +7429,7 @@ function getFallbackNotesLibrary() {
           lessonTitle: lesson.lessonTitle,
           materialTitle: `Конспект: ${lesson.lessonTitle}`,
           materialType: "PDF",
-          authorName: "Онлайн-школа",
+          authorName: "Yaroslav Tutor Academy",
           fileUrl: lesson.notesUrl,
         }),
       ),

@@ -706,7 +706,7 @@ async function seedDatabase() {
         await client.query(
           `
             INSERT INTO notes (id, course_id, lesson_id, title, material_type, author, file_url, active)
-            VALUES ($1, $2, $3, $4, 'Конспект', 'Онлайн-школа', $5, TRUE)
+            VALUES ($1, $2, $3, $4, 'Конспект', 'Yaroslav Tutor Academy', $5, TRUE)
             ON CONFLICT (id) DO UPDATE SET
               title = EXCLUDED.title,
               file_url = EXCLUDED.file_url,
@@ -1185,7 +1185,7 @@ async function ensureChatsForStudent(client, studentId) {
   await client.query(
     `
       INSERT INTO chat_messages (chat_id, sender_role, sender_name, message_text)
-      SELECT ch.id, 'System', 'Онлайн-школа', 'Чат создан. Здесь можно написать вопрос по курсу.'
+      SELECT ch.id, 'System', 'Yaroslav Tutor Academy', 'Чат создан. Здесь можно написать вопрос по курсу.'
       FROM chats ch
       WHERE ch.student_id = $1
         AND NOT EXISTS (SELECT 1 FROM chat_messages cm WHERE cm.chat_id = ch.id)
@@ -6731,7 +6731,7 @@ async function findOrCreateConversation(actor, targetRole, targetId) {
   await dbQuery(
     `
       INSERT INTO chat_messages (chat_id, sender_role, sender_name, message_text)
-      VALUES ($1, 'System', 'Онлайн-школа', $2)
+      VALUES ($1, 'System', 'Yaroslav Tutor Academy', $2)
     `,
     [created.conversationId, `Чат создан: ${actor.name || actor.role} и ${recipient.targetName}.`],
   );
@@ -6972,7 +6972,7 @@ runSchemaAndSeed()
   })
   .then(() => {
     app.listen(port, "0.0.0.0", () => {
-      console.log(`Yaroslav Tutor School is running on port ${port}`);
+      console.log(`Yaroslav Tutor Academy is running on port ${port}`);
     });
   })
   .catch((error) => {

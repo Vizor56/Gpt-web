@@ -2851,7 +2851,7 @@ INSERT INTO Chat_Messages (Chat_ID, Sender_Role, Sender_Name, Message_Text)
 SELECT
     C.Chat_ID,
     N'System',
-    N'Онлайн-школа',
+    N'Yaroslav Tutor Academy',
     N'Чат создан. Здесь можно писать куратору и преподавателю курса.'
 FROM Chats AS C
 WHERE C.Is_Active = 1
@@ -2973,7 +2973,7 @@ BEGIN
     SET @ChatId = CONVERT(INT, SCOPE_IDENTITY());
 
     INSERT INTO Chat_Messages (Chat_ID, Sender_Role, Sender_Name, Message_Text)
-    VALUES (@ChatId, N'System', N'Онлайн-школа', N'Чат создан. Здесь можно писать куратору и преподавателю.');
+    VALUES (@ChatId, N'System', N'Yaroslav Tutor Academy', N'Чат создан. Здесь можно писать куратору и преподавателю.');
 END;
 
 SELECT @ChatId;

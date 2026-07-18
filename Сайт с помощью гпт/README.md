@@ -1,4 +1,4 @@
-# Онлайн-школа ЕГЭ на максимум
+# Yaroslav Tutor Academy
 
 Сайт подготовлен к деплою на Render и Neon PostgreSQL.
 
