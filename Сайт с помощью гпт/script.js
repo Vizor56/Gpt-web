@@ -396,7 +396,7 @@ const statusMeta = {
   Correction_Check: { label: "Работа над ошибками на проверке", className: "status-check", icon: "#icon-clock" },
   Correction2_Required: { label: "Нужна 2-я работа над ошибками", className: "status-check", icon: "#icon-clipboard" },
   Correction2_Check: { label: "2-я работа над ошибками на проверке", className: "status-check", icon: "#icon-clock" },
-  Review_Required: { label: "Нужен разбор ДЗ", className: "status-review", icon: "#icon-message" },
+  Review_Required: { label: "Необходимо посмотреть разбор ДЗ", className: "status-review", icon: "#icon-message" },
   Open: { label: "Открыт", className: "status-open", icon: "#icon-play" },
   Announcement: { label: "Анонс", className: "status-soon", icon: "#icon-megaphone" },
   Soon: { label: "Скоро", className: "status-soon", icon: "#icon-clock" },
@@ -7897,8 +7897,13 @@ function isPassingScore(rawScore) {
 
 function getLessonLearningStatus(lesson = {}) {
   const correctionAttempt = Number(lesson.correctionAttempt || 1);
+  const correctionAttempts = getCorrectionAttemptsForLesson(lesson);
+  const hasSecondFailedCorrection = correctionAttempts.some(
+    (attempt) => Number(attempt.attemptNumber || 1) >= 2 && attempt.status === "Checked" && !isPassingScore(attempt.score),
+  );
   const needsHomeworkReview =
     Boolean(lesson.needsHomeworkReview) ||
+    hasSecondFailedCorrection ||
     (correctionAttempt >= 2 && lesson.correctionStatus === "Checked" && !isPassingScore(lesson.correctionScore));
 
   if (needsHomeworkReview) {
@@ -7940,6 +7945,62 @@ function getLessonLearningStatus(lesson = {}) {
 
 function formatHomeworkScoreText(lesson) {
   return formatTenPointScoreText(lesson?.homeworkScore ?? lesson?.score);
+}
+
+function getLatestHomeworkGrade(lesson = {}) {
+  const checkedCorrections = getCorrectionAttemptsForLesson(lesson)
+    .filter((attempt) => attempt?.status === "Checked" && getTenPointScoreValue(attempt.score) !== null)
+    .sort((first, second) => {
+      const attemptCompare = Number(second.attemptNumber || 0) - Number(first.attemptNumber || 0);
+
+      if (attemptCompare !== 0) {
+        return attemptCompare;
+      }
+
+      return new Date(second.checkedAt || second.submittedAt || 0) - new Date(first.checkedAt || first.submittedAt || 0);
+    });
+
+  if (checkedCorrections.length > 0) {
+    return {
+      score: getTenPointScoreValue(checkedCorrections[0].score),
+      source: "correction",
+      attemptNumber: Number(checkedCorrections[0].attemptNumber || 1),
+    };
+  }
+
+  if (getEffectiveHomeworkStatus(lesson) === "Checked") {
+    const homeworkScore = getTenPointScoreValue(lesson.homeworkScore ?? lesson.score);
+
+    if (homeworkScore !== null) {
+      return {
+        score: homeworkScore,
+        source: "homework",
+        attemptNumber: 0,
+      };
+    }
+  }
+
+  return null;
+}
+
+function renderLessonHomeworkGrade(lesson = {}) {
+  const grade = getLatestHomeworkGrade(lesson);
+
+  if (!grade) {
+    return "";
+  }
+
+  const className = isPassingScore(grade.score) ? "is-green" : "is-yellow";
+  const title =
+    grade.source === "correction"
+      ? `Последняя оценка за ${grade.attemptNumber >= 2 ? "2-ю работу над ошибками" : "работу над ошибками"}`
+      : "Последняя оценка за ДЗ";
+
+  return `
+    <span class="lesson-homework-grade ${className}" title="${escapeHtml(title)}" aria-label="${escapeHtml(`${title}: ${grade.score} из 10`)}">
+      <svg><use href="#icon-star" /></svg>${escapeHtml(grade.score)}
+    </span>
+  `;
 }
 
 function getCheckedHomeworkScoreText(lesson) {
@@ -8060,7 +8121,9 @@ function renderCorrectionTimeline(lesson) {
       : homeworkStatus === "Submitted"
         ? { label: "Основное ДЗ на проверке", className: "is-blue" }
         : { label: "Основное ДЗ открыто", className: "is-muted" };
-  const reviewNeeded = Boolean(lesson.needsHomeworkReview);
+  const reviewNeeded =
+    Boolean(lesson.needsHomeworkReview) ||
+    attempts.some((attempt) => Number(attempt.attemptNumber || 1) >= 2 && attempt.status === "Checked" && !isPassingScore(attempt.score));
 
   const attemptCards = attempts
     .map((attempt) => {
@@ -8105,13 +8168,48 @@ function renderCorrectionTimeline(lesson) {
 
 function getHomeworkButtonMeta(lesson) {
   const effectiveStatus = getEffectiveHomeworkStatus(lesson);
+  const correctionAttempt = Number(lesson?.correctionAttempt || 1);
+  const hasSecondFailedCorrection = getCorrectionAttemptsForLesson(lesson).some(
+    (attempt) => Number(attempt.attemptNumber || 1) >= 2 && attempt.status === "Checked" && !isPassingScore(attempt.score),
+  );
+  const needsHomeworkReview =
+    Boolean(lesson?.needsHomeworkReview) ||
+    hasSecondFailedCorrection ||
+    (correctionAttempt >= 2 && lesson?.correctionStatus === "Checked" && !isPassingScore(lesson?.correctionScore));
 
-  if (lesson?.needsHomeworkReview) {
+  if (needsHomeworkReview) {
     return {
       className: "button-red",
       icon: "#icon-message",
       label: "Нужен разбор ДЗ",
       title: "Открыть домашнее задание и историю работ над ошибками",
+    };
+  }
+
+  if (lesson?.correctionId) {
+    if (lesson.correctionStatus === "Submitted") {
+      return {
+        className: "button-blue",
+        icon: "#icon-clock",
+        label: correctionAttempt >= 2 ? "2-я работа на проверке" : "Работа на проверке",
+        title: "Открыть домашнее задание и работу над ошибками на проверке",
+      };
+    }
+
+    if (lesson.correctionStatus === "Checked" && isPassingScore(lesson.correctionScore)) {
+      return {
+        className: "button-green",
+        icon: "#icon-clipboard",
+        label: "Исправление проверено",
+        title: "Открыть проверенную работу над ошибками",
+      };
+    }
+
+    return {
+      className: "button-yellow",
+      icon: "#icon-clipboard",
+      label: correctionAttempt >= 2 ? "Нужна 2-я работа" : "Нужна работа над ошибками",
+      title: "Открыть историю ДЗ и отправить работу над ошибками",
     };
   }
 
@@ -8193,83 +8291,81 @@ function renderLessonRow(lesson) {
   if (lesson.isPreviewLocked) {
     const lockedTitle =
       lesson.previewLockReason === "purchase" ? "Этот урок откроется после покупки курса" : "Зарегистрируйтесь, чтобы открыть урок";
-    const lockedHomeworkLabel = lesson.previewLockReason === "purchase" ? "ДЗ после покупки" : "ДЗ после входа";
 
     actionButtons.push(`
       <button type="button" disabled title="${escapeHtml(lockedTitle)}">
         <svg><use href="#icon-lock" /></svg>Запись
       </button>
+    `);
+    actionButtons.push(`
       <button type="button" disabled title="${escapeHtml(lockedTitle)}">
         <svg><use href="#icon-file" /></svg>Конспект
       </button>
+    `);
+    actionButtons.push(`
       <button class="button-yellow" type="button" disabled title="${escapeHtml(lockedTitle)}">
-        <svg><use href="#icon-upload" /></svg>${lockedHomeworkLabel}
+        <svg><use href="#icon-upload" /></svg>Домашняя работа
       </button>
     `);
   } else {
-  const videoUrl = getLessonVideoUrl(lesson);
-  const notesUrl = getLessonNotesUrl(lesson);
+    const videoUrl = getLessonVideoUrl(lesson);
+    const notesUrl = getLessonNotesUrl(lesson);
 
-  if (videoUrl) {
-    actionButtons.push(`
-      <button type="button" data-video-url="${escapeHtml(videoUrl)}">
-        <svg><use href="#icon-play" /></svg>Запись
-      </button>
-    `);
-  } else if (isAnnouncementOnly) {
-    actionButtons.push(`
-      <button type="button" disabled>
-        <svg><use href="#icon-megaphone" /></svg>Анонс
-      </button>
-    `);
-  } else {
-    actionButtons.push(`
-      <button type="button" disabled title="Запустите API с базой данных, чтобы получить ссылку на запись">
-        <svg><use href="#icon-play" /></svg>Запись
-      </button>
-    `);
-  }
+    if (videoUrl) {
+      actionButtons.push(`
+        <button type="button" data-video-url="${escapeHtml(videoUrl)}">
+          <svg><use href="#icon-play" /></svg>Запись
+        </button>
+      `);
+    } else if (isAnnouncementOnly) {
+      actionButtons.push(`
+        <button type="button" disabled>
+          <svg><use href="#icon-megaphone" /></svg>Запись
+        </button>
+      `);
+    } else {
+      actionButtons.push(`
+        <button type="button" disabled title="Запустите API с базой данных, чтобы получить ссылку на запись">
+          <svg><use href="#icon-play" /></svg>Запись
+        </button>
+      `);
+    }
 
-  if (notesUrl) {
-    const notesLabel = isAnnouncementOnly ? "Материалы" : "Конспект PDF";
-    actionButtons.push(`
-      <button type="button" data-material-url="${escapeHtml(notesUrl)}">
-        <svg><use href="#icon-file" /></svg>${notesLabel}
-      </button>
-    `);
-  }
+    if (notesUrl) {
+      actionButtons.push(`
+        <button type="button" data-material-url="${escapeHtml(notesUrl)}">
+          <svg><use href="#icon-file" /></svg>Конспект
+        </button>
+      `);
+    } else {
+      actionButtons.push(`
+        <button type="button" disabled title="Конспект для этого урока пока не добавлен">
+          <svg><use href="#icon-file" /></svg>Конспект
+        </button>
+      `);
+    }
 
-  const homeworkButton = getHomeworkButtonMeta(lesson);
-  const checkedScoreText = getCheckedHomeworkScoreText(lesson);
+    const homeworkButton = getHomeworkButtonMeta(lesson);
+    const latestGrade = renderLessonHomeworkGrade(lesson);
 
     if (lesson.homeworkAccessLocked) {
-      const homeworkLabel = hasAuthenticatedAccount() ? "ДЗ после покупки" : "ДЗ после входа";
       const homeworkTitle = hasAuthenticatedAccount() ? "Домашнее задание откроется после покупки курса" : "Зарегистрируйтесь, чтобы сдавать ДЗ";
       actionButtons.push(`
         <button class="button-yellow" type="button" disabled title="${escapeHtml(homeworkTitle)}">
-          <svg><use href="#icon-upload" /></svg>${homeworkLabel}
+          <svg><use href="#icon-upload" /></svg>Домашняя работа
         </button>
       `);
     } else if (hasAuthenticatedAccount()) {
       actionButtons.push(`
-        <button class="${homeworkButton.className}" type="button" data-homework-lesson-id="${escapeHtml(getLessonKey(lesson))}" title="${homeworkButton.title}">
-          <svg><use href="${homeworkButton.icon}" /></svg>${homeworkButton.label}
+        <button class="${homeworkButton.className} lesson-homework-button" type="button" data-homework-lesson-id="${escapeHtml(getLessonKey(lesson))}" title="${homeworkButton.title}">
+          <span><svg><use href="${homeworkButton.icon}" /></svg>Домашняя работа</span>
+          ${latestGrade}
         </button>
-        ${checkedScoreText ? `<span class="lesson-score-chip">${checkedScoreText}</span>` : ""}
       `);
-      if (lesson.correctionId) {
-        const correctionMeta = getCorrectionStatusMeta(lesson.correctionStatus, lesson.correctionScore, lesson.correctionAttempt, lesson.needsHomeworkReview);
-        const correctionButtonClass = correctionMeta.className === "is-green" ? "button-green" : correctionMeta.className === "is-blue" ? "button-blue" : correctionMeta.className === "is-red" ? "button-red" : "button-yellow";
-        actionButtons.push(`
-          <button class="${correctionButtonClass} correction-action" type="button" data-homework-lesson-id="${escapeHtml(getLessonKey(lesson))}" title="Открыть работу над ошибками">
-            <svg><use href="#icon-clipboard" /></svg>${correctionMeta.label}
-          </button>
-        `);
-      }
     } else {
       actionButtons.push(`
         <button class="button-yellow" type="button" disabled title="Зарегистрируйтесь, чтобы сдавать ДЗ">
-          <svg><use href="#icon-upload" /></svg>ДЗ после входа
+          <svg><use href="#icon-upload" /></svg>Домашняя работа
         </button>
       `);
     }

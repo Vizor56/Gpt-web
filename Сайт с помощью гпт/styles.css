@@ -2153,7 +2153,7 @@ body[data-site-theme] :is(.shop-section-tabs button.is-active, .account-tabs but
 
 .lesson-actions {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -2210,6 +2210,51 @@ body[data-site-theme] :is(.shop-section-tabs button.is-active, .account-tabs but
   color: #b4533f;
   border-color: #f3c2b7;
   background: #fff3ef;
+}
+
+.lesson-actions .lesson-homework-button {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.lesson-actions .lesson-homework-button > span:first-child,
+.lesson-actions .lesson-homework-grade {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.lesson-actions .lesson-homework-button > span:first-child {
+  flex: 1 1 auto;
+}
+
+.lesson-actions .lesson-homework-grade {
+  flex: 0 0 auto;
+  min-width: 34px;
+  min-height: 28px;
+  padding: 0 7px;
+  border: 1px solid currentColor;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.74);
+  font-size: 12px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.lesson-actions .lesson-homework-grade svg {
+  width: 13px;
+  height: 13px;
+}
+
+.lesson-actions .lesson-homework-grade.is-green {
+  color: var(--green);
+}
+
+.lesson-actions .lesson-homework-grade.is-yellow {
+  color: var(--orange);
 }
 
 .lesson-actions .lesson-score-chip {
