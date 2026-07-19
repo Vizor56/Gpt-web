@@ -7007,15 +7007,19 @@ app.use("/api", (_request, response) => {
 
 app.use("/assets", express.static(path.join(rootDir, "assets")));
 app.get(["/", "/index.html"], (_request, response) => {
+  response.set("Cache-Control", "no-store, max-age=0");
   response.sendFile(path.join(rootDir, "index.html"));
 });
 app.get("/script.js", (_request, response) => {
+  response.set("Cache-Control", "no-store, max-age=0");
   response.type("text/javascript").sendFile(path.join(rootDir, "script.js"));
 });
 app.get("/styles.css", (_request, response) => {
+  response.set("Cache-Control", "no-store, max-age=0");
   response.type("text/css").sendFile(path.join(rootDir, "styles.css"));
 });
 app.get("*", (_request, response) => {
+  response.set("Cache-Control", "no-store, max-age=0");
   response.sendFile(path.join(rootDir, "index.html"));
 });
 

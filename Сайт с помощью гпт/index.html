@@ -9,7 +9,7 @@
       content="Yaroslav Tutor Academy: личный кабинет для курсов, уроков, домашних заданий, конспектов и трансляций."
     />
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=staff-header-cleanup-20260719" />
   </head>
   <body>
     <svg class="icon-sprite" aria-hidden="true" focusable="false">
@@ -184,6 +184,8 @@
                 <span class="capybara__shadow"></span>
                 <span class="capybara__tail"></span>
                 <span class="capybara__body"></span>
+                <span class="capybara__leg capybara__leg--back"></span>
+                <span class="capybara__leg capybara__leg--front"></span>
                 <span class="capybara__head"></span>
                 <span class="capybara__ear capybara__ear--left"></span>
                 <span class="capybara__ear capybara__ear--right"></span>
@@ -402,7 +404,7 @@
 
               <div class="tabs" role="tablist" aria-label="Курсы">
                 <button class="tab is-active" type="button" role="tab" aria-selected="true" data-tab="owned">
-                  Купленные курсы
+                  Доступные уроки
                 </button>
                 <button class="tab" type="button" role="tab" aria-selected="false" data-tab="all">
                   Все курсы
@@ -654,7 +656,7 @@
               <section class="panel library-toolbar">
                 <div>
                   <span>Материалы</span>
-                  <strong id="library-count">0 файлов</strong>
+                  <strong id="library-count">Загружаем материалы...</strong>
                 </div>
                 <label class="library-filter">
                   <span>Курс</span>
@@ -780,12 +782,20 @@
                 <p id="account-page-description">Профиль, прогресс, статус и друзья</p>
               </header>
 
-              <section class="panel account-summary-panel">
+              <div class="account-tabs" role="tablist" aria-label="Разделы аккаунта">
+                <button class="is-active" type="button" data-account-tab="profile" aria-selected="true">Профиль</button>
+                <button type="button" data-account-tab="progress" aria-selected="false">Прогресс</button>
+                <button type="button" data-account-tab="friends" aria-selected="false">Друзья</button>
+                <button type="button" data-account-tab="status" aria-selected="false">Статус</button>
+                <button type="button" data-account-tab="achievements" aria-selected="false">Достижения</button>
+                <button type="button" data-account-tab="shop" aria-selected="false">Магазин</button>
+              </div>
+
+              <section class="panel account-summary-panel" data-account-panel="profile">
                 <div>
                   <span class="account-kicker">Ученик</span>
                   <h2 id="account-student-name">Войдите в аккаунт</h2>
                   <p id="account-student-meta">После входа здесь появятся имя, класс и учебные данные.</p>
-                  <div class="account-profile-status" id="account-profile-status" aria-live="polite"></div>
                 </div>
                 <div class="account-points">
                   <svg><use href="#icon-star" /></svg>
@@ -794,13 +804,7 @@
                 </div>
               </section>
 
-              <div class="account-tabs" role="tablist" aria-label="Разделы аккаунта">
-                <button class="is-active" type="button" data-account-tab="progress" aria-selected="true">Прогресс</button>
-                <button type="button" data-account-tab="achievements" aria-selected="false">Достижения</button>
-                <button type="button" data-account-tab="shop" aria-selected="false">Магазин</button>
-              </div>
-
-              <section class="account-progress-section" data-account-panel="progress">
+              <section class="account-progress-section is-hidden" data-account-panel="progress" aria-hidden="true">
                 <div class="account-section-heading">
                   <h2>Прогресс курсов</h2>
                   <span id="account-progress-summary">Личный прогресс доступен после входа.</span>
@@ -808,7 +812,7 @@
                 <div class="account-course-list" id="account-course-progress-list" aria-live="polite"></div>
               </section>
 
-              <section class="account-friends-section" data-account-profile-section>
+              <section class="account-friends-section is-hidden" data-account-panel="friends" aria-hidden="true">
                 <div class="account-section-heading">
                   <h2>Друзья</h2>
                   <span>Заявки, список друзей и быстрые чаты</span>
@@ -816,6 +820,14 @@
                 <div class="account-friends-list" id="account-friends-list" aria-live="polite">
                   <div class="resource-empty">Войдите в аккаунт, чтобы видеть друзей.</div>
                 </div>
+              </section>
+
+              <section class="panel account-status-section is-hidden" data-account-panel="status" aria-hidden="true">
+                <div class="account-section-heading">
+                  <h2>Статус профиля</h2>
+                  <span>Выберите спокойную плашку для аккаунта и общения</span>
+                </div>
+                <div class="account-profile-status" id="account-profile-status" aria-live="polite"></div>
               </section>
 
               <section class="account-achievements-section is-hidden" data-account-panel="achievements" aria-hidden="true">
@@ -1148,7 +1160,7 @@
       </section>
     </div>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=staff-header-cleanup-20260719"></script>
   </body>
 </html>
 

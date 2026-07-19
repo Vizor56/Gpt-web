@@ -520,7 +520,7 @@ let staffFilters = {};
 let staffDrilldownState = {};
 let latestNotificationItems = [];
 let notificationPanelOpen = false;
-let currentAccountTab = "progress";
+let currentAccountTab = "profile";
 let currentAccountMode = "profile";
 let currentShopSection = "all";
 let currentStaffShopSection = "all";
@@ -1022,8 +1022,11 @@ function openPoints() {
 }
 
 function setStudyTab(tabName = "owned") {
-  if (!hasAuthenticatedAccount() && tabName === "owned") {
-    tabName = "all";
+  const hasSession = hasAuthenticatedAccount();
+  const ownedTab = document.querySelector('[data-tab="owned"]');
+
+  if (ownedTab) {
+    ownedTab.textContent = hasSession ? "Купленные курсы" : "Доступные уроки";
   }
 
   courseGrid?.setAttribute("data-active-tab", tabName);
@@ -1037,7 +1040,7 @@ function setStudyTab(tabName = "owned") {
   studyCourseCards.forEach((card) => {
     const isCatalogOnly = card.dataset.catalog === "true";
     const isNotOwned = card.dataset.owned === "false";
-    const isHidden = tabName !== "all" && (isCatalogOnly || isNotOwned);
+    const isHidden = tabName !== "all" && (isCatalogOnly || (hasSession && isNotOwned));
     card.classList.toggle("is-hidden", isHidden);
     card.setAttribute("aria-hidden", String(isHidden));
   });
@@ -1056,44 +1059,32 @@ function setAccountMode(mode = "profile") {
     accountPageDescription.textContent = isPointsMode ? "Магазин профиля и достижения" : "Профиль, прогресс, статус и друзья";
   }
 
-  if (accountSummaryPanel) {
-    accountSummaryPanel.classList.toggle("is-hidden", isPointsMode);
-  }
-
   if (accountSideColumn) {
     accountSideColumn.classList.toggle("is-hidden", isPointsMode);
   }
 
-  accountProfileSections.forEach((section) => {
-    section.classList.toggle("is-hidden", isPointsMode);
-    section.setAttribute("aria-hidden", String(isPointsMode));
-  });
-
-  const visibleTabs = isPointsMode ? new Set(["shop", "achievements"]) : new Set();
+  const visibleTabs = isPointsMode ? new Set(["shop", "achievements"]) : new Set(["profile", "progress", "friends", "status"]);
   accountTabs.forEach((tab) => {
     const visible = visibleTabs.has(tab.dataset.accountTab || "");
     tab.classList.toggle("is-hidden", !visible);
     tab.setAttribute("aria-hidden", String(!visible));
   });
 
-  document.querySelector(".account-tabs")?.classList.toggle("is-hidden", !isPointsMode);
+  document.querySelector(".account-tabs")?.classList.remove("is-hidden");
 
   if (isPointsMode) {
     setAccountTab(currentAccountTab === "achievements" ? "achievements" : "shop");
     return;
   }
 
-  accountPanels.forEach((panel) => {
-    const isProgress = panel.dataset.accountPanel === "progress";
-    panel.classList.toggle("is-hidden", !isProgress);
-    panel.setAttribute("aria-hidden", String(!isProgress));
-  });
-  currentAccountTab = "progress";
+  setAccountTab(["profile", "progress", "friends", "status"].includes(currentAccountTab) ? currentAccountTab : "profile");
 }
 
-function setAccountTab(tabName = "progress") {
+function setAccountTab(tabName = "profile") {
   if (currentAccountMode === "profile") {
-    tabName = "progress";
+    if (!["profile", "progress", "friends", "status"].includes(tabName)) {
+      tabName = "profile";
+    }
   } else if (!["shop", "achievements"].includes(tabName)) {
     tabName = "shop";
   }
@@ -2108,13 +2099,12 @@ function renderBadgeShopSection(shop) {
       <h3>Плашки профиля</h3>
       ${badges
         .map((badge) => {
-          const canBuy = badge.badgeType === "shop" && !badge.isOwned && Number(shop.pointsTotal) >= Number(badge.pricePoints || 0);
           const action = badge.isOwned
             ? badge.isEquipped
               ? `<button type="button" data-badge-unequip="${escapeHtml(badge.badgeCode)}">Снять</button>`
               : `<button type="button" data-badge-equip="${escapeHtml(badge.badgeCode)}">Надеть</button>`
             : badge.badgeType === "shop"
-              ? `<button type="button" data-badge-buy="${escapeHtml(badge.badgeCode)}" ${canBuy ? "" : "disabled"}>Купить</button>`
+              ? `<button type="button" data-badge-buy="${escapeHtml(badge.badgeCode)}">Купить</button>`
               : `<button type="button" disabled>Откроется</button>`;
           const lockText = badge.badgeType === "achievement" && !badge.isOwned ? `Нужно ${formatNumber(badge.unlockPercent || 0)}% курса` : "";
 
@@ -2171,13 +2161,12 @@ function renderShop(shop) {
           <h3>${escapeHtml(getShopTypeLabel(slot))}</h3>
           ${sectionItems
             .map((item) => {
-              const canBuy = !item.isOwned && Number(shop.pointsTotal) >= Number(item.pricePoints);
               const buyLabel = getShopSlot(item.itemType) === "theme" ? "Купить и применить" : "Купить";
               const action = item.isOwned
                 ? item.isEquipped
                   ? `<button type="button" data-shop-unequip="${escapeHtml(item.itemCode)}">Снять</button>`
                   : `<button type="button" data-shop-equip="${escapeHtml(item.itemCode)}">Надеть</button>`
-                : `<button type="button" data-shop-buy="${escapeHtml(item.itemCode)}" ${canBuy ? "" : "disabled"}>${escapeHtml(buyLabel)}</button>`;
+                : `<button type="button" data-shop-buy="${escapeHtml(item.itemCode)}">${escapeHtml(buyLabel)}</button>`;
 
               return `
                 <article class="shop-item"${getShopItemAttrs(item)}>
@@ -2520,6 +2509,57 @@ function isStaffMode() {
   return Boolean(document.querySelector(".app")?.classList.contains("is-staff-mode") && hasAuthenticatedStaff(currentStaff));
 }
 
+let isCleaningStaffWorkspaceHeader = false;
+let staffWorkspaceHeaderObserver = null;
+
+function cleanupStaffWorkspaceHeader() {
+  if (isCleaningStaffWorkspaceHeader) {
+    return;
+  }
+
+  isCleaningStaffWorkspaceHeader = true;
+  document.querySelectorAll(".staff-workspace-header").forEach((header) => {
+    const titleColumn = header.firstElementChild;
+
+    if (titleColumn) {
+      Array.from(titleColumn.children).forEach((child) => {
+        if (child.id !== "staff-workspace-title") {
+          child.remove();
+        }
+      });
+    }
+
+    const actions = header.querySelector(".staff-workspace-actions");
+
+    if (actions) {
+      Array.from(actions.children).forEach((child) => {
+        if (!child.matches("[data-staff-refresh]")) {
+          child.remove();
+        }
+      });
+    }
+
+    header.querySelectorAll("#staff-workspace-eyebrow, #staff-header-profile, .staff-header-profile, .profile-pet-chip--header").forEach((element) => {
+      element.remove();
+    });
+  });
+  isCleaningStaffWorkspaceHeader = false;
+}
+
+function startStaffWorkspaceHeaderCleanupObserver() {
+  if (staffWorkspaceHeaderObserver || !document.body) {
+    return;
+  }
+
+  staffWorkspaceHeaderObserver = new MutationObserver(() => {
+    window.requestAnimationFrame(cleanupStaffWorkspaceHeader);
+  });
+  staffWorkspaceHeaderObserver.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
+}
+
 function ensureStaffShell() {
   if (!document.querySelector("#staff-side-nav")) {
     document.querySelector(".brand")?.insertAdjacentHTML(
@@ -2535,11 +2575,9 @@ function ensureStaffShell() {
         <section class="staff-workspace-page is-hidden" data-page="staff-workspace" aria-hidden="true">
           <header class="staff-workspace-header">
             <div>
-              <span id="staff-workspace-eyebrow">Рабочий кабинет</span>
               <h1 id="staff-workspace-title">Команда</h1>
             </div>
             <div class="staff-workspace-actions">
-              <div class="staff-header-profile" id="staff-header-profile"></div>
               <button class="staff-refresh-button" type="button" data-staff-refresh>
                 <svg><use href="#icon-clock" /></svg>
                 Обновить
@@ -2552,6 +2590,9 @@ function ensureStaffShell() {
       `,
     );
   }
+
+  startStaffWorkspaceHeaderCleanupObserver();
+  cleanupStaffWorkspaceHeader();
 }
 
 function getStaffNavItems() {
@@ -2661,10 +2702,9 @@ function setStaffWorkspaceStatus(message, type = "") {
 }
 
 function updateStaffWorkspaceHeader(pageName) {
-  const staff = getStaffProfile();
+  cleanupStaffWorkspaceHeader();
+
   const title = document.querySelector("#staff-workspace-title");
-  const eyebrow = document.querySelector("#staff-workspace-eyebrow");
-  const staffHeaderProfile = document.querySelector("#staff-header-profile");
   const staffShopItems = Array.isArray(latestStaffWorkspace?.staffShop?.items) ? latestStaffWorkspace.staffShop.items : null;
   const staffShopItemsForRender = staffShopItems || [];
   const staffEquippedItems = staffShopItemsForRender.filter((item) => item.isEquipped);
@@ -2677,16 +2717,7 @@ function updateStaffWorkspaceHeader(pageName) {
     title.textContent = getStaffPageTitle(pageName);
   }
 
-  if (eyebrow) {
-    eyebrow.textContent = `${getStaffRoleLabel(staff.role)} · ${staff.name || staff.login || "команда"}`;
-  }
-
-  if (staffHeaderProfile) {
-    staffHeaderProfile.innerHTML = `
-      ${renderPixelPetMarkup(staffEquippedItems, { wrapperClass: "profile-pet-chip profile-pet-chip--header" })}
-      <span>${escapeHtml(staff.name || staff.login || "Команда")}</span>
-    `;
-  }
+  cleanupStaffWorkspaceHeader();
 
   if (isStaffMode() && profileAvatar) {
     profileAvatar.classList.add("has-pet-avatar");
@@ -2756,6 +2787,7 @@ function openStaffPage(pageName = "messages") {
   setActiveNav("");
   history.replaceState(null, "", `#staff-${pageName}`);
   renderStaffPage(pageName);
+  cleanupStaffWorkspaceHeader();
 }
 
 async function loadStaffWorkspace({ silent = false } = {}) {
@@ -2814,6 +2846,26 @@ function getStaffItems(name) {
   return [];
 }
 
+function getVisibleStaffCourses() {
+  const courses = getStaffItems("courses");
+  const staff = getStaffProfile();
+
+  if (staff.role !== "Teacher") {
+    return courses;
+  }
+
+  const teacherId = String(staff.teacherId || staff.staffId || "");
+  const teacherName = String(staff.name || "").trim();
+
+  return courses.filter((course) => {
+    if (teacherId && String(course.teacherId || "") === teacherId) {
+      return true;
+    }
+
+    return Boolean(teacherName && String(course.teacherName || "").trim() === teacherName);
+  });
+}
+
 function getStaffDrilldownKey(pageName) {
   const role = getStaffProfile().role || "Staff";
   return `${role}:${pageName}`;
@@ -2859,7 +2911,7 @@ function matchesTeacherSelection(item, teacher) {
 }
 
 function getStaffCourseOptions(selectedCourseId = "") {
-  return getStaffItems("courses")
+  return getVisibleStaffCourses()
     .map((course) => `<option value="${escapeHtml(course.courseId)}" ${String(course.courseId) === String(selectedCourseId) ? "selected" : ""}>${escapeHtml(course.courseTitle)}</option>`)
     .join("");
 }
@@ -3347,13 +3399,12 @@ function renderStaffPoints() {
           <h3>${escapeHtml(getShopTypeLabel(slot))}</h3>
           ${sectionItems
             .map((item) => {
-              const canBuy = !item.isOwned && Number(shop.pointsTotal || 0) >= Number(item.pricePoints || 0);
               const buyLabel = getShopSlot(item.itemType) === "theme" ? "Купить и применить" : "Купить";
               const action = item.isOwned
                 ? item.isEquipped
                   ? `<button type="button" data-staff-shop-unequip="${escapeHtml(item.itemCode)}">Снять</button>`
                   : `<button type="button" data-staff-shop-equip="${escapeHtml(item.itemCode)}">Надеть</button>`
-                : `<button type="button" data-staff-shop-buy="${escapeHtml(item.itemCode)}" ${canBuy ? "" : "disabled"}>${escapeHtml(buyLabel)}</button>`;
+                : `<button type="button" data-staff-shop-buy="${escapeHtml(item.itemCode)}">${escapeHtml(buyLabel)}</button>`;
               return `
                 <article class="shop-item"${getShopItemAttrs(item)}>
                   ${renderShopItemPreview(item, equippedItems)}
@@ -4276,12 +4327,12 @@ function renderTeacherCourseStepCard(course, lessons) {
 }
 
 function renderTeacherCourses() {
-  const courses = getStaffItems("courses");
+  const courses = getVisibleStaffCourses();
   const lessonsByCourse = groupBy(getStaffItems("lessons"), (lesson) => lesson.courseId);
   const streamsByCourse = groupBy(getStaffItems("streams"), (stream) => stream.courseId);
 
   if (courses.length === 0) {
-    return renderStaffEmpty("Курсы преподавателя пока не найдены.");
+    return renderStaffEmpty("Курсы текущего преподавателя пока не найдены.");
   }
 
   const state = getStaffDrilldown("courses");
@@ -4515,6 +4566,7 @@ function renderCuratorCallForm(call = {}) {
   const students = getCuratorCallStudents();
   const selectedIds = new Set((call.students || []).map((student) => String(student.studentId)));
   const isEdit = Boolean(call.callId);
+  const selectedCount = selectedIds.size;
 
   return `
     <form class="staff-lesson-form staff-call-form" data-staff-call-form>
@@ -4535,17 +4587,33 @@ function renderCuratorCallForm(call = {}) {
         Статус
         <select name="status">${renderCallStatusOptions(call.status || "Planned")}</select>
       </label>
-      <label>
-        Ученики
-        <select name="studentIds" multiple size="6" required>
-          ${students
-            .map(
-              (student) =>
-                `<option value="${escapeHtml(student.studentId)}" ${selectedIds.has(String(student.studentId)) ? "selected" : ""}>${escapeHtml(student.studentName)}${student.courseTitle ? ` · ${escapeHtml(student.courseTitle)}` : ""}</option>`,
-            )
-            .join("")}
-        </select>
-      </label>
+      <div class="staff-field student-picker-field">
+        <span>Ученики</span>
+        <details class="student-picker" data-student-picker>
+          <summary>
+            <span>Выбрать учеников</span>
+            <strong data-student-picker-count>${selectedCount ? `${formatNumber(selectedCount)} выбрано` : "Не выбраны"}</strong>
+          </summary>
+          <div class="student-picker__menu">
+            <input type="search" data-student-picker-search placeholder="Поиск по имени или курсу" autocomplete="off" />
+            <div class="student-picker__options">
+              ${students
+                .map((student) => {
+                  const label = `${student.studentName || "Ученик"}${student.courseTitle ? ` · ${student.courseTitle}` : ""}`;
+
+                  return `
+                    <label class="student-picker__option" data-student-picker-option data-search-text="${escapeHtml(label.toLowerCase())}">
+                      <input type="checkbox" name="studentIds" value="${escapeHtml(student.studentId)}" data-student-picker-checkbox ${selectedIds.has(String(student.studentId)) ? "checked" : ""} />
+                      <span>${escapeHtml(label)}</span>
+                    </label>
+                  `;
+                })
+                .join("")}
+            </div>
+            <p class="message-recipient-empty is-hidden" data-student-picker-empty>Ученики по поиску не найдены.</p>
+          </div>
+        </details>
+      </div>
       <button type="submit" ${students.length ? "" : "disabled"}><svg><use href="#icon-clock" /></svg>${isEdit ? "Сохранить созвон" : "Создать созвон"}</button>
       <p class="staff-form-status" aria-live="polite"></p>
     </form>
@@ -5548,22 +5616,48 @@ function renderAdminEnrollmentForm(student, enrollment = {}) {
 function renderAdminStudentCard(student) {
   const courses = student.courses || [];
   const comments = student.comments || [];
+  const studentName = student.studentName || `${student.firstName || ""} ${student.lastName || ""}`.trim();
+  const parents = student.parents || [];
+  const searchText = getAdminSearchText([
+    studentName,
+    student.phone,
+    student.email,
+    student.login,
+    student.grade,
+    courses.map((course) => [course.courseTitle, course.teacherName, course.curatorName]),
+    parents.map((parent) => parent.parentName),
+    comments.map((comment) => [comment.authorName, comment.commentText]),
+  ]);
+  const courseTags = courses.map((course) => `${course.courseTitle} · ${course.teacherName || "преподаватель не указан"} · ${course.curatorName || "куратор не указан"}`);
+  const parentTags = parents.map((parent) => parent.parentName);
 
   return `
-    <article class="staff-card admin-student-card admin-compact-card"${courses.length === 1 ? getCourseThemeAttr(courses[0]) : ""}>
-      <div class="staff-card__meta">
-        <span class="resource-chip ${student.studentStatus === "Graduate" ? "is-green" : "is-blue"}">${student.studentStatus === "Graduate" ? "Выпускник" : "Ученик"}</span>
-        <span class="resource-chip">${escapeHtml(student.grade ? `${student.grade} класс` : "класс не указан")}</span>
-        <span class="resource-chip is-green">${Number(student.averageScore || 0).toFixed(1)} ср. балл</span>
+    <article class="staff-card admin-student-card admin-compact-card" data-admin-directory-card data-admin-search-text="${escapeHtml(searchText)}"${courses.length === 1 ? getCourseThemeAttr(courses[0]) : ""}>
+      ${renderAdminCardHeader({
+        name: studentName,
+        subtitle: [student.phone, student.email].filter(Boolean).join(" · ") || "Контакты не указаны",
+        avatarClass: student.studentStatus === "Graduate" ? "is-graduate" : "is-student",
+        chips: `
+          <span class="resource-chip ${student.studentStatus === "Graduate" ? "is-green" : "is-blue"}">${student.studentStatus === "Graduate" ? "Выпускник" : "Ученик"}</span>
+          <span class="resource-chip">${escapeHtml(student.grade ? `${student.grade} класс` : "класс не указан")}</span>
+        `,
+      })}
+      ${renderAdminKpis([
+        { label: "Курсы", value: formatNumber(courses.length), tone: "blue" },
+        { label: "ДЗ сдано", value: `${formatNumber(student.homeworkSubmitted || 0)} / ${formatNumber(student.homeworkTotal || 0)}`, tone: "yellow" },
+        { label: "Проверено", value: formatNumber(student.homeworkChecked || 0), tone: "green" },
+        { label: "Средний балл", value: Number(student.averageScore || 0).toFixed(1), tone: "green" },
+      ])}
+      <div class="admin-card-preview">
+        <small>Курсы и команда</small>
+        ${renderAdminPreviewTags(courseTags, "Курсы не подключены", 3)}
       </div>
-      <h3>${escapeHtml(student.studentName || `${student.firstName || ""} ${student.lastName || ""}`.trim())}</h3>
-      <p>${escapeHtml([student.phone, student.email].filter(Boolean).join(" · ") || "Контакты не указаны")}</p>
-      <p>ДЗ: <strong>${formatNumber(student.homeworkSubmitted || 0)} / ${formatNumber(student.homeworkTotal || 0)}</strong>, проверено ${formatNumber(student.homeworkChecked || 0)}</p>
-      <div class="staff-card__meta">
-        ${(student.parents || []).map((parent) => `<span class="resource-chip">${escapeHtml(parent.parentName)}</span>`).join("") || `<span class="resource-chip">Родитель не указан</span>`}
+      <div class="admin-card-preview">
+        <small>Родители</small>
+        ${renderAdminPreviewTags(parentTags, "Родитель не указан", 3)}
       </div>
       <details class="staff-details admin-person-details">
-        <summary>Подробности и редактирование ученика</summary>
+        <summary><span>Редактировать</span><small>личные данные, курсы, родители, комментарии</small></summary>
         <section class="admin-detail-block">
           <h4>Личные данные</h4>
           ${renderAdminStudentForm(student)}
@@ -5608,14 +5702,20 @@ function renderAdminStudentCard(student) {
 function renderAdminStudents() {
   const students = getStaffItems("students");
   const filteredStudents = applyAdminStudentFilters(students);
+  const cards = filteredStudents.length ? filteredStudents.map(renderAdminStudentCard).join("") : "";
 
   return `
     ${renderAdminMetrics()}
     ${renderAdminAddDetails("Добавить ученика", renderAdminStudentForm())}
     ${renderAdminFilters("students", students)}
-    <div class="staff-card-grid">
-      ${filteredStudents.length ? filteredStudents.map(renderAdminStudentCard).join("") : renderStaffEmpty("Ученики по выбранным фильтрам не найдены.")}
-    </div>
+    ${renderAdminDirectory("students", {
+      title: "Ученики",
+      subtitle: "Краткий обзор, курсы, родители, преподаватели и кураторы. Подробности раскрываются внутри карточки.",
+      total: filteredStudents.length,
+      searchPlaceholder: "Имя, логин, курс, родитель, преподаватель...",
+      children: cards,
+      emptyText: "Ученики по выбранным фильтрам не найдены.",
+    })}
   `;
 }
 
@@ -5642,64 +5742,82 @@ function renderAdminParentForm(parent = {}) {
 
 function renderAdminParents() {
   const parents = getStaffItems("parents");
+  const cards = parents
+    .map((parent) => {
+      const children = parent.children || [];
+      const parentName = parent.parentName || `${parent.firstName || ""} ${parent.lastName || ""}`.trim();
+      const searchText = getAdminSearchText([parentName, parent.phone, parent.email, parent.telegramLink, parent.vkLink, parent.sourcePlatform, children.map((child) => child.studentName)]);
+
+      return `
+        <article class="staff-card admin-compact-card admin-parent-card" data-admin-directory-card data-admin-search-text="${escapeHtml(searchText)}">
+          ${renderAdminCardHeader({
+            name: parentName,
+            subtitle: [parent.phone, parent.email, parent.sourcePlatform].filter(Boolean).join(" · ") || "Контакты не указаны",
+            avatarClass: "is-parent",
+            chips: `
+              <span class="resource-chip ${parent.parentStatus === "Parent_Student" ? "is-blue" : "is-green"}">${parent.parentStatus === "Parent_Student" ? "Родитель ученика" : "Родитель выпускника"}</span>
+            `,
+          })}
+          ${renderAdminKpis([
+            { label: "Детей", value: formatNumber(children.length), tone: children.length ? "blue" : "" },
+            { label: "Источник", value: parent.sourcePlatform || "не указан" },
+            { label: "Соцсети", value: [parent.telegramLink, parent.vkLink].filter(Boolean).length ? "есть" : "нет" },
+          ])}
+          <div class="admin-card-preview">
+            <small>Дети</small>
+            ${renderAdminPreviewTags(
+              children.map((child) => `${child.studentName} · ${child.studentStatus === "Graduate" ? "выпускник" : "ученик"}`),
+              "Дети не указаны",
+              4,
+            )}
+          </div>
+          <details class="staff-details admin-person-details">
+            <summary><span>Редактировать</span><small>личные данные, дети и связи</small></summary>
+            <section class="admin-detail-block">
+              <h4>Личные данные</h4>
+              ${renderAdminParentForm(parent)}
+            </section>
+            <section class="admin-detail-block">
+              <h4>Дети и связи</h4>
+              <div class="admin-course-list">
+                ${
+                  children.length
+                    ? children
+                        .map(
+                          (child) => `
+                            <div class="staff-reviewed-note">
+                              <strong>${escapeHtml(child.studentName)}</strong>
+                              <span>${escapeHtml(child.studentStatus === "Graduate" ? "выпускник" : "ученик")} · ${escapeHtml(child.relationType || "Родитель")}</span>
+                              ${renderAdminParentChildForm(parent, child)}
+                            </div>
+                          `,
+                        )
+                        .join("")
+                    : `<div class="staff-reviewed-note is-muted"><strong>Дети не указаны</strong><span>Добавьте связь с учеником ниже.</span></div>`
+                }
+                <div class="staff-reviewed-note is-pending">
+                  <strong>Добавить ребёнка</strong>
+                  ${renderAdminParentChildForm(parent)}
+                </div>
+              </div>
+            </section>
+          </details>
+        </article>
+      `;
+    })
+    .join("");
 
   return `
     ${renderAdminMetrics()}
     ${renderAdminAddDetails("Добавить родителя", renderAdminParentForm())}
-    <div class="staff-card-grid">
-      ${
-        parents.length
-          ? parents
-              .map(
-                (parent) => `
-                  <article class="staff-card admin-compact-card">
-                    <div class="staff-card__meta">
-                      <span class="resource-chip ${parent.parentStatus === "Parent_Student" ? "is-blue" : "is-green"}">${parent.parentStatus === "Parent_Student" ? "Родитель ученика" : "Родитель выпускника"}</span>
-                      <span class="resource-chip">${formatNumber((parent.children || []).length)} детей</span>
-                    </div>
-                    <h3>${escapeHtml(parent.parentName)}</h3>
-                    <p>${escapeHtml([parent.phone, parent.email, parent.sourcePlatform].filter(Boolean).join(" · ") || "Контакты не указаны")}</p>
-                    <div class="staff-card__meta">
-                      ${(parent.children || []).map((child) => `<span class="resource-chip">${escapeHtml(child.studentName)} · ${child.studentStatus === "Graduate" ? "выпускник" : "ученик"}</span>`).join("") || `<span class="resource-chip">Дети не указаны</span>`}
-                    </div>
-                    <details class="staff-details admin-person-details">
-                      <summary>Подробности и редактирование родителя</summary>
-                      <section class="admin-detail-block">
-                        <h4>Личные данные</h4>
-                        ${renderAdminParentForm(parent)}
-                      </section>
-                      <section class="admin-detail-block">
-                        <h4>Дети и связи</h4>
-                      <div class="admin-course-list">
-                        ${
-                          (parent.children || []).length
-                            ? parent.children
-                                .map(
-                                  (child) => `
-                                    <div class="staff-reviewed-note">
-                                      <strong>${escapeHtml(child.studentName)}</strong>
-                                      <span>${escapeHtml(child.studentStatus === "Graduate" ? "выпускник" : "ученик")} · ${escapeHtml(child.relationType || "Родитель")}</span>
-                                      ${renderAdminParentChildForm(parent, child)}
-                                    </div>
-                                  `,
-                                )
-                                .join("")
-                            : `<div class="staff-reviewed-note is-muted"><strong>Дети не указаны</strong><span>Добавьте связь с учеником ниже.</span></div>`
-                        }
-                        <div class="staff-reviewed-note is-pending">
-                          <strong>Добавить ребёнка</strong>
-                          ${renderAdminParentChildForm(parent)}
-                        </div>
-                      </div>
-                      </section>
-                    </details>
-                  </article>
-                `,
-              )
-              .join("")
-          : renderStaffEmpty("Родители пока не добавлены.")
-      }
-    </div>
+    ${renderAdminDirectory("parents", {
+      title: "Родители",
+      subtitle: "Контакты, источник прихода и связи с детьми без раскрытых форм на каждой карточке.",
+      total: parents.length,
+      searchPlaceholder: "Имя, телефон, платформа, ребёнок...",
+      children: cards,
+      emptyText: "Родители пока не добавлены.",
+    })}
   `;
 }
 
@@ -5715,10 +5833,100 @@ function renderAdminPersonChips(items = [], getLabel) {
   return items.map((item) => `<span class="resource-chip">${escapeHtml(getLabel(item))}</span>`).join("");
 }
 
+function getAdminInitials(name = "") {
+  const parts = String(name || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  const initials = `${parts[0]?.[0] || ""}${parts[1]?.[0] || ""}`.trim();
+  return (initials || "YT").toUpperCase();
+}
+
+function getAdminSearchText(values = []) {
+  return values
+    .flat(Infinity)
+    .filter((value) => value !== null && value !== undefined && value !== "")
+    .map((value) => String(value).toLowerCase())
+    .join(" ");
+}
+
+function renderAdminCardHeader({ name, subtitle = "", avatarClass = "", chips = "" }) {
+  return `
+    <div class="admin-card-header">
+      <span class="admin-card-avatar ${escapeHtml(avatarClass)}" aria-hidden="true">${escapeHtml(getAdminInitials(name))}</span>
+      <div class="admin-card-title-block">
+        <h3>${escapeHtml(name || "Пока неизвестно")}</h3>
+        <p>${escapeHtml(subtitle || "Информация пока не указана")}</p>
+      </div>
+      ${chips ? `<div class="admin-card-chips">${chips}</div>` : ""}
+    </div>
+  `;
+}
+
+function renderAdminKpis(items = []) {
+  return `
+    <div class="admin-card-kpis">
+      ${items
+        .map(
+          (item) => `
+            <span class="admin-kpi ${item.tone ? `is-${escapeHtml(item.tone)}` : ""}">
+              <small>${escapeHtml(item.label)}</small>
+              <strong>${escapeHtml(item.value)}</strong>
+            </span>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function renderAdminPreviewTags(items = [], emptyText = "Пока не указано", limit = 4) {
+  const list = (items || []).filter(Boolean);
+
+  if (!list.length) {
+    return `<div class="admin-card-tags"><span class="resource-chip">${escapeHtml(emptyText)}</span></div>`;
+  }
+
+  const visible = list.slice(0, limit);
+  const restCount = list.length - visible.length;
+
+  return `
+    <div class="admin-card-tags">
+      ${visible.map((item) => `<span class="resource-chip">${escapeHtml(item)}</span>`).join("")}
+      ${restCount > 0 ? `<span class="resource-chip is-blue">+${formatNumber(restCount)}</span>` : ""}
+    </div>
+  `;
+}
+
+function renderAdminDirectory(sectionName, { title, subtitle, total, searchPlaceholder, children, emptyText }) {
+  return `
+    <section class="admin-directory" data-admin-directory="${escapeHtml(sectionName)}">
+      <header class="admin-directory-header">
+        <div>
+          <span>База школы</span>
+          <h2>${escapeHtml(title)}</h2>
+          <p>${escapeHtml(subtitle)}</p>
+        </div>
+        <div class="admin-directory-tools">
+          <label class="admin-directory-search">
+            <span>Поиск</span>
+            <input type="search" data-admin-directory-search placeholder="${escapeHtml(searchPlaceholder)}" autocomplete="off" />
+          </label>
+          <strong data-admin-visible-count>${formatNumber(total || 0)} показано</strong>
+        </div>
+      </header>
+      <div class="staff-card-grid admin-directory-grid">
+        ${children || renderStaffEmpty(emptyText)}
+      </div>
+      <p class="admin-directory-empty is-hidden" data-admin-empty-search>По этому поиску ничего не найдено.</p>
+    </section>
+  `;
+}
+
 function renderAdminAddDetails(label, formHtml) {
   return `
     <details class="staff-details admin-add-details">
-      <summary><svg><use href="#icon-upload" /></svg>${escapeHtml(label)}</summary>
+      <summary><svg><use href="#icon-upload" /></svg><span>${escapeHtml(label)}</span><small>Открыть форму добавления</small></summary>
       ${formHtml}
     </details>
   `;
@@ -5783,13 +5991,19 @@ function renderAdminTeacherCardLegacy(teacher) {
 
 function renderAdminTeachers() {
   const teachers = getStaffItems("teachers");
+  const cards = teachers.length ? teachers.map(renderAdminTeacherCard).join("") : "";
 
   return `
     ${renderAdminMetrics()}
     ${renderAdminAddDetails("Добавить преподавателя", renderAdminTeacherForm())}
-    <div class="staff-card-grid">
-      ${teachers.length ? teachers.map(renderAdminTeacherCard).join("") : renderStaffEmpty("Преподаватели пока не добавлены.")}
-    </div>
+    ${renderAdminDirectory("teachers", {
+      title: "Преподаватели",
+      subtitle: "Курсы, ученики, кураторы и нагрузка преподавателя в компактном виде.",
+      total: teachers.length,
+      searchPlaceholder: "Имя, логин, курс, ученик, куратор...",
+      children: cards,
+      emptyText: "Преподаватели пока не добавлены.",
+    })}
   `;
 }
 
@@ -5855,13 +6069,19 @@ function renderAdminCuratorCardLegacy(curator) {
 
 function renderAdminCurators() {
   const curators = getStaffItems("curators");
+  const cards = curators.length ? curators.map(renderAdminCuratorCard).join("") : "";
 
   return `
     ${renderAdminMetrics()}
     ${renderAdminAddDetails("Добавить куратора", renderAdminCuratorForm())}
-    <div class="staff-card-grid">
-      ${curators.length ? curators.map(renderAdminCuratorCard).join("") : renderStaffEmpty("Кураторы пока не добавлены.")}
-    </div>
+    ${renderAdminDirectory("curators", {
+      title: "Кураторы",
+      subtitle: "Закрепления, преподаватели, ученики и качество обратной связи на одной карточке.",
+      total: curators.length,
+      searchPlaceholder: "Имя, логин, курс, ученик, преподаватель...",
+      children: cards,
+      emptyText: "Кураторы пока не добавлены.",
+    })}
   `;
 }
 
@@ -5869,18 +6089,46 @@ function renderAdminTeacherCard(teacher) {
   const courses = teacher.courses || [];
   const students = teacher.students || [];
   const curators = teacher.curators || [];
+  const teacherName = teacher.teacherName || `${teacher.firstName || ""} ${teacher.lastName || ""}`.trim();
+  const searchText = getAdminSearchText([
+    teacherName,
+    teacher.phone,
+    teacher.email,
+    teacher.telegram,
+    teacher.login,
+    courses.map((course) => [course.courseTitle, course.curatorNames]),
+    students.map((student) => [student.studentName, student.courseTitle, student.curatorName]),
+    curators.map((curator) => curator.curatorName),
+  ]);
 
   return `
-    <article class="staff-card admin-person-card admin-compact-card">
-      <div class="staff-card__meta">
-        <span class="resource-chip is-green">Рейтинг ${Number(teacher.rating || 0).toFixed(1)} / 10</span>
-        <span class="resource-chip is-blue">${formatNumber(teacher.studentsCount || 0)} учен.</span>
-        <span class="resource-chip">${formatNumber(teacher.coursesCount || courses.length)} курс.</span>
+    <article class="staff-card admin-person-card admin-compact-card admin-teacher-card" data-admin-directory-card data-admin-search-text="${escapeHtml(searchText)}">
+      ${renderAdminCardHeader({
+        name: teacherName,
+        subtitle: [teacher.phone, teacher.email, teacher.telegram].filter(Boolean).join(" · ") || "Контакты пока неизвестны",
+        avatarClass: "is-teacher",
+        chips: `
+          <span class="resource-chip is-green">Рейтинг ${Number(teacher.rating || 0).toFixed(1)} / 10</span>
+          <span class="resource-chip">${escapeHtml(adminText(teacher.login))}</span>
+        `,
+      })}
+      ${renderAdminKpis([
+        { label: "Курсы", value: formatNumber(teacher.coursesCount || courses.length), tone: "blue" },
+        { label: "Ученики", value: formatNumber(teacher.studentsCount || 0), tone: "blue" },
+        { label: "ДЗ прислали", value: formatNumber(teacher.homeworkSubmitted || 0), tone: "yellow" },
+        { label: "Проверено", value: formatNumber(teacher.homeworkChecked || 0), tone: "green" },
+        { label: "Средний балл", value: Number(teacher.averageHomeworkScore || 0).toFixed(1), tone: "green" },
+      ])}
+      <div class="admin-card-preview">
+        <small>Курсы</small>
+        ${renderAdminPreviewTags(courses.map((course) => `${course.courseTitle} · ${course.curatorNames || "куратор не указан"}`), "Курсы не закреплены", 3)}
       </div>
-      <h3>${escapeHtml(teacher.teacherName || "Пока неизвестно")}</h3>
-      <p>${escapeHtml([teacher.phone, teacher.email, teacher.telegram].filter(Boolean).join(" · ") || "Контакты пока неизвестны")}</p>
+      <div class="admin-card-preview">
+        <small>Ученики</small>
+        ${renderAdminPreviewTags(students.map((student) => `${student.studentName} · ${student.courseTitle}`), "Ученики не закреплены", 3)}
+      </div>
       <details class="staff-details admin-person-details">
-        <summary>Подробности и редактирование преподавателя</summary>
+        <summary><span>Редактировать</span><small>личные данные, курсы, ученики, кураторы</small></summary>
         <div class="staff-info-grid">
           <span>ДЗ прислали<strong>${formatNumber(teacher.homeworkSubmitted || 0)}</strong></span>
           <span>ДЗ проверено<strong>${formatNumber(teacher.homeworkChecked || 0)}</strong></span>
@@ -5953,18 +6201,46 @@ function renderAdminCuratorCard(curator) {
   const courses = curator.courses || [];
   const students = curator.students || [];
   const teachers = curator.teachers || [];
+  const curatorName = curator.curatorName || `${curator.firstName || ""} ${curator.lastName || ""}`.trim();
+  const searchText = getAdminSearchText([
+    curatorName,
+    curator.phone,
+    curator.email,
+    curator.telegram,
+    curator.login,
+    courses.map((course) => [course.courseTitle, course.teacherNames]),
+    students.map((student) => [student.studentName, student.courseTitle, student.teacherName]),
+    teachers.map((teacher) => teacher.teacherName),
+  ]);
 
   return `
-    <article class="staff-card admin-person-card admin-compact-card">
-      <div class="staff-card__meta">
-        <span class="resource-chip is-green">Средняя оценка ${Number(curator.rating || 0).toFixed(1)} / 10</span>
-        <span class="resource-chip is-blue">${formatNumber(curator.studentsCount || 0)} учен.</span>
-        <span class="resource-chip">${formatNumber(curator.teachersCount || teachers.length)} преп.</span>
+    <article class="staff-card admin-person-card admin-compact-card admin-curator-card" data-admin-directory-card data-admin-search-text="${escapeHtml(searchText)}">
+      ${renderAdminCardHeader({
+        name: curatorName,
+        subtitle: [curator.phone, curator.email, curator.telegram].filter(Boolean).join(" · ") || "Контакты пока неизвестны",
+        avatarClass: "is-curator",
+        chips: `
+          <span class="resource-chip is-green">Оценка ${Number(curator.rating || 0).toFixed(1)} / 10</span>
+          <span class="resource-chip">${escapeHtml(adminText(curator.login))}</span>
+        `,
+      })}
+      ${renderAdminKpis([
+        { label: "Курсы", value: formatNumber(curator.coursesCount || courses.length), tone: "blue" },
+        { label: "Преподаватели", value: formatNumber(curator.teachersCount || teachers.length), tone: "blue" },
+        { label: "Ученики", value: formatNumber(curator.studentsCount || 0), tone: "blue" },
+        { label: "Фидбек", value: formatNumber(curator.curatorFeedbackTotal || 0), tone: "green" },
+        { label: "Проверено", value: formatNumber(curator.homeworkCheckedByTeachers || 0), tone: "yellow" },
+      ])}
+      <div class="admin-card-preview">
+        <small>Преподаватели</small>
+        ${renderAdminPreviewTags(teachers.map((teacher) => `${teacher.teacherName} · ${formatNumber(teacher.studentsCount || 0)} учен.`), "Преподаватели не закреплены", 3)}
       </div>
-      <h3>${escapeHtml(curator.curatorName || "Пока неизвестно")}</h3>
-      <p>${escapeHtml([curator.phone, curator.email, curator.telegram].filter(Boolean).join(" · ") || "Контакты пока неизвестны")}</p>
+      <div class="admin-card-preview">
+        <small>Курсы</small>
+        ${renderAdminPreviewTags(courses.map((course) => `${course.courseTitle} · ${course.teacherNames || "преподаватель не указан"}`), "Курсы не закреплены", 3)}
+      </div>
       <details class="staff-details admin-person-details">
-        <summary>Подробности и редактирование куратора</summary>
+        <summary><span>Редактировать</span><small>личные данные, курсы, ученики, преподаватели</small></summary>
         <div class="staff-info-grid">
           <span>Проверено преподавателями<strong>${formatNumber(curator.homeworkCheckedByTeachers || 0)}</strong></span>
           <span>Фидбек куратора<strong>${formatNumber(curator.curatorFeedbackTotal || 0)}</strong></span>
@@ -6317,20 +6593,54 @@ function getConversationFilterType(conversation = {}) {
   return "all";
 }
 
+function getRecipientGroupLabel(recipient = {}) {
+  const fallbackGroups = {
+    Admin: "Администраторы",
+    Teacher: "Преподаватели",
+    Curator: "Кураторы",
+    Student: "Ученики",
+  };
+
+  return recipient.recipientGroup || fallbackGroups[recipient.targetRole] || "Адресаты";
+}
+
+function renderGroupedRecipientOptions(recipients = []) {
+  const groups = new Map();
+
+  recipients.forEach((recipient) => {
+    const group = getRecipientGroupLabel(recipient);
+
+    if (!groups.has(group)) {
+      groups.set(group, []);
+    }
+
+    groups.get(group).push(recipient);
+  });
+
+  return [...groups.entries()]
+    .map(([group, items]) => {
+      const options = items
+        .map((recipient) => {
+          const roleLabel = getMessageTargetLabel(recipient.targetRole);
+          const subtitle = recipient.subtitle ? ` · ${recipient.subtitle}` : "";
+          const label = `${roleLabel}: ${recipient.targetName}${subtitle}`;
+          const searchText = [roleLabel, recipient.targetName, recipient.subtitle, recipient.targetRole, recipient.targetId].filter(Boolean).join(" ").toLowerCase();
+
+          return `<option value="${escapeHtml(`${recipient.targetRole}:${recipient.targetId}`)}" data-search-text="${escapeHtml(searchText)}">${escapeHtml(label)}</option>`;
+        })
+        .join("");
+
+      return `<optgroup label="${escapeHtml(group)}">${options}</optgroup>`;
+    })
+    .join("");
+}
+
 function renderMessageStartPanel(recipients = [], actor = getMessageActor()) {
   if (!actor) {
     return "";
   }
 
-  const options = recipients
-    .map(
-      (recipient) => `
-        <option value="${escapeHtml(`${recipient.targetRole}:${recipient.targetId}`)}">
-          ${escapeHtml(getMessageTargetLabel(recipient.targetRole))}: ${escapeHtml(recipient.targetName)}${recipient.subtitle ? ` · ${escapeHtml(recipient.subtitle)}` : ""}
-        </option>
-      `,
-    )
-    .join("");
+  const options = renderGroupedRecipientOptions(recipients);
 
   const filters =
     actor.role === "Admin"
@@ -6351,6 +6661,10 @@ function renderMessageStartPanel(recipients = [], actor = getMessageActor()) {
   return `
     <form class="conversation-start-form" data-message-start-form>
       <label>
+        Поиск адресата
+        <input class="message-recipient-search" type="search" data-message-recipient-search placeholder="Имя, логин, курс или роль" autocomplete="off" ${recipients.length ? "" : "disabled"} />
+      </label>
+      <label>
         Кому написать
         <select name="recipient" ${recipients.length ? "" : "disabled"} required>
           <option value="">Выберите адресата</option>
@@ -6360,6 +6674,7 @@ function renderMessageStartPanel(recipients = [], actor = getMessageActor()) {
       <button type="submit" ${recipients.length ? "" : "disabled"}>
         <svg><use href="#icon-message" /></svg>Создать чат
       </button>
+      <p class="message-recipient-empty is-hidden" data-message-recipient-empty>Адресаты по поиску не найдены.</p>
       ${recipients.length ? "" : `<p>Нет доступных адресатов.</p>`}
     </form>
     ${filters}
@@ -8640,7 +8955,10 @@ async function loadNotesLibrary() {
     return;
   }
 
-  libraryNotesList.innerHTML = `<div class="resource-empty">Загружаю конспекты...</div>`;
+  if (libraryCount) {
+    libraryCount.textContent = "Загружаем материалы...";
+  }
+  libraryNotesList.innerHTML = `<div class="resource-empty">Загружаем материалы...</div>`;
 
   let notes = [];
 
@@ -9087,6 +9405,8 @@ if (shopItemsList) {
     const badgeUnequipButton = event.target.closest("[data-badge-unequip]");
 
     if (sectionButton) {
+      event.preventDefault();
+      event.stopPropagation();
       currentShopSection = sectionButton.dataset.shopSection || "all";
       if (latestShop) {
         renderShop(latestShop);
@@ -9095,31 +9415,43 @@ if (shopItemsList) {
     }
 
     if (buyButton && !buyButton.disabled) {
+      event.preventDefault();
+      event.stopPropagation();
       sendShopAction("/api/shop/purchase", buyButton.dataset.shopBuy);
       return;
     }
 
     if (equipButton && !equipButton.disabled) {
+      event.preventDefault();
+      event.stopPropagation();
       sendShopAction("/api/shop/equip", equipButton.dataset.shopEquip);
       return;
     }
 
     if (unequipButton && !unequipButton.disabled) {
+      event.preventDefault();
+      event.stopPropagation();
       sendShopAction("/api/shop/equip", unequipButton.dataset.shopUnequip, { unequip: true });
       return;
     }
 
     if (badgeBuyButton && !badgeBuyButton.disabled) {
+      event.preventDefault();
+      event.stopPropagation();
       sendBadgeAction("/api/badges/purchase", badgeBuyButton.dataset.badgeBuy);
       return;
     }
 
     if (badgeEquipButton && !badgeEquipButton.disabled) {
+      event.preventDefault();
+      event.stopPropagation();
       sendBadgeAction("/api/badges/equip", badgeEquipButton.dataset.badgeEquip);
       return;
     }
 
     if (badgeUnequipButton && !badgeUnequipButton.disabled) {
+      event.preventDefault();
+      event.stopPropagation();
       sendBadgeAction("/api/badges/equip", badgeUnequipButton.dataset.badgeUnequip, { unequip: true });
     }
   });
@@ -9557,6 +9889,38 @@ document.addEventListener("submit", (event) => {
 });
 
 if (conversationList) {
+  conversationList.addEventListener("input", (event) => {
+    const searchInput = event.target.closest("[data-message-recipient-search]");
+
+    if (!searchInput) {
+      return;
+    }
+
+    const form = searchInput.closest("[data-message-start-form]");
+    const query = searchInput.value.trim().toLowerCase();
+    const select = form?.querySelector("select[name='recipient']");
+    const emptyText = form?.querySelector("[data-message-recipient-empty]");
+    let visibleCount = 0;
+
+    form?.querySelectorAll("option[data-search-text]").forEach((option) => {
+      const visible = !query || String(option.dataset.searchText || "").includes(query);
+      option.hidden = !visible;
+      option.disabled = !visible;
+      visibleCount += visible ? 1 : 0;
+    });
+
+    form?.querySelectorAll("optgroup").forEach((group) => {
+      const hasVisibleOptions = Array.from(group.querySelectorAll("option[data-search-text]")).some((option) => !option.hidden);
+      group.hidden = !hasVisibleOptions;
+    });
+
+    if (select?.selectedOptions?.[0]?.disabled) {
+      select.value = "";
+    }
+
+    emptyText?.classList.toggle("is-hidden", visibleCount > 0);
+  });
+
   conversationList.addEventListener("click", (event) => {
     const filterButton = event.target.closest("[data-message-filter]");
 
@@ -9618,6 +9982,66 @@ if (conversationList) {
     }
   });
 }
+
+document.addEventListener("input", (event) => {
+  const adminDirectorySearch = event.target.closest("[data-admin-directory-search]");
+
+  if (adminDirectorySearch) {
+    const directory = adminDirectorySearch.closest("[data-admin-directory]");
+    const query = adminDirectorySearch.value.trim().toLowerCase();
+    let visibleCount = 0;
+
+    directory?.querySelectorAll("[data-admin-directory-card]").forEach((card) => {
+      const visible = !query || String(card.dataset.adminSearchText || "").includes(query);
+      card.classList.toggle("is-hidden", !visible);
+      card.setAttribute("aria-hidden", String(!visible));
+      visibleCount += visible ? 1 : 0;
+    });
+
+    const visibleCounter = directory?.querySelector("[data-admin-visible-count]");
+
+    if (visibleCounter) {
+      visibleCounter.textContent = `${formatNumber(visibleCount)} показано`;
+    }
+
+    directory?.querySelector("[data-admin-empty-search]")?.classList.toggle("is-hidden", !query || visibleCount > 0);
+    return;
+  }
+
+  const searchInput = event.target.closest("[data-student-picker-search]");
+
+  if (!searchInput) {
+    return;
+  }
+
+  const picker = searchInput.closest("[data-student-picker]");
+  const query = searchInput.value.trim().toLowerCase();
+  let visibleCount = 0;
+
+  picker?.querySelectorAll("[data-student-picker-option]").forEach((option) => {
+    const visible = !query || String(option.dataset.searchText || "").includes(query);
+    option.classList.toggle("is-hidden", !visible);
+    visibleCount += visible ? 1 : 0;
+  });
+
+  picker?.querySelector("[data-student-picker-empty]")?.classList.toggle("is-hidden", visibleCount > 0);
+});
+
+document.addEventListener("change", (event) => {
+  const checkbox = event.target.closest("[data-student-picker-checkbox]");
+
+  if (!checkbox) {
+    return;
+  }
+
+  const picker = checkbox.closest("[data-student-picker]");
+  const countTarget = picker?.querySelector("[data-student-picker-count]");
+  const checkedCount = picker?.querySelectorAll("[data-student-picker-checkbox]:checked").length || 0;
+
+  if (countTarget) {
+    countTarget.textContent = checkedCount ? `${formatNumber(checkedCount)} выбрано` : "Не выбраны";
+  }
+});
 
 if (accountFriendsList) {
   accountFriendsList.addEventListener("click", (event) => {
