@@ -2936,7 +2936,7 @@ function getHomeworkStaffStatus(item) {
   const status = item.submissionStatus || item.homeworkStatus;
 
   if (item?.needsHomeworkReview) {
-    return { label: "Нужен разбор ДЗ", className: "is-red" };
+    return { label: "Необходимо посмотреть разбор ДЗ", className: "is-red" };
   }
 
   if (status === "Checked") {
@@ -3989,7 +3989,7 @@ function renderTeacherAnalysisHomeworkCard(item) {
   return `
     <article class="staff-card staff-card--pending staff-card--review-needed"${getCourseThemeAttr(item)}>
       <div class="staff-card__meta">
-        <span class="resource-chip is-red">Нужен разбор ДЗ</span>
+        <span class="resource-chip is-red">Необходимо посмотреть разбор ДЗ</span>
         <span class="resource-chip is-yellow">2-я работа над ошибками</span>
         <span class="resource-chip">${escapeHtml(item.studentName || "Ученик")}</span>
         ${item.checkedAt ? `<span class="resource-chip">${escapeHtml(formatStreamDate(item.checkedAt))}</span>` : ""}
@@ -7199,6 +7199,7 @@ function normalizeLesson(rawLesson) {
     correctionAttempts: normalizeCorrectionAttempts(rawLesson.correctionAttempts),
   };
 
+  lesson.needsHomeworkReview = needsLessonHomeworkReview(lesson);
   lesson.lessonStatus = getLessonLearningStatus(lesson);
   lesson.isCompleted = lesson.lessonStatus === "Done";
   return lesson;
@@ -7895,18 +7896,32 @@ function isPassingScore(rawScore) {
   return typeof score === "number" && score >= 5;
 }
 
+function getFailedCheckedCorrectionAttempts(lesson = {}) {
+  return getCorrectionAttemptsForLesson(lesson).filter(
+    (attempt) => attempt?.status === "Checked" && !isPassingScore(attempt.score),
+  );
+}
+
+function needsLessonHomeworkReview(lesson = {}) {
+  if (lesson?.lessonStatus === "Review_Required" || lesson?.needsHomeworkReview === true) {
+    return true;
+  }
+
+  if (
+    Number(lesson?.correctionAttempt || 1) >= 2 &&
+    lesson?.correctionStatus === "Checked" &&
+    !isPassingScore(lesson?.correctionScore)
+  ) {
+    return true;
+  }
+
+  return getFailedCheckedCorrectionAttempts(lesson).some((attempt) => Number(attempt.attemptNumber || 1) >= 2);
+}
+
 function getLessonLearningStatus(lesson = {}) {
   const correctionAttempt = Number(lesson.correctionAttempt || 1);
-  const correctionAttempts = getCorrectionAttemptsForLesson(lesson);
-  const hasSecondFailedCorrection = correctionAttempts.some(
-    (attempt) => Number(attempt.attemptNumber || 1) >= 2 && attempt.status === "Checked" && !isPassingScore(attempt.score),
-  );
-  const needsHomeworkReview =
-    Boolean(lesson.needsHomeworkReview) ||
-    hasSecondFailedCorrection ||
-    (correctionAttempt >= 2 && lesson.correctionStatus === "Checked" && !isPassingScore(lesson.correctionScore));
 
-  if (needsHomeworkReview) {
+  if (needsLessonHomeworkReview(lesson)) {
     return "Review_Required";
   }
 
@@ -8038,7 +8053,7 @@ function getCorrectionStatusMeta(status, score = null, attemptNumber = 1, needsH
   const attempt = Number(attemptNumber || 1);
 
   if (needsHomeworkReview || (attempt >= 2 && status === "Checked" && !isPassingScore(score))) {
-    return { label: "Нужен разбор ДЗ", className: "is-red" };
+    return { label: "Необходимо посмотреть разбор ДЗ", className: "is-red" };
   }
 
   if (status === "Checked") {
@@ -8121,9 +8136,7 @@ function renderCorrectionTimeline(lesson) {
       : homeworkStatus === "Submitted"
         ? { label: "Основное ДЗ на проверке", className: "is-blue" }
         : { label: "Основное ДЗ открыто", className: "is-muted" };
-  const reviewNeeded =
-    Boolean(lesson.needsHomeworkReview) ||
-    attempts.some((attempt) => Number(attempt.attemptNumber || 1) >= 2 && attempt.status === "Checked" && !isPassingScore(attempt.score));
+  const reviewNeeded = needsLessonHomeworkReview(lesson);
 
   const attemptCards = attempts
     .map((attempt) => {
@@ -8156,7 +8169,7 @@ function renderCorrectionTimeline(lesson) {
           ? `
             <article class="homework-attempt-card is-red">
               <span>Следующий шаг</span>
-              <strong>Нужен разбор ДЗ</strong>
+              <strong>Необходимо посмотреть разбор ДЗ</strong>
               <small>Две работы над ошибками проверены ниже 5.</small>
             </article>
           `
@@ -8169,19 +8182,13 @@ function renderCorrectionTimeline(lesson) {
 function getHomeworkButtonMeta(lesson) {
   const effectiveStatus = getEffectiveHomeworkStatus(lesson);
   const correctionAttempt = Number(lesson?.correctionAttempt || 1);
-  const hasSecondFailedCorrection = getCorrectionAttemptsForLesson(lesson).some(
-    (attempt) => Number(attempt.attemptNumber || 1) >= 2 && attempt.status === "Checked" && !isPassingScore(attempt.score),
-  );
-  const needsHomeworkReview =
-    Boolean(lesson?.needsHomeworkReview) ||
-    hasSecondFailedCorrection ||
-    (correctionAttempt >= 2 && lesson?.correctionStatus === "Checked" && !isPassingScore(lesson?.correctionScore));
+  const needsHomeworkReview = needsLessonHomeworkReview(lesson);
 
   if (needsHomeworkReview) {
     return {
       className: "button-red",
       icon: "#icon-message",
-      label: "Нужен разбор ДЗ",
+      label: "Посмотреть разбор ДЗ",
       title: "Открыть домашнее задание и историю работ над ошибками",
     };
   }
@@ -8406,26 +8413,30 @@ function renderHomeworks(lessons) {
   homeworkList.innerHTML = homeworks
     .map((lesson) => {
       const themeKey = getCourseThemeKey();
+      const lessonStatus = getLessonLearningStatus(lesson);
+      const lessonMeta = statusMeta[lessonStatus] || statusMeta.Open;
       const effectiveStatus = getEffectiveHomeworkStatus(lesson);
-      const meta = getHomeworkStatusMeta(effectiveStatus);
       const homeworkButton = getHomeworkButtonMeta(lesson);
       const checkedScoreText = getCheckedHomeworkScoreText(lesson);
       const isHomeworkPassed = effectiveStatus === "Checked" && isPassingScore(lesson.homeworkScore ?? lesson.score);
-      const correctionMeta = lesson.correctionId ? getCorrectionStatusMeta(lesson.correctionStatus, lesson.correctionScore, lesson.correctionAttempt, lesson.needsHomeworkReview) : null;
+      const needsHomeworkReview = needsLessonHomeworkReview(lesson);
+      const correctionMeta = lesson.correctionId ? getCorrectionStatusMeta(lesson.correctionStatus, lesson.correctionScore, lesson.correctionAttempt, needsHomeworkReview) : null;
       const scoreText =
-        checkedScoreText
+        needsHomeworkReview
+          ? "Необходим разбор"
+          : checkedScoreText
           ? checkedScoreText
           : isHomeworkSubmitted(lesson)
             ? "На проверке"
             : "Ожидает ссылку";
-      const scoreClass = lesson.needsHomeworkReview ? "is-red" : effectiveStatus === "Submitted" ? "is-blue" : effectiveStatus === "Checked" ? (isHomeworkPassed ? "is-green" : "is-yellow") : "is-yellow";
+      const scoreClass = needsHomeworkReview ? "is-red" : effectiveStatus === "Submitted" ? "is-blue" : effectiveStatus === "Checked" ? (isHomeworkPassed ? "is-green" : "is-yellow") : "is-yellow";
 
       return `
         <article class="resource-card" data-course-theme="${escapeHtml(themeKey)}">
           <div>
             <div class="resource-card__meta">
               <span class="resource-chip">Урок ${escapeHtml(lesson.lessonNumber)}</span>
-              <span class="resource-chip ${meta.className}">${meta.label}</span>
+              <span class="resource-chip ${lessonMeta.className}">${lessonMeta.label}</span>
               ${correctionMeta ? `<span class="resource-chip ${correctionMeta.className}">${correctionMeta.label}</span>` : ""}
               <span class="resource-chip">до ${escapeHtml(formatDate(lesson.homeworkDueAt))}</span>
             </div>
@@ -8706,8 +8717,8 @@ async function submitCorrectionLink(lessonKey, form) {
     return;
   }
 
-  if (lesson.needsHomeworkReview || (Number(lesson.correctionAttempt || 1) >= 2 && lesson.correctionStatus === "Checked" && !isPassingScore(lesson.correctionScore))) {
-    setCorrectionSubmitStatus("После двух неудачных работ над ошибками нужен разбор ДЗ с преподавателем.", "error");
+  if (needsLessonHomeworkReview(lesson)) {
+    setCorrectionSubmitStatus("После двух неудачных работ над ошибками необходимо посмотреть разбор ДЗ с преподавателем.", "error");
     return;
   }
 
@@ -8783,26 +8794,27 @@ function openHomeworkModal(lessonKey) {
     return;
   }
 
+  const lessonStatus = getLessonLearningStatus(lesson);
+  const lessonMeta = statusMeta[lessonStatus] || statusMeta.Open;
   const effectiveStatus = getEffectiveHomeworkStatus(lesson);
-  const meta = getHomeworkStatusMeta(effectiveStatus);
   const themeKey = getCourseThemeKey(lesson.courseSlug || lesson.courseKey || lesson.courseId || currentCourseKey, `${lesson.courseTitle || ""} ${lesson.lessonTitle || ""} ${lesson.topic || ""}`);
   const isChecked = effectiveStatus === "Checked";
   const isHomeworkPassed = isChecked && isPassingScore(lesson.homeworkScore ?? lesson.score);
   const currentLink = lesson.submittedHomeworkUrl || "";
   const checkedScoreText = getCheckedHomeworkScoreText(lesson);
-  const correctionMeta = lesson.correctionId ? getCorrectionStatusMeta(lesson.correctionStatus, lesson.correctionScore, lesson.correctionAttempt, lesson.needsHomeworkReview) : null;
   const correctionAttempt = Number(lesson.correctionAttempt || 1);
   const correctionTitle = getCorrectionAttemptTitle(correctionAttempt);
   const correctionLink = lesson.correctionSubmittedUrl || "";
   const isCorrectionChecked = lesson.correctionStatus === "Checked";
   const isCorrectionPassed = isCorrectionChecked && isPassingScore(lesson.correctionScore);
-  const needsHomeworkReview = Boolean(lesson.needsHomeworkReview) || (correctionAttempt >= 2 && isCorrectionChecked && !isCorrectionPassed);
+  const needsHomeworkReview = needsLessonHomeworkReview(lesson);
+  const correctionMeta = lesson.correctionId ? getCorrectionStatusMeta(lesson.correctionStatus, lesson.correctionScore, lesson.correctionAttempt, needsHomeworkReview) : null;
   const correctionActionClass = needsHomeworkReview ? "button-red" : isCorrectionPassed ? "button-green" : isCorrectionChecked ? "button-yellow" : "button-blue";
   const correctionScoreClass = needsHomeworkReview ? "is-red" : isCorrectionPassed ? "is-green" : "is-yellow";
   const correctionStatusText = !lesson.correctionId
     ? ""
     : needsHomeworkReview
-      ? "Две работы над ошибками проверены ниже 5. Нужен разбор ДЗ с преподавателем."
+      ? "Две работы над ошибками проверены ниже 5. Необходимо посмотреть разбор ДЗ с преподавателем."
       : isCorrectionChecked
       ? isCorrectionPassed
         ? "Работа над ошибками проверена успешно. Ссылку можно открыть, но заменить её нельзя."
@@ -8814,7 +8826,9 @@ function openHomeworkModal(lessonKey) {
         : `Прикрепите ${correctionTitle.toLowerCase()} ссылкой на Google Drive.`;
   const statusText = !lesson.homeworkAssignmentId
     ? "Это ДЗ найдено в курсе, но ещё не назначено ученику в базе."
-    : isChecked
+    : needsHomeworkReview
+      ? "Две работы над ошибками проверены ниже 5. Необходимо посмотреть разбор ДЗ."
+      : isChecked
       ? isHomeworkPassed
         ? "Работа проверена успешно. Ссылку можно открыть, но заменить её нельзя."
         : "Основное ДЗ проверено ниже 5. Нужно отправить работу над ошибками."
@@ -8823,13 +8837,13 @@ function openHomeworkModal(lessonKey) {
         : "Вставьте ссылку на файл или документ в Google Drive.";
 
   homeworkModal.setAttribute("data-course-theme", themeKey);
-  homeworkModalStatus.textContent = meta.label;
-  homeworkModalStatus.className = `homework-modal__eyebrow ${meta.className}`;
+  homeworkModalStatus.textContent = lessonMeta.label;
+  homeworkModalStatus.className = `homework-modal__eyebrow ${lessonMeta.className}`;
   homeworkModalTitle.textContent = getHomeworkDisplayTitle(lesson, `ДЗ: ${lesson.lessonTitle}`);
   homeworkModalDescription.textContent = getHomeworkDisplayDescription(lesson);
   homeworkModalMeta.innerHTML = `
     <span class="resource-chip">Урок ${escapeHtml(lesson.lessonNumber)}</span>
-    <span class="resource-chip ${meta.className}">${meta.label}</span>
+    <span class="resource-chip ${lessonMeta.className}">${lessonMeta.label}</span>
     ${checkedScoreText ? `<span class="resource-chip ${isHomeworkPassed ? "is-green" : "is-yellow"}">${checkedScoreText}</span>` : ""}
     ${correctionMeta ? `<span class="resource-chip ${correctionMeta.className}">${correctionMeta.label}</span>` : ""}
     <span class="resource-chip">до ${escapeHtml(formatDate(lesson.homeworkDueAt))}</span>
@@ -8853,7 +8867,7 @@ function openHomeworkModal(lessonKey) {
               ${correctionLink ? createActionLink(correctionLink, correctionActionClass, "#icon-clipboard", needsHomeworkReview ? "Открыть работу для разбора" : isCorrectionPassed ? "Открыть проверенную работу" : isCorrectionChecked ? "Открыть работу для переделки" : "Открыть работу на проверке") : ""}
               ${correctionLink ? `<button class="button-yellow" type="button" data-copy-homework-link="${escapeHtml(correctionLink)}"><svg><use href="#icon-clipboard" /></svg>Скопировать ссылку</button>` : ""}
             </div>
-            ${needsHomeworkReview ? `<div class="homework-review-needed"><strong>Нужен разбор ДЗ</strong><span>Преподаватель увидит эту работу в отдельном разделе и сможет назначить разбор непонятного задания.</span></div>` : ""}
+            ${needsHomeworkReview ? `<div class="homework-review-needed"><strong>Необходимо посмотреть разбор ДЗ</strong><span>Преподаватель увидит эту работу в отдельном разделе и сможет назначить разбор непонятного задания.</span></div>` : ""}
             <form class="homework-link-form" data-correction-submit-form="${escapeHtml(getLessonKey(lesson))}">
               <label class="homework-link-field" for="correction-link-input">
                 <span>Ссылка на ${escapeHtml(correctionTitle.toLowerCase())} в Google Drive</span>

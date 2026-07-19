@@ -1333,7 +1333,7 @@ function homeworkNeedsReviewSql(assignmentAlias = "ha") {
     FROM homework_corrections hc_review
     WHERE hc_review.assignment_id = ${assignmentAlias}.id
       AND hc_review.status = 'Checked'
-      AND hc_review.attempt_number = 2
+      AND hc_review.attempt_number >= 2
       AND COALESCE(${scoreSql("hc_review")}, 0) < 5
   )`;
 }
@@ -1719,7 +1719,7 @@ async function getStudentNotifications(studentId) {
         SELECT
           CONCAT('correction-', hc.id) AS "notificationId",
           CASE
-            WHEN hc.attempt_number = 2 AND COALESCE(${scoreSql("hc")}, 0) < 5 THEN 'Нужен разбор ДЗ'
+            WHEN hc.attempt_number >= 2 AND COALESCE(${scoreSql("hc")}, 0) < 5 THEN 'Необходимо посмотреть разбор ДЗ'
             WHEN hc.attempt_number = 2 THEN '2-я работа над ошибками проверена'
             WHEN COALESCE(${scoreSql("hc")}, 0) < 5 THEN 'Нужна 2-я работа над ошибками'
             ELSE 'Работа над ошибками проверена'
@@ -2294,7 +2294,7 @@ app.post(
       }
 
       if (row.status === "Checked" && Number(row.score || 0) < 5 && Number(row.attempt_number || 1) >= 2) {
-        throw createHttpError(409, "Две работы над ошибками уже проверены ниже 5. Нужен разбор ДЗ с преподавателем.");
+        throw createHttpError(409, "Две работы над ошибками уже проверены ниже 5. Необходимо посмотреть разбор ДЗ с преподавателем.");
       }
 
       if (row.status === "Checked" && Number(row.score || 0) < 5 && Number(row.attempt_number || 1) < 2) {
@@ -5552,7 +5552,7 @@ function buildStaffNotifications(staff, homeworks, stats) {
           type: needsHomeworkReview ? "HomeworkReviewRequired" : isCorrection ? "CorrectionSubmitted" : "HomeworkSubmitted",
           tone: needsHomeworkReview ? "warning" : homework.submissionStatus === "Checked" || homework.homeworkStatus === "Checked" ? "success" : "warning",
           title: needsHomeworkReview
-            ? `Нужен разбор ДЗ: ${homework.studentName}`
+            ? `Необходимо посмотреть разбор ДЗ: ${homework.studentName}`
             : isCorrection
               ? `${homework.studentName} сдал ${correctionAttempt >= 2 ? "2-ю работу над ошибками" : "работу над ошибками"}`
               : `${homework.studentName} сдал ДЗ`,
