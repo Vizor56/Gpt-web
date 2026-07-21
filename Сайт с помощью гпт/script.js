@@ -10178,6 +10178,21 @@ if (notificationButton) {
 }
 
 document.addEventListener("click", (event) => {
+  const openAdminDrawer = document.querySelector(".admin-person-details[open], .admin-add-details[open]");
+  const clickedAdminSummary = event.target.closest(".admin-person-details > summary, .admin-add-details > summary");
+
+  if (clickedAdminSummary) {
+    document.querySelectorAll(".admin-person-details[open], .admin-add-details[open]").forEach((details) => {
+      if (details !== clickedAdminSummary.parentElement) {
+        details.open = false;
+      }
+    });
+  } else if (openAdminDrawer && !openAdminDrawer.contains(event.target)) {
+    event.preventDefault();
+    openAdminDrawer.open = false;
+    return;
+  }
+
   if (notificationPanelOpen && !event.target.closest("#notification-panel") && !event.target.closest(".notification-button")) {
     notificationPanelOpen = false;
     renderGlobalNotifications();
@@ -10315,6 +10330,21 @@ document.addEventListener("click", (event) => {
       target.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") {
+    return;
+  }
+
+  const openAdminDrawer = document.querySelector(".admin-person-details[open], .admin-add-details[open]");
+
+  if (!openAdminDrawer) {
+    return;
+  }
+
+  event.preventDefault();
+  openAdminDrawer.open = false;
 });
 
 document.addEventListener("change", (event) => {

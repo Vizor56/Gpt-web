@@ -19345,3 +19345,570 @@ body[data-site-theme="theme-pixel-coffee"] {
 [hidden] {
   display: none !important;
 }
+
+/* Staff editing UX */
+body:has(.admin-person-details[open]) {
+  overflow: hidden;
+}
+
+body:has(.admin-person-details[open]) .admin-directory::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 100250;
+  background: rgba(20, 42, 45, 0.34);
+  backdrop-filter: blur(4px);
+}
+
+.admin-compact-card {
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.admin-compact-card:hover {
+  border-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 28%, #ffffff);
+  box-shadow: 0 16px 42px rgba(32, 42, 45, 0.09);
+  transform: translateY(-1px);
+}
+
+.admin-person-details {
+  border-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 14%, #ffffff);
+}
+
+.admin-person-details > summary {
+  min-height: 46px;
+  padding: 0 13px;
+  border: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 14%, #ffffff);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.96), rgba(238, 248, 246, 0.72)),
+    var(--academy-paper-solid, var(--surface));
+}
+
+.admin-person-details > summary span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-person-details > summary span::before {
+  content: "";
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  background: var(--academy-accent, var(--blue));
+  box-shadow:
+    12px 0 0 color-mix(in srgb, var(--academy-accent, var(--blue)) 58%, #ffffff),
+    24px 0 0 color-mix(in srgb, var(--academy-gold, var(--gold)) 74%, #ffffff);
+}
+
+.admin-person-details[open] {
+  position: fixed;
+  inset: 24px 24px 24px auto;
+  z-index: 100300;
+  display: block;
+  width: min(980px, calc(100vw - 48px));
+  max-width: 100%;
+  max-height: calc(100dvh - 48px);
+  margin: 0;
+  overflow-y: auto;
+  border: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 28%, #ffffff);
+  border-radius: 12px;
+  background:
+    linear-gradient(90deg, rgba(20, 92, 89, 0.055) 1px, transparent 1px) 0 0 / 30px 30px,
+    linear-gradient(0deg, rgba(20, 92, 89, 0.04) 1px, transparent 1px) 0 0 / 30px 30px,
+    var(--academy-paper-solid, var(--surface));
+  box-shadow: 0 30px 90px rgba(15, 31, 36, 0.28);
+  scrollbar-gutter: stable;
+}
+
+.admin-person-details[open] > summary {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  min-height: 76px;
+  padding: 16px 20px;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 16%, #ffffff);
+  border-radius: 12px 12px 0 0;
+  background:
+    linear-gradient(135deg, rgba(255, 253, 248, 0.98), rgba(238, 248, 246, 0.94)),
+    var(--academy-paper-solid, var(--surface));
+  box-shadow: 0 12px 28px rgba(32, 42, 45, 0.08);
+}
+
+.admin-person-details[open] > summary span {
+  color: var(--academy-ink, var(--ink));
+  font-size: 20px;
+  line-height: 1.15;
+}
+
+.admin-person-details[open] > summary small {
+  max-width: 520px;
+  text-align: left;
+}
+
+.admin-person-details[open] > summary::after {
+  content: "Закрыть";
+  width: auto;
+  height: 36px;
+  padding: 0 13px;
+  border: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 18%, #ffffff);
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.9);
+  color: var(--academy-accent-dark, var(--blue-dark));
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 34px;
+  transform: none;
+}
+
+.admin-person-details[open] .staff-info-grid {
+  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+  gap: 10px;
+  padding: 18px 20px 0;
+}
+
+.admin-person-details[open] .staff-info-grid span {
+  min-height: 68px;
+  border-radius: 10px;
+  background:
+    linear-gradient(135deg, rgba(255, 253, 248, 0.96), rgba(238, 248, 246, 0.58)),
+    var(--academy-paper, var(--surface));
+}
+
+.admin-person-details[open] .admin-detail-block {
+  --admin-block-tone: var(--academy-accent, var(--blue));
+  --admin-block-soft: rgba(238, 248, 246, 0.72);
+  position: relative;
+  gap: 14px;
+  margin: 16px 20px;
+  padding: 18px 18px 18px 20px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--admin-block-tone) 18%, #ffffff);
+  border-left: 5px solid var(--admin-block-tone);
+  border-radius: 12px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--admin-block-tone) 7%, #ffffff), transparent 42%),
+    var(--admin-block-soft);
+}
+
+.admin-person-details[open] .admin-detail-block:nth-of-type(1) {
+  --admin-block-tone: #145c59;
+  --admin-block-soft: rgba(238, 248, 246, 0.78);
+}
+
+.admin-person-details[open] .admin-detail-block:nth-of-type(2) {
+  --admin-block-tone: #315f61;
+  --admin-block-soft: rgba(236, 244, 244, 0.78);
+}
+
+.admin-person-details[open] .admin-detail-block:nth-of-type(3) {
+  --admin-block-tone: #b68424;
+  --admin-block-soft: rgba(255, 248, 231, 0.78);
+}
+
+.admin-person-details[open] .admin-detail-block:nth-of-type(4) {
+  --admin-block-tone: #5e55a7;
+  --admin-block-soft: rgba(245, 243, 255, 0.78);
+}
+
+.admin-person-details[open] .admin-detail-block h4 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--academy-ink, var(--ink));
+  font-size: 17px;
+  line-height: 1.2;
+}
+
+.admin-person-details[open] .admin-detail-block h4::before {
+  content: "";
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border-radius: 9px;
+  background:
+    linear-gradient(var(--admin-block-tone) 0 0) 8px 7px / 12px 3px,
+    linear-gradient(var(--admin-block-tone) 0 0) 8px 13px / 12px 3px,
+    linear-gradient(var(--admin-block-tone) 0 0) 8px 19px / 8px 3px,
+    color-mix(in srgb, var(--admin-block-tone) 12%, #ffffff);
+  background-repeat: no-repeat;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--admin-block-tone) 20%, #ffffff);
+}
+
+.admin-person-details[open] .admin-edit-form,
+.admin-person-details[open] .admin-enrollment-form,
+.admin-person-details[open] .admin-course-staff-form,
+.admin-person-details[open] .admin-parent-child-form {
+  gap: 11px;
+}
+
+.admin-person-details[open] .admin-edit-form {
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+}
+
+.admin-person-details[open] .admin-edit-form label,
+.admin-person-details[open] .staff-inline-form label,
+.admin-person-details[open] .staff-field {
+  gap: 7px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--admin-block-tone, var(--academy-accent, var(--blue))) 13%, #ffffff);
+  border-radius: 10px;
+  background: rgba(255, 253, 248, 0.72);
+}
+
+.admin-person-details[open] .admin-edit-form input,
+.admin-person-details[open] .admin-edit-form select,
+.admin-person-details[open] .admin-edit-form textarea,
+.admin-person-details[open] .staff-inline-form input,
+.admin-person-details[open] .staff-inline-form select,
+.admin-person-details[open] .staff-inline-form textarea {
+  min-height: 42px;
+  border-color: color-mix(in srgb, var(--admin-block-tone, var(--academy-accent, var(--blue))) 15%, #ffffff);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.admin-person-details[open] .admin-edit-form select[multiple] {
+  min-height: 142px;
+}
+
+.admin-person-details[open] .admin-edit-form button[type="submit"],
+.admin-person-details[open] .staff-inline-form button[type="submit"] {
+  min-height: 46px;
+  border-color: color-mix(in srgb, var(--admin-block-tone, var(--academy-accent, var(--blue))) 32%, #ffffff);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--admin-block-tone, var(--academy-accent, var(--blue))) 12%, #ffffff), rgba(255, 253, 248, 0.92));
+  color: var(--academy-accent-dark, var(--blue-dark));
+}
+
+.admin-person-details[open] .admin-course-list .staff-reviewed-note {
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(360px, 1.08fr);
+  gap: 6px 14px;
+  align-items: start;
+  padding: 14px;
+  border-radius: 10px;
+  background:
+    linear-gradient(135deg, rgba(255, 253, 248, 0.9), rgba(255, 253, 248, 0.62)),
+    var(--academy-paper, var(--surface));
+}
+
+.admin-person-details[open] .admin-course-list .staff-reviewed-note > strong,
+.admin-person-details[open] .admin-course-list .staff-reviewed-note > span {
+  grid-column: 1;
+}
+
+.admin-person-details[open] .admin-course-list .staff-reviewed-note > form {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: start;
+  padding: 0;
+}
+
+.admin-person-details[open] blockquote {
+  margin: 0;
+  padding: 12px 14px;
+  border-left: 4px solid var(--admin-block-tone);
+  border-radius: 10px;
+  background: rgba(255, 253, 248, 0.78);
+}
+
+.staff-details:not(.admin-person-details):not(.admin-add-details) {
+  border-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 13%, #ffffff);
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.92), rgba(238, 248, 246, 0.48)),
+    var(--academy-paper, var(--surface));
+}
+
+.staff-details:not(.admin-person-details):not(.admin-add-details) > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 46px;
+  padding: 12px 14px;
+  list-style: none;
+}
+
+.staff-details:not(.admin-person-details):not(.admin-add-details) > summary::-webkit-details-marker {
+  display: none;
+}
+
+.staff-details:not(.admin-person-details):not(.admin-add-details) > summary::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 160ms ease;
+}
+
+.staff-details:not(.admin-person-details):not(.admin-add-details)[open] > summary::after {
+  transform: translateY(3px) rotate(225deg);
+}
+
+.staff-details:not(.admin-person-details):not(.admin-add-details)[open] > summary {
+  border-bottom: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 12%, #ffffff);
+  background: rgba(238, 248, 246, 0.64);
+}
+
+.staff-details:not(.admin-person-details):not(.admin-add-details) .staff-lesson-form,
+.staff-details:not(.admin-person-details):not(.admin-add-details) .staff-stream-form,
+.staff-details:not(.admin-person-details):not(.admin-add-details) .staff-call-form {
+  padding: 14px;
+  background: rgba(255, 253, 248, 0.72);
+}
+
+.staff-panel > .staff-lesson-form,
+.staff-panel > .staff-stream-form,
+.staff-panel > .staff-call-form {
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 12%, #ffffff);
+  border-radius: 12px;
+  background:
+    linear-gradient(135deg, rgba(238, 248, 246, 0.72), rgba(255, 253, 248, 0.92)),
+    var(--academy-paper, var(--surface));
+}
+
+.staff-panel > .staff-lesson-form label,
+.staff-panel > .staff-stream-form label,
+.staff-panel > .staff-call-form label,
+.staff-details:not(.admin-person-details):not(.admin-add-details) .staff-lesson-form label,
+.staff-details:not(.admin-person-details):not(.admin-add-details) .staff-stream-form label,
+.staff-details:not(.admin-person-details):not(.admin-add-details) .staff-call-form label {
+  padding: 9px;
+  border: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 10%, #ffffff);
+  border-radius: 10px;
+  background: rgba(255, 253, 248, 0.72);
+}
+
+@media (max-width: 980px) {
+  .admin-person-details[open] {
+    inset: 12px;
+    width: auto;
+    max-height: calc(100dvh - 24px);
+  }
+
+  .admin-person-details[open] .admin-edit-form,
+  .admin-person-details[open] .admin-course-list .staff-reviewed-note {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-person-details[open] .admin-course-list .staff-reviewed-note > form {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 720px) {
+  body:has(.admin-person-details[open]) .sidebar {
+    z-index: 100100;
+  }
+
+  .admin-person-details[open] {
+    inset: 8px;
+    max-height: calc(100dvh - 16px);
+    border-radius: 10px;
+  }
+
+  .admin-person-details[open] > summary {
+    align-items: flex-start;
+    flex-direction: column;
+    min-height: 0;
+    padding: 14px;
+  }
+
+  .admin-person-details[open] > summary::after {
+    align-self: stretch;
+    text-align: center;
+  }
+
+  .admin-person-details[open] .staff-info-grid,
+  .admin-person-details[open] .admin-detail-block {
+    margin-right: 12px;
+    margin-left: 12px;
+    padding: 14px;
+  }
+
+  .admin-person-details[open] .staff-info-grid {
+    padding-top: 14px;
+  }
+}
+
+/* Staff drawer UX refinement */
+body:has(.admin-add-details[open]) {
+  overflow: hidden;
+}
+
+body:has(.admin-add-details[open]) .admin-directory::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 100250;
+  background: rgba(20, 42, 45, 0.34);
+  backdrop-filter: blur(4px);
+}
+
+:is(.admin-person-details, .admin-add-details)[open] {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 42%, #ffffff) transparent;
+}
+
+.admin-add-details[open] {
+  position: fixed;
+  inset: 24px 24px 24px auto;
+  z-index: 100300;
+  display: block;
+  width: min(780px, calc(100vw - 48px));
+  max-width: 100%;
+  max-height: calc(100dvh - 48px);
+  margin: 0;
+  overflow-y: auto;
+  border: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 28%, #ffffff);
+  border-radius: 12px;
+  background:
+    linear-gradient(90deg, rgba(20, 92, 89, 0.055) 1px, transparent 1px) 0 0 / 30px 30px,
+    linear-gradient(0deg, rgba(20, 92, 89, 0.04) 1px, transparent 1px) 0 0 / 30px 30px,
+    var(--academy-paper-solid, var(--surface));
+  box-shadow: 0 30px 90px rgba(15, 31, 36, 0.28);
+  scrollbar-gutter: stable;
+}
+
+.admin-add-details[open] > summary {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  min-height: 76px;
+  padding: 16px 20px;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 16%, #ffffff);
+  border-radius: 12px 12px 0 0;
+  background:
+    linear-gradient(135deg, rgba(255, 253, 248, 0.98), rgba(238, 248, 246, 0.94)),
+    var(--academy-paper-solid, var(--surface));
+  box-shadow: 0 12px 28px rgba(32, 42, 45, 0.08);
+}
+
+.admin-add-details[open] > summary span {
+  color: var(--academy-ink, var(--ink));
+  font-size: 20px;
+  line-height: 1.15;
+}
+
+.admin-add-details[open] > summary small {
+  max-width: 420px;
+  text-align: left;
+}
+
+.admin-add-details[open] > summary::after {
+  content: "\0417\0430\043a\0440\044b\0442\044c";
+  width: auto;
+  height: 36px;
+  padding: 0 13px;
+  border: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 18%, #ffffff);
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.9);
+  color: var(--academy-accent-dark, var(--blue-dark));
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 34px;
+  transform: none;
+}
+
+.admin-add-details[open] > .admin-edit-form,
+.admin-add-details[open] > .staff-lesson-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 11px;
+  margin: 16px 20px 20px;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 16%, #ffffff);
+  border-left: 5px solid var(--academy-accent, var(--blue));
+  border-radius: 12px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--academy-accent, var(--blue)) 7%, #ffffff), transparent 42%),
+    rgba(238, 248, 246, 0.78);
+}
+
+.admin-add-details[open] > .admin-edit-form label,
+.admin-add-details[open] > .staff-lesson-form label {
+  gap: 7px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 13%, #ffffff);
+  border-radius: 10px;
+  background: rgba(255, 253, 248, 0.72);
+}
+
+.admin-add-details[open] > .admin-edit-form input,
+.admin-add-details[open] > .admin-edit-form select,
+.admin-add-details[open] > .admin-edit-form textarea,
+.admin-add-details[open] > .staff-lesson-form input,
+.admin-add-details[open] > .staff-lesson-form select,
+.admin-add-details[open] > .staff-lesson-form textarea {
+  min-height: 42px;
+  border-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 15%, #ffffff);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.admin-add-details[open] > .admin-edit-form select[multiple],
+.admin-add-details[open] > .staff-lesson-form select[multiple] {
+  min-height: 142px;
+}
+
+.admin-add-details[open] > .admin-edit-form button[type="submit"],
+.admin-add-details[open] > .staff-lesson-form button[type="submit"] {
+  min-height: 46px;
+  border-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 32%, #ffffff);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--academy-accent, var(--blue)) 12%, #ffffff), rgba(255, 253, 248, 0.92));
+  color: var(--academy-accent-dark, var(--blue-dark));
+}
+
+@media (max-width: 980px) {
+  .admin-add-details[open] {
+    inset: 12px;
+    width: auto;
+    max-height: calc(100dvh - 24px);
+  }
+
+  .admin-add-details[open] > .admin-edit-form,
+  .admin-add-details[open] > .staff-lesson-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  body:has(.admin-add-details[open]) .sidebar {
+    z-index: 100100;
+  }
+
+  .admin-add-details[open] {
+    inset: 8px;
+    max-height: calc(100dvh - 16px);
+    border-radius: 10px;
+  }
+
+  .admin-add-details[open] > summary {
+    align-items: flex-start;
+    flex-direction: column;
+    min-height: 0;
+    padding: 14px;
+  }
+
+  .admin-add-details[open] > summary::after {
+    align-self: stretch;
+    text-align: center;
+  }
+
+  .admin-add-details[open] > .admin-edit-form,
+  .admin-add-details[open] > .staff-lesson-form {
+    margin: 12px;
+    padding: 14px;
+  }
+}
