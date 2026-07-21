@@ -20061,3 +20061,101 @@ body:has(.admin-add-details[open]) .admin-directory::after {
     display: none;
   }
 }
+
+/* Message emoji picker */
+.message-form__actions {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+}
+
+.message-emoji-picker {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.message-emoji-toggle {
+  display: inline-grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 18%, #ffffff);
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(238, 248, 246, 0.88)),
+    var(--academy-paper, var(--surface));
+  color: var(--academy-accent-dark, var(--blue-dark));
+  font-size: 22px;
+  font-weight: 900;
+  box-shadow: 0 10px 20px rgba(32, 42, 45, 0.08);
+}
+
+.message-emoji-toggle:hover:not(:disabled),
+.message-emoji-toggle[aria-expanded="true"] {
+  border-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 34%, #ffffff);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--academy-accent, var(--blue)) 11%, #ffffff), rgba(255, 253, 248, 0.98)),
+    var(--academy-paper, var(--surface));
+  transform: translateY(-1px);
+}
+
+.message-emoji-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+  transform: none;
+}
+
+.message-emoji-panel {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  z-index: 20;
+  display: grid;
+  width: min(244px, calc(100vw - 40px));
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 18%, #ffffff);
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, rgba(255, 253, 248, 0.98), rgba(238, 248, 246, 0.94)),
+    var(--academy-paper-solid, var(--surface));
+  box-shadow: 0 18px 48px rgba(20, 42, 45, 0.18);
+}
+
+.message-emoji-panel button {
+  display: grid;
+  min-width: 0;
+  height: 42px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.74);
+  font-size: 21px;
+  line-height: 1;
+}
+
+.message-emoji-panel button:hover {
+  border-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 18%, #ffffff);
+  background: color-mix(in srgb, var(--academy-accent, var(--blue)) 9%, #ffffff);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 620px) {
+  .message-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .message-form__actions {
+    justify-content: space-between;
+  }
+
+  .message-form__actions .submit-button {
+    flex: 1 1 auto;
+  }
+
+  .message-emoji-panel {
+    right: auto;
+    left: 0;
+  }
+}

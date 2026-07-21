@@ -492,6 +492,9 @@ const messageStatus = document.querySelector("#message-status");
 const messagesRefreshButton = document.querySelector("#messages-refresh-button");
 const messageThreadTitle = document.querySelector("#message-thread-title");
 const messageThreadRole = document.querySelector("#message-thread-role");
+const messageEmojiPicker = document.querySelector("[data-message-emoji-picker]");
+const messageEmojiPanel = document.querySelector("[data-message-emoji-panel]");
+const messageEmojiToggle = document.querySelector("[data-message-emoji-toggle]");
 
 let currentCourseKey = "math";
 let currentCourseView = "lessons";
@@ -527,6 +530,32 @@ let currentAccountMode = "profile";
 let currentShopSection = "all";
 let currentStaffShopSection = "all";
 const SITE_THEME_CACHE_KEY = "tutor-site-theme";
+
+function setMessageEmojiPickerOpen(open = false) {
+  if (!messageEmojiPanel || !messageEmojiToggle) {
+    return;
+  }
+
+  messageEmojiPanel.classList.toggle("is-hidden", !open);
+  messageEmojiToggle.setAttribute("aria-expanded", open ? "true" : "false");
+}
+
+function insertMessageEmoji(emoji = "") {
+  const textarea = messageForm?.querySelector("[name='messageText']");
+  const value = String(emoji || "");
+
+  if (!textarea || textarea.disabled || !value) {
+    return;
+  }
+
+  const start = Number.isInteger(textarea.selectionStart) ? textarea.selectionStart : textarea.value.length;
+  const end = Number.isInteger(textarea.selectionEnd) ? textarea.selectionEnd : start;
+  textarea.value = `${textarea.value.slice(0, start)}${value}${textarea.value.slice(end)}`;
+  const nextPosition = start + value.length;
+  textarea.focus();
+  textarea.setSelectionRange(nextPosition, nextPosition);
+  textarea.dispatchEvent(new Event("input", { bubbles: true }));
+}
 
 function normalizeSiteThemeClass(themeClass = "") {
   const value = String(themeClass || "").trim();
@@ -7191,7 +7220,8 @@ function renderMessages(payload) {
 
   if (!actor) {
     currentConversationId = null;
-    messageForm?.querySelectorAll("textarea, button[type='submit']").forEach((control) => {
+    setMessageEmojiPickerOpen(false);
+    messageForm?.querySelectorAll("textarea, button[type='submit'], [data-message-emoji-toggle]").forEach((control) => {
       control.disabled = true;
     });
 
@@ -7260,7 +7290,11 @@ function renderMessages(payload) {
     return;
   }
 
-  messageForm?.querySelectorAll("textarea, button[type='submit']").forEach((control) => {
+  if (!activeConversationVisible) {
+    setMessageEmojiPickerOpen(false);
+  }
+
+  messageForm?.querySelectorAll("textarea, button[type='submit'], [data-message-emoji-toggle]").forEach((control) => {
     control.disabled = !actor || !activeConversationVisible;
   });
 
@@ -7587,6 +7621,7 @@ async function submitMessage(event) {
     }
 
     form.reset();
+    setMessageEmojiPickerOpen(false);
     setMessageStatus("Сообщение отправлено.", "success");
     await loadMessages(result.activeConversationId || currentConversationId);
   } catch (error) {
@@ -10271,10 +10306,26 @@ document.addEventListener("click", (event) => {
   const openAdminDrawer = document.querySelector(".admin-person-details[open], .admin-add-details[open]");
   const clickedAdminSummary = event.target.closest(".admin-person-details > summary, .admin-add-details > summary");
   const adminRuntimeTabButton = event.target.closest("[data-admin-runtime-tab]");
+  const emojiToggleButton = event.target.closest("[data-message-emoji-toggle]");
+  const emojiButton = event.target.closest("[data-message-emoji]");
 
   if (adminRuntimeTabButton) {
     event.preventDefault();
     setAdminRuntimeTab(adminRuntimeTabButton.closest(".admin-person-details"), adminRuntimeTabButton.dataset.adminRuntimeTab);
+    return;
+  }
+
+  if (emojiToggleButton) {
+    event.preventDefault();
+    if (!emojiToggleButton.disabled) {
+      setMessageEmojiPickerOpen(messageEmojiPanel?.classList.contains("is-hidden"));
+    }
+    return;
+  }
+
+  if (emojiButton) {
+    event.preventDefault();
+    insertMessageEmoji(emojiButton.dataset.messageEmoji);
     return;
   }
 
@@ -10288,6 +10339,10 @@ document.addEventListener("click", (event) => {
     event.preventDefault();
     openAdminDrawer.open = false;
     return;
+  }
+
+  if (messageEmojiPanel && !messageEmojiPanel.classList.contains("is-hidden") && !event.target.closest("[data-message-emoji-picker]")) {
+    setMessageEmojiPickerOpen(false);
   }
 
   if (notificationPanelOpen && !event.target.closest("#notification-panel") && !event.target.closest(".notification-button")) {

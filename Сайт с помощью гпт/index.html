@@ -634,10 +634,35 @@
                       Сообщение
                       <textarea name="messageText" rows="3" placeholder="Напишите вопрос или ответ" required></textarea>
                     </label>
-                    <button class="submit-button" type="submit">
-                      <svg><use href="#icon-message" /></svg>
-                      Отправить
-                    </button>
+                    <div class="message-form__actions">
+                      <div class="message-emoji-picker" data-message-emoji-picker>
+                        <button class="message-emoji-toggle" type="button" data-message-emoji-toggle aria-label="Добавить эмодзи" aria-expanded="false">
+                          ☺
+                        </button>
+                        <div class="message-emoji-panel is-hidden" data-message-emoji-panel>
+                          <button type="button" data-message-emoji="🙂">🙂</button>
+                          <button type="button" data-message-emoji="😊">😊</button>
+                          <button type="button" data-message-emoji="😂">😂</button>
+                          <button type="button" data-message-emoji="🔥">🔥</button>
+                          <button type="button" data-message-emoji="👍">👍</button>
+                          <button type="button" data-message-emoji="❤️">❤️</button>
+                          <button type="button" data-message-emoji="👏">👏</button>
+                          <button type="button" data-message-emoji="🙏">🙏</button>
+                          <button type="button" data-message-emoji="😎">😎</button>
+                          <button type="button" data-message-emoji="🤔">🤔</button>
+                          <button type="button" data-message-emoji="✅">✅</button>
+                          <button type="button" data-message-emoji="✨">✨</button>
+                          <button type="button" data-message-emoji="💪">💪</button>
+                          <button type="button" data-message-emoji="🎯">🎯</button>
+                          <button type="button" data-message-emoji="📚">📚</button>
+                          <button type="button" data-message-emoji="🧠">🧠</button>
+                        </div>
+                      </div>
+                      <button class="submit-button" type="submit">
+                        <svg><use href="#icon-message" /></svg>
+                        Отправить
+                      </button>
+                    </div>
                     <p class="application-status" id="message-status" aria-live="polite"></p>
                   </form>
                 </div>
