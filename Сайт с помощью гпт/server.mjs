@@ -374,6 +374,7 @@ async function runRuntimeMigrations() {
 
     ALTER TABLE students ADD COLUMN IF NOT EXISTS profile_status TEXT NOT NULL DEFAULT 'focused';
     ALTER TABLE students ADD COLUMN IF NOT EXISTS active_badge_id INTEGER;
+    ALTER TABLE lessons ADD COLUMN IF NOT EXISTS homework_review_url TEXT;
     ALTER TABLE shop_items ADD COLUMN IF NOT EXISTS audience TEXT NOT NULL DEFAULT 'All';
     ALTER TABLE point_transactions ADD COLUMN IF NOT EXISTS correction_id INTEGER;
     UPDATE shop_items SET audience = 'All' WHERE audience IS NULL OR audience = '';
@@ -489,7 +490,7 @@ async function runRuntimeMigrations() {
       ALTER TABLE staff_resource_reviews DROP CONSTRAINT IF EXISTS staff_resource_reviews_resource_type_check;
       ALTER TABLE staff_resource_reviews
         ADD CONSTRAINT staff_resource_reviews_resource_type_check
-        CHECK (resource_type IN ('Lesson', 'Note', 'Homework', 'Stream', 'Correction'));
+        CHECK (resource_type IN ('Lesson', 'Note', 'Homework', 'Stream', 'Correction', 'HomeworkReview'));
     END $$;
 
     DO $$
@@ -1603,6 +1604,7 @@ async function buildAccountPayload(studentId, authToken = "") {
         l.id AS "lessonId",
         l.lesson_number AS "lessonNumber",
         l.title AS "lessonTitle",
+        l.homework_review_url AS "homeworkReviewUrl",
         ${lessonLearningStatusSql("l", "ha", "hs", "hc")} AS "lessonStatus",
         COALESCE(lp.watch_percent, 0) AS "watchPercent",
         ${lessonPassedSql("ha", "hs")} AS "isCompleted",
@@ -1632,6 +1634,7 @@ async function buildAccountPayload(studentId, authToken = "") {
       lessonId: row.lessonId,
       lessonNumber: row.lessonNumber,
       lessonTitle: row.lessonTitle,
+      homeworkReviewUrl: row.homeworkReviewUrl,
       lessonStatus: row.lessonStatus,
       watchPercent: Number(row.watchPercent || 0),
       isCompleted: Boolean(row.isCompleted),
@@ -1751,6 +1754,57 @@ async function getStudentNotifications(studentId) {
         WHERE hc.student_id = $1
           AND hc.status = 'Checked'
           AND hc.checked_at IS NOT NULL
+
+        UNION ALL
+
+        SELECT
+          CONCAT('homework-review-pending-', hc.id) AS "notificationId",
+          'Разбор ДЗ скоро появится' AS title,
+          CONCAT(
+            c.title,
+            ' · Урок ',
+            l.lesson_number,
+            '. ',
+            ht.title,
+            ' · не переживайте, это ДЗ разберём отдельно'
+          ) AS text,
+          'Homework_Review' AS type,
+          CONCAT('#course-', c.slug) AS link,
+          hc.checked_at AS "createdAt",
+          'warning' AS tone
+        FROM homework_corrections hc
+        JOIN homework_assignments ha ON ha.id = hc.assignment_id
+        JOIN homework_templates ht ON ht.id = ha.template_id
+        JOIN courses c ON c.id = ht.course_id
+        LEFT JOIN lessons l ON l.id = ht.lesson_id
+        WHERE hc.student_id = $1
+          AND hc.status = 'Checked'
+          AND hc.attempt_number >= 2
+          AND COALESCE(${scoreSql("hc")}, 0) < 5
+          AND hc.checked_at IS NOT NULL
+          AND COALESCE(l.homework_review_url, '') = ''
+
+        UNION ALL
+
+        SELECT
+          CONCAT('homework-review-ready-', hc.id) AS "notificationId",
+          'Разбор ДЗ появился' AS title,
+          CONCAT(c.title, ' · Урок ', l.lesson_number, '. ', ht.title, ' · можно посмотреть видео-разбор') AS text,
+          'Homework_Review' AS type,
+          COALESCE(l.homework_review_url, CONCAT('#course-', c.slug)) AS link,
+          COALESCE(l.updated_at, hc.checked_at) AS "createdAt",
+          'info' AS tone
+        FROM homework_corrections hc
+        JOIN homework_assignments ha ON ha.id = hc.assignment_id
+        JOIN homework_templates ht ON ht.id = ha.template_id
+        JOIN courses c ON c.id = ht.course_id
+        LEFT JOIN lessons l ON l.id = ht.lesson_id
+        WHERE hc.student_id = $1
+          AND hc.status = 'Checked'
+          AND hc.attempt_number >= 2
+          AND COALESCE(${scoreSql("hc")}, 0) < 5
+          AND hc.checked_at IS NOT NULL
+          AND COALESCE(l.homework_review_url, '') <> ''
 
         UNION ALL
 
@@ -1923,6 +1977,7 @@ async function getCourseLessons(slug, studentId = 0) {
         l.video_url AS "videoUrl",
         l.notes_url AS "notesUrl",
         l.homework_url AS "homeworkUrl",
+        l.homework_review_url AS "homeworkReviewUrl",
         ${lessonLearningStatusSql("l", "ha", "hs", "hc")} AS "lessonStatus",
         ${lessonPassedSql("ha", "hs")} AS "isCompleted",
         ht.id AS "homeworkTemplateId",
@@ -1982,6 +2037,7 @@ async function getCourseLessons(slug, studentId = 0) {
     videoUrl: row.videoUrl,
     notesUrl: row.notesUrl,
     homeworkUrl: row.homeworkTaskUrl || row.homeworkUrl,
+    homeworkReviewUrl: row.homeworkReviewUrl,
     homeworkTemplateId: row.homeworkTemplateId,
     homeworkTitle: row.homeworkTitle,
     homeworkDescription: row.homeworkDescription,
@@ -2018,6 +2074,7 @@ async function getCourseLessons(slug, studentId = 0) {
         videoUrl: index === 0 ? lesson.videoUrl : null,
         notesUrl: index === 0 ? lesson.notesUrl : null,
         homeworkUrl: null,
+        homeworkReviewUrl: index === 0 ? lesson.homeworkReviewUrl : null,
         homeworkTemplateId: null,
         homeworkTitle: null,
         homeworkDescription: null,
@@ -2100,6 +2157,7 @@ async function getHomeworks(slug = "", studentId = 0) {
         l.id AS "lessonId",
         l.lesson_number AS "lessonNumber",
         l.title AS "lessonTitle",
+        l.homework_review_url AS "homeworkReviewUrl",
         ${lessonLearningStatusSql("l", "ha", "hs", "hc")} AS "lessonStatus",
         ht.id AS "homeworkTemplateId",
         ht.title AS "homeworkTitle",
@@ -2177,7 +2235,7 @@ app.post(
       await client.query("BEGIN");
       const assignment = await client.query(
         `
-          SELECT ha.id, ha.student_id, ha.enrollment_id, ha.status, hs.status AS submission_status
+          SELECT ha.id, ha.student_id, ha.enrollment_id, ha.status, hs.status AS submission_status, hs.file_url AS submission_url
           FROM homework_assignments ha
           LEFT JOIN homework_submissions hs ON hs.assignment_id = ha.id
           WHERE ha.id = $1
@@ -2194,6 +2252,10 @@ app.post(
       const row = assignment.rows[0];
       if (row.status === "Checked" || row.submission_status === "Checked") {
         throw createHttpError(409, "Проверенное ДЗ нельзя заменить.");
+      }
+
+      if (row.status === "Submitted" || row.submission_status === "Submitted" || row.submission_url) {
+        throw createHttpError(409, "Отправленную ссылку на ДЗ нельзя заменить.");
       }
 
       await client.query("UPDATE homework_assignments SET status = 'Submitted' WHERE id = $1", [assignmentId]);
@@ -2289,6 +2351,10 @@ app.post(
       }
 
       let row = correction.rows[0];
+      if (row.status === "Submitted") {
+        throw createHttpError(409, "Отправленную работу над ошибками нельзя заменить.");
+      }
+
       if (row.status === "Checked" && Number(row.score || 0) >= 5) {
         throw createHttpError(409, "Успешно проверенную работу над ошибками нельзя заменить.");
       }
@@ -4990,6 +5056,7 @@ async function buildStaffWorkspace(staff) {
         l.video_url AS "videoUrl",
         l.notes_url AS "notesUrl",
         l.homework_url AS "homeworkUrl",
+        l.homework_review_url AS "homeworkReviewUrl",
         l.duration_minutes AS "durationMinutes",
         l.status AS "lessonStatus",
         r.id AS "curatorReviewId",
@@ -5161,18 +5228,6 @@ async function buildStaffWorkspace(staff) {
        AND r.staff_id = $3
       WHERE c.status = 'Active'
         AND hc.status <> 'Cancelled'
-        AND NOT (hc.attempt_number = 2 AND hc.status = 'Checked' AND COALESCE(${scoreSql("hc")}, 0) < 5)
-        AND NOT (
-          hc.status = 'Checked'
-          AND COALESCE(${scoreSql("hc")}, 0) < 5
-          AND EXISTS (
-            SELECT 1
-            FROM homework_corrections hc_next
-            WHERE hc_next.assignment_id = hc.assignment_id
-              AND hc_next.attempt_number > hc.attempt_number
-              AND hc_next.status <> 'Cancelled'
-          )
-        )
         AND ${staff.role === "Teacher" ? "COALESCE(hc.teacher_id, ha.teacher_id, ce.teacher_id, c.teacher_id) = $1" : "COALESCE(ce.curator_id, c.curator_id) = $1"}
       ORDER BY c.id, s.last_name, s.first_name, l.lesson_number, hc.id
     `,
@@ -5276,6 +5331,52 @@ async function buildStaffWorkspace(staff) {
        AND r.staff_id = $3
       WHERE c.status = 'Active' AND ${courseVisibleScope}
       ORDER BY ls.starts_at DESC, ls.id DESC
+    `,
+    reviewParams,
+  );
+
+  const homeworkReviews = await dbQuery(
+    `
+      SELECT
+        FALSE AS "isCorrection",
+        TRUE AS "isHomeworkReview",
+        l.id AS "lessonId",
+        l.id AS "homeworkAssignmentId",
+        l.id AS "homeworkSubmissionId",
+        c.id AS "courseId",
+        c.slug AS "courseSlug",
+        c.title AS "courseTitle",
+        c.teacher_id AS "teacherId",
+        c.curator_id AS "curatorId",
+        CONCAT(t.first_name, ' ', t.last_name) AS "teacherName",
+        l.lesson_number AS "lessonNumber",
+        l.title AS "lessonTitle",
+        CONCAT('Видео-разбор ДЗ: ', l.title) AS "homeworkTitle",
+        l.topic AS "homeworkDescription",
+        l.homework_url AS "taskLink",
+        l.homework_review_url AS "homeworkReviewUrl",
+        l.homework_review_url AS "submissionLink",
+        'Checked' AS "homeworkStatus",
+        'Checked' AS "submissionStatus",
+        l.updated_at AS "submittedAt",
+        l.updated_at AS "checkedAt",
+        r.id AS "curatorReviewId",
+        r.rating AS "curatorRating",
+        r.comment_text AS "curatorComment",
+        r.created_at AS "curatorReviewCreatedAt",
+        r.updated_at AS "curatorReviewUpdatedAt"
+      FROM lessons l
+      JOIN courses c ON c.id = l.course_id
+      LEFT JOIN teachers t ON t.id = c.teacher_id
+      LEFT JOIN staff_resource_reviews r
+        ON r.resource_type = 'HomeworkReview'
+       AND r.resource_id = l.id
+       AND r.staff_role = $2
+       AND r.staff_id = $3
+      WHERE c.status = 'Active'
+        AND COALESCE(l.homework_review_url, '') <> ''
+        AND ${courseVisibleScope}
+      ORDER BY c.id, l.lesson_number
     `,
     reviewParams,
   );
@@ -5399,18 +5500,6 @@ async function buildStaffWorkspace(staff) {
        AND r.staff_id = $3
       WHERE c.status = 'Active'
         AND hc.status <> 'Cancelled'
-        AND NOT (hc.attempt_number = 2 AND hc.status = 'Checked' AND COALESCE(${scoreSql("hc")}, 0) < 5)
-        AND NOT (
-          hc.status = 'Checked'
-          AND COALESCE(${scoreSql("hc")}, 0) < 5
-          AND EXISTS (
-            SELECT 1
-            FROM homework_corrections hc_next
-            WHERE hc_next.assignment_id = hc.assignment_id
-              AND hc_next.attempt_number > hc.attempt_number
-              AND hc_next.status <> 'Cancelled'
-          )
-        )
         AND ${staff.role === "Teacher" ? "COALESCE(hc.teacher_id, ha.teacher_id, ce.teacher_id, c.teacher_id) = $1" : "COALESCE(ce.curator_id, c.curator_id) = $1"}
       GROUP BY c.id, c.teacher_id, c.curator_id, t.first_name, t.last_name, l.id, ht.id, hc.attempt_number
       ORDER BY c.id, l.lesson_number, ht.id
@@ -5465,12 +5554,56 @@ async function buildStaffWorkspace(staff) {
     reviewParams,
   );
 
+  const homeworkReviewStats = await dbQuery(
+    `
+      SELECT
+        FALSE AS "isCorrection",
+        FALSE AS "needsHomeworkReview",
+        TRUE AS "isHomeworkReview",
+        c.id AS "courseId",
+        c.slug AS "courseSlug",
+        c.title AS "courseTitle",
+        c.teacher_id AS "teacherId",
+        c.curator_id AS "curatorId",
+        CONCAT(t.first_name, ' ', t.last_name) AS "teacherName",
+        l.id AS "lessonId",
+        l.lesson_number AS "lessonNumber",
+        l.title AS "lessonTitle",
+        l.id AS "homeworkTemplateId",
+        CONCAT('Видео-разбор ДЗ: ', l.title) AS "homeworkTitle",
+        COUNT(l.id)::integer AS "homeworkTotal",
+        COUNT(l.id)::integer AS "studentsTotal",
+        COUNT(l.id)::integer AS "submittedTotal",
+        COUNT(l.id)::integer AS "checkedTotal",
+        SUM(CASE WHEN r.id IS NOT NULL THEN 1 ELSE 0 END)::integer AS "curatorReviewedTotal",
+        MAX(r.id) AS "curatorReviewId",
+        MAX(r.rating) AS "curatorRating",
+        MAX(r.comment_text) AS "curatorComment"
+      FROM lessons l
+      JOIN courses c ON c.id = l.course_id
+      LEFT JOIN teachers t ON t.id = c.teacher_id
+      LEFT JOIN staff_resource_reviews r
+        ON r.resource_type = 'HomeworkReview'
+       AND r.resource_id = l.id
+       AND r.staff_role = $2
+       AND r.staff_id = $3
+      WHERE c.status = 'Active'
+        AND COALESCE(l.homework_review_url, '') <> ''
+        AND ${courseVisibleScope}
+      GROUP BY c.id, c.teacher_id, c.curator_id, t.first_name, t.last_name, l.id
+      ORDER BY c.id, l.lesson_number
+    `,
+    reviewParams,
+  );
+
   const mappedHomeworks = homeworks.rows.map(mapStaffHomeworkDates);
   const mappedStats = homeworkStats.rows.map(mapHomeworkStat);
   const mappedCorrections = corrections.rows.map(mapStaffHomeworkDates);
   const mappedCorrectionStats = correctionStats.rows.map(mapHomeworkStat);
   const mappedAnalysisHomeworks = analysisHomeworks.rows.map(mapStaffHomeworkDates);
   const mappedAnalysisStats = analysisStats.rows.map(mapHomeworkStat);
+  const mappedHomeworkReviews = homeworkReviews.rows.map(mapStaffHomeworkDates);
+  const mappedHomeworkReviewStats = homeworkReviewStats.rows.map(mapHomeworkStat);
 
   return {
     source: "database",
@@ -5483,6 +5616,7 @@ async function buildStaffWorkspace(staff) {
     homeworks: mappedHomeworks,
     corrections: mappedCorrections,
     analysisHomeworks: mappedAnalysisHomeworks,
+    homeworkReviews: mappedHomeworkReviews,
     streams: streams.rows.map((row) => ({ ...mapReviewDates(row), startsAt: toDateText(row.startsAt), endsAt: toDateText(row.endsAt) })),
     calls: calls.rows.map((row) => ({
       ...row,
@@ -5494,6 +5628,7 @@ async function buildStaffWorkspace(staff) {
     homeworkStats: mappedStats,
     correctionStats: mappedCorrectionStats,
     analysisStats: mappedAnalysisStats,
+    homeworkReviewStats: mappedHomeworkReviewStats,
     staffShop: await getStaffShopPayload(staff),
     notifications: buildStaffNotifications(
       staff,
@@ -5873,6 +6008,7 @@ app.post(
     const videoUrl = normalizeLink(request.body.videoUrl);
     const notesUrl = normalizeLink(request.body.notesUrl);
     const homeworkUrl = normalizeLink(request.body.homeworkUrl);
+    const homeworkReviewUrl = normalizeLink(request.body.homeworkReviewUrl || request.body.homework_review_url);
 
     if (!courseId || !lessonTitle) {
       throw createHttpError(400, "Укажите курс и название урока.");
@@ -5903,14 +6039,15 @@ app.post(
                 video_url = $4,
                 notes_url = $5,
                 homework_url = $6,
+                homework_review_url = $7,
                 status = 'Open',
                 is_open = TRUE,
                 updated_at = NOW()
-            WHERE id = $7
-              AND course_id = $8
+            WHERE id = $8
+              AND course_id = $9
             RETURNING id
           `,
-          [lessonNumber, lessonTitle, topic, videoUrl, notesUrl, homeworkUrl, lessonId, courseId],
+          [lessonNumber, lessonTitle, topic, videoUrl, notesUrl, homeworkUrl, homeworkReviewUrl, lessonId, courseId],
         );
         if (updated.rowCount === 0) {
           throw createHttpError(404, "Урок не найден.");
@@ -5918,11 +6055,11 @@ app.post(
       } else {
         const inserted = await client.query(
           `
-            INSERT INTO lessons (course_id, lesson_number, title, topic, video_url, notes_url, homework_url, status, is_open)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, 'Open', TRUE)
+            INSERT INTO lessons (course_id, lesson_number, title, topic, video_url, notes_url, homework_url, homework_review_url, status, is_open)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Open', TRUE)
             RETURNING id
           `,
-          [courseId, lessonNumber, lessonTitle, topic, videoUrl, notesUrl, homeworkUrl],
+          [courseId, lessonNumber, lessonTitle, topic, videoUrl, notesUrl, homeworkUrl, homeworkReviewUrl],
         );
         savedLessonId = inserted.rows[0].id;
       }
@@ -6153,7 +6290,7 @@ app.post(
     const rating = toInt(request.body.rating, null);
     const commentText = cleanText(request.body.commentText, 1000);
 
-    if (!["Lesson", "Note", "Homework", "Stream", "Correction"].includes(resourceType) || !resourceId || !rating || rating < 1 || rating > 10) {
+    if (!["Lesson", "Note", "Homework", "Stream", "Correction", "HomeworkReview"].includes(resourceType) || !resourceId || !rating || rating < 1 || rating > 10) {
       throw createHttpError(400, "Оценка должна быть от 1 до 10.");
     }
 
@@ -6210,6 +6347,8 @@ async function assertReviewResourceVisible(staff, resourceType, resourceId) {
     query = `SELECT 1 FROM notes n JOIN courses c ON c.id = n.course_id WHERE n.id = $1 AND ${courseVisibleScope}`;
   } else if (resourceType === "Stream") {
     query = `SELECT 1 FROM live_streams ls JOIN courses c ON c.id = ls.course_id WHERE ls.id = $1 AND ${courseVisibleScope}`;
+  } else if (resourceType === "HomeworkReview") {
+    query = `SELECT 1 FROM lessons l JOIN courses c ON c.id = l.course_id WHERE l.id = $1 AND COALESCE(l.homework_review_url, '') <> '' AND ${courseVisibleScope}`;
   } else if (resourceType === "Homework") {
     query = `
       SELECT 1

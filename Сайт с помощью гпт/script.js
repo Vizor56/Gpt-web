@@ -4010,7 +4010,7 @@ function renderTeacherAnalysisHomeworkCard(item) {
 }
 
 function getStaffHomeworkMode(mode = "homeworks") {
-  return ["homeworks", "corrections", "analysis"].includes(mode) ? mode : "homeworks";
+  return ["homeworks", "corrections", "analysis", "reviews"].includes(mode) ? mode : "homeworks";
 }
 
 function getStaffHomeworkModeConfig(mode = "homeworks") {
@@ -4023,6 +4023,16 @@ function getStaffHomeworkModeConfig(mode = "homeworks") {
       statsKey: "analysisStats",
       emptyText: "Работ для разбора непонятного ДЗ пока нет.",
       title: "Разбор непонятного ДЗ",
+    };
+  }
+
+  if (normalizedMode === "reviews") {
+    return {
+      mode: "reviews",
+      itemsKey: "homeworkReviews",
+      statsKey: "homeworkReviewStats",
+      emptyText: "Видео-разборов ДЗ для кураторской оценки пока нет.",
+      title: "Разборы ДЗ",
     };
   }
 
@@ -4047,6 +4057,7 @@ function getStaffHomeworkModeConfig(mode = "homeworks") {
 
 function renderHomeworkModeTabs(mode = "homeworks") {
   const normalizedMode = getStaffHomeworkMode(mode);
+  const canReviewHomeworkVideos = currentStaff?.staff?.role === "Curator";
   return `
     <div class="course-section-tabs staff-subtabs" data-staff-homework-mode-tabs>
       <button type="button" class="${normalizedMode === "homeworks" ? "is-active" : ""}" data-staff-homework-mode="homeworks">
@@ -4058,13 +4069,22 @@ function renderHomeworkModeTabs(mode = "homeworks") {
       <button type="button" class="${normalizedMode === "analysis" ? "is-active" : ""}" data-staff-homework-mode="analysis">
         <svg><use href="#icon-message" /></svg>Разбор непонятного ДЗ
       </button>
+      ${
+        canReviewHomeworkVideos
+          ? `
+            <button type="button" class="${normalizedMode === "reviews" ? "is-active" : ""}" data-staff-homework-mode="reviews">
+              <svg><use href="#icon-play" /></svg>Разборы ДЗ
+            </button>
+          `
+          : ""
+      }
     </div>
   `;
 }
 
 function renderTeacherHomeworkEnhanced() {
   const state = getStaffDrilldown("homework");
-  const mode = getStaffHomeworkMode(state.mode);
+  const mode = state.mode === "reviews" ? "homeworks" : getStaffHomeworkMode(state.mode);
   const modeConfig = getStaffHomeworkModeConfig(mode);
   const items = getStaffItems(modeConfig.itemsKey).sort(sortHomeworkItems);
   const stats = getStaffItems(modeConfig.statsKey);
@@ -4183,6 +4203,10 @@ function renderLessonForm(course, lesson = {}) {
         Домашнее задание
         <input name="homeworkUrl" type="url" value="${escapeHtml(lesson.homeworkUrl || "")}" placeholder="https://..." />
       </label>
+      <label>
+        Видео-разбор ДЗ
+        <input name="homeworkReviewUrl" type="url" value="${escapeHtml(lesson.homeworkReviewUrl || "")}" placeholder="https://..." />
+      </label>
       <button type="submit"><svg><use href="#icon-upload" /></svg>${isEdit ? "Сохранить урок" : "Создать урок"}</button>
       <p class="staff-form-status" aria-live="polite"></p>
     </form>
@@ -4258,10 +4282,11 @@ function renderTeacherLessonRow(course, lesson) {
       <span class="lesson-status status-open">
         <svg><use href="#icon-play" /></svg>${escapeHtml(lesson.lessonStatus || "Open")}
       </span>
-      <div class="lesson-actions">
+      <div class="lesson-actions${lesson.homeworkReviewUrl ? " lesson-actions--review" : ""}">
         ${lesson.videoUrl ? `<a href="${escapeHtml(lesson.videoUrl)}" target="_blank" rel="noopener noreferrer"><svg><use href="#icon-play" /></svg>Видео</a>` : `<button type="button" disabled><svg><use href="#icon-play" /></svg>Видео</button>`}
         ${lesson.notesUrl ? `<a href="${escapeHtml(lesson.notesUrl)}" target="_blank" rel="noopener noreferrer"><svg><use href="#icon-file" /></svg>Конспект</a>` : `<button type="button" disabled><svg><use href="#icon-file" /></svg>Конспект</button>`}
         ${lesson.homeworkUrl ? `<a href="${escapeHtml(lesson.homeworkUrl)}" target="_blank" rel="noopener noreferrer"><svg><use href="#icon-clipboard" /></svg>ДЗ</a>` : `<button type="button" disabled><svg><use href="#icon-clipboard" /></svg>ДЗ</button>`}
+        ${lesson.homeworkReviewUrl ? `<a href="${escapeHtml(lesson.homeworkReviewUrl)}" target="_blank" rel="noopener noreferrer"><svg><use href="#icon-message" /></svg>Разбор ДЗ</a>` : ""}
       </div>
       <details class="staff-details staff-lesson-editor">
         <summary>Редактировать урок и материалы</summary>
@@ -4694,12 +4719,12 @@ function getCuratorResourceConfig(pageName) {
     },
     homework: {
       items: getStaffItems(homeworkModeConfig.itemsKey),
-      resourceType: homeworkMode === "homeworks" ? "Homework" : "Correction",
-      idField: homeworkMode === "homeworks" ? "homeworkAssignmentId" : "correctionId",
+      resourceType: homeworkMode === "reviews" ? "HomeworkReview" : homeworkMode === "homeworks" ? "Homework" : "Correction",
+      idField: homeworkMode === "reviews" ? "lessonId" : homeworkMode === "homeworks" ? "homeworkAssignmentId" : "correctionId",
       title: (item) => item.homeworkTitle,
-      text: (item) => `${item.studentName || "Ученик"} · ${item.lessonTitle || item.courseTitle}`,
-      link: (item) => item.taskLink,
-      linkLabel: "Задание",
+      text: (item) => (homeworkMode === "reviews" ? `${item.teacherName || "Преподаватель"} · ${item.lessonTitle || item.courseTitle}` : `${item.studentName || "Ученик"} · ${item.lessonTitle || item.courseTitle}`),
+      link: (item) => (homeworkMode === "reviews" ? item.homeworkReviewUrl : item.taskLink),
+      linkLabel: homeworkMode === "reviews" ? "Видео-разбор" : "Задание",
       empty: "Домашние задания по закрепленным преподавателям не найдены.",
     },
     streams: {
@@ -4800,7 +4825,7 @@ function renderCuratorHomeworkReviewArea(config, item) {
     return renderCuratorReviewNote(item);
   }
 
-  if (!isStaffHomeworkChecked(item)) {
+  if (config.resourceType !== "HomeworkReview" && !isStaffHomeworkChecked(item)) {
     return `
       <div class="staff-reviewed-note is-muted">
         <strong>Кураторская оценка пока закрыта</strong>
@@ -4873,21 +4898,22 @@ function renderCuratorHomeworkPageLegacy(pageName, config, items) {
 function renderCuratorHomeworkCard(config, item) {
   const status = getHomeworkStaffStatus(item);
   const reviewed = isCuratorReviewed(item);
+  const isHomeworkReview = config.resourceType === "HomeworkReview";
 
   return `
     <article class="staff-card ${reviewed ? "staff-card--checked is-complete" : isStaffHomeworkChecked(item) ? "staff-card--pending" : isStaffHomeworkSubmitted(item) ? "staff-card--pending" : "staff-card--muted"}"${getCourseThemeAttr(item)}>
       <div class="staff-card__meta">
-        <span class="resource-chip ${status.className}">${status.label}</span>
+        <span class="resource-chip ${isHomeworkReview ? "is-blue" : status.className}">${isHomeworkReview ? "Видео-разбор" : status.label}</span>
         <span class="resource-chip is-blue">${escapeHtml(item.teacherName || "Преподаватель")}</span>
-        <span class="resource-chip">${escapeHtml(item.studentName || "Ученик")}</span>
+        ${isHomeworkReview ? `<span class="resource-chip">Урок ${escapeHtml(item.lessonNumber || "-")}</span>` : `<span class="resource-chip">${escapeHtml(item.studentName || "Ученик")}</span>`}
       </div>
       <h3>${escapeHtml(config.title(item) || "Домашнее задание")}</h3>
       <p>${escapeHtml(config.text(item) || "")}</p>
       <div class="staff-card__actions">
         ${createStaffLink(config.link(item), config.linkLabel)}
-        ${createStaffLink(item.submissionLink, item.submissionLink ? "Работа ученика" : "Нет ссылки", "#icon-clipboard")}
+        ${isHomeworkReview ? "" : createStaffLink(item.submissionLink, item.submissionLink ? "Работа ученика" : "Нет ссылки", "#icon-clipboard")}
       </div>
-      ${renderHomeworkTeacherResult(item)}
+      ${isHomeworkReview ? "" : renderHomeworkTeacherResult(item)}
       ${renderCuratorHomeworkReviewArea(config, item)}
     </article>
   `;
@@ -4941,6 +4967,7 @@ function renderCuratorHomeworkPage(pageName, config, items) {
 }
 
 function renderCuratorArchiveCard(config, item, typeLabel) {
+  const isHomeworkReview = config.resourceType === "HomeworkReview";
   return `
     <article class="staff-card staff-card--archived"${getCourseThemeAttr(item)}>
       <div class="staff-card__meta">
@@ -4954,7 +4981,7 @@ function renderCuratorArchiveCard(config, item, typeLabel) {
         ${createStaffLink(config.link(item), config.linkLabel)}
         ${config.resourceType === "Homework" ? createStaffLink(item.submissionLink, item.submissionLink ? "Работа ученика" : "Нет ссылки", "#icon-clipboard") : ""}
       </div>
-      ${config.resourceType === "Homework" ? renderHomeworkTeacherResult(item) : ""}
+      ${config.resourceType === "Homework" && !isHomeworkReview ? renderHomeworkTeacherResult(item) : ""}
       ${renderCuratorReviewNote(item)}
     </article>
   `;
@@ -4962,13 +4989,63 @@ function renderCuratorArchiveCard(config, item, typeLabel) {
 
 function renderCuratorArchivePage() {
   const sections = [
-    ["lessons", "Уроки"],
-    ["notes", "Конспекты"],
-    ["homework", "Домашние задания"],
-    ["streams", "Трансляции"],
+    ["lessons", "Уроки", getCuratorResourceConfig("lessons")],
+    ["notes", "Конспекты", getCuratorResourceConfig("notes")],
+    [
+      "homeworks",
+      "Домашние задания",
+      {
+        items: getStaffItems("homeworks"),
+        resourceType: "Homework",
+        idField: "homeworkAssignmentId",
+        title: (item) => item.homeworkTitle,
+        text: (item) => `${item.studentName || "Ученик"} · ${item.lessonTitle || item.courseTitle}`,
+        link: (item) => item.taskLink,
+        linkLabel: "Задание",
+      },
+    ],
+    [
+      "corrections",
+      "Работы над ошибками",
+      {
+        items: getStaffItems("corrections"),
+        resourceType: "Correction",
+        idField: "correctionId",
+        title: (item) => item.homeworkTitle,
+        text: (item) => `${item.studentName || "Ученик"} · ${item.lessonTitle || item.courseTitle}`,
+        link: (item) => item.taskLink,
+        linkLabel: "Задание",
+      },
+    ],
+    [
+      "analysis",
+      "Разбор непонятного ДЗ",
+      {
+        items: getStaffItems("analysisHomeworks"),
+        resourceType: "Correction",
+        idField: "correctionId",
+        title: (item) => item.homeworkTitle,
+        text: (item) => `${item.studentName || "Ученик"} · ${item.lessonTitle || item.courseTitle}`,
+        link: (item) => item.taskLink,
+        linkLabel: "Задание",
+      },
+    ],
+    ["streams", "Трансляции", getCuratorResourceConfig("streams")],
+    [
+      "homeworkReviews",
+      "Разборы ДЗ",
+      {
+        items: getStaffItems("homeworkReviews"),
+        resourceType: "HomeworkReview",
+        idField: "lessonId",
+        title: (item) => item.homeworkTitle,
+        text: (item) => `${item.teacherName || "Преподаватель"} · Урок ${item.lessonNumber || "-"}`,
+        link: (item) => item.homeworkReviewUrl,
+        linkLabel: "Видео-разбор",
+      },
+    ],
   ]
-    .map(([pageName, label]) => {
-      const config = getCuratorResourceConfig(pageName);
+    .map(([pageName, label, config]) => {
       const items = (config?.items || []).filter(isCuratorReviewed).sort(sortHomeworkItems);
       return { pageName, label, config, items };
     })
@@ -7171,6 +7248,7 @@ function normalizeLesson(rawLesson) {
     videoUrl: rawLesson.videoUrl ?? rawLesson.Video_Link ?? null,
     notesUrl: rawLesson.notesUrl ?? rawLesson.Notes_Link ?? null,
     homeworkUrl: rawLesson.homeworkUrl ?? rawLesson.Homework_Link ?? rawLesson.homeworkTaskUrl ?? null,
+    homeworkReviewUrl: rawLesson.homeworkReviewUrl ?? rawLesson.Homework_Review_Link ?? null,
     homeworkTemplateId: rawLesson.homeworkTemplateId ?? null,
     homeworkTitle: cleanDisplayText(rawLesson.homeworkTitle ?? rawLesson.homeworkName, null),
     homeworkDescription: cleanDisplayText(rawLesson.homeworkDescription, ""),
@@ -8179,6 +8257,241 @@ function renderCorrectionTimeline(lesson) {
   `;
 }
 
+function getCorrectionAttemptByNumber(lesson, attemptNumber) {
+  return getCorrectionAttemptsForLesson(lesson).find((attempt) => Number(attempt.attemptNumber || 1) === Number(attemptNumber || 1)) || null;
+}
+
+function getHomeworkHistoryMeta(entry) {
+  if (entry.status === "passed") {
+    return { label: "Зачтено", className: "is-green" };
+  }
+
+  if (entry.status === "failed") {
+    return { label: "Ниже 5", className: "is-yellow" };
+  }
+
+  if (entry.status === "submitted") {
+    return { label: "На проверке", className: "is-blue" };
+  }
+
+  if (entry.status === "review") {
+    return { label: "Нужен разбор", className: "is-red" };
+  }
+
+  return { label: "Открыто", className: "is-muted" };
+}
+
+function getHomeworkHistoryEntries(lesson) {
+  const effectiveStatus = getEffectiveHomeworkStatus(lesson);
+  const homeworkScore = lesson.homeworkScore ?? lesson.score;
+  const entries = [
+    {
+      title: "ДЗ",
+      status:
+        effectiveStatus === "Checked"
+          ? isPassingScore(homeworkScore)
+            ? "passed"
+            : "failed"
+          : effectiveStatus === "Submitted" || lesson.submittedHomeworkUrl
+            ? "submitted"
+            : "open",
+      scoreText: formatTenPointScoreText(homeworkScore),
+      comment: lesson.feedbackText || lesson.teacherComment || "",
+      dateText: lesson.checkedAt || lesson.homeworkSubmittedAt || "",
+      link: lesson.submittedHomeworkUrl || "",
+    },
+  ];
+
+  getCorrectionAttemptsForLesson(lesson).forEach((attempt) => {
+    const scoreText = formatTenPointScoreText(attempt.score);
+    const checked = attempt.status === "Checked";
+    entries.push({
+      title: getCorrectionAttemptTitle(attempt.attemptNumber),
+      status: checked
+        ? isPassingScore(attempt.score)
+          ? "passed"
+          : needsLessonHomeworkReview(lesson) && Number(attempt.attemptNumber || 1) >= 2
+            ? "review"
+            : "failed"
+        : attempt.submittedUrl || attempt.status === "Submitted"
+          ? "submitted"
+          : "open",
+      scoreText,
+      comment: attempt.feedbackText || "",
+      dateText: attempt.checkedAt || attempt.submittedAt || "",
+      link: attempt.submittedUrl || "",
+    });
+  });
+
+  return entries;
+}
+
+function renderHomeworkHistoryPanel(lesson) {
+  const entries = getHomeworkHistoryEntries(lesson);
+
+  return `
+    <section class="homework-history-panel" aria-label="История домашних работ">
+      <header>
+        <span>История</span>
+        <h3>Попытки, баллы и комментарии</h3>
+      </header>
+      <div class="homework-history-list">
+        ${entries
+          .map((entry) => {
+            const meta = getHomeworkHistoryMeta(entry);
+            return `
+              <article class="homework-history-card ${meta.className}">
+                <div>
+                  <span>${escapeHtml(entry.title)}</span>
+                  <strong>${escapeHtml(meta.label)}</strong>
+                </div>
+                ${entry.scoreText ? `<p class="homework-history-score">${escapeHtml(entry.scoreText)}</p>` : ""}
+                ${entry.comment ? `<p><strong>Комментарий:</strong> ${escapeHtml(entry.comment)}</p>` : `<p class="is-muted">Комментария пока нет.</p>`}
+                <footer>
+                  ${entry.dateText ? `<small>${escapeHtml(formatStreamDate(entry.dateText))}</small>` : `<small>Дата появится после отправки</small>`}
+                  ${entry.link ? `<button type="button" data-copy-homework-link="${escapeHtml(entry.link)}"><svg><use href="#icon-clipboard" /></svg>Копировать</button>` : ""}
+                </footer>
+              </article>
+            `;
+          })
+          .join("")}
+      </div>
+    </section>
+  `;
+}
+
+function getCorrectionAttemptRow(lesson, attemptNumber) {
+  const currentAttempt = Number(lesson.correctionAttempt || 1);
+  const attempt = getCorrectionAttemptByNumber(lesson, attemptNumber);
+  const isCurrentAttempt = Boolean(lesson.correctionId) && currentAttempt === Number(attemptNumber);
+  const submittedUrl = attempt?.submittedUrl || (isCurrentAttempt ? lesson.correctionSubmittedUrl : "");
+  const status = attempt?.status || (isCurrentAttempt ? lesson.correctionStatus : "");
+  const isSent = Boolean(submittedUrl) || ["Submitted", "Checked"].includes(status);
+  const isAvailable = Boolean(attempt || isCurrentAttempt);
+  const canEdit = isAvailable && isCurrentAttempt && !isSent && !needsLessonHomeworkReview(lesson);
+
+  return {
+    key: `correction-${attemptNumber}`,
+    kind: "correction",
+    attemptNumber,
+    isCurrent: isCurrentAttempt,
+    label: attemptNumber === 2 ? "Вторая работа над ошибками" : "Первая работа над ошибками",
+    link: submittedUrl || "",
+    canEdit,
+    readonly: Boolean(submittedUrl) || ["Submitted", "Checked"].includes(status),
+    disabled: !canEdit && !submittedUrl,
+    statusText: submittedUrl
+      ? "Ссылка уже отправлена. Изменить её нельзя."
+      : canEdit
+        ? `Прикрепите ${getCorrectionAttemptTitle(attemptNumber).toLowerCase()} ссылкой на Google Drive.`
+        : attemptNumber === 1
+          ? "Понадобится, если основное ДЗ будет ниже 5."
+          : "Понадобится, если первая работа над ошибками будет ниже 5.",
+  };
+}
+
+function getHomeworkAttemptRows(lesson) {
+  const effectiveStatus = getEffectiveHomeworkStatus(lesson);
+  const currentLink = lesson.submittedHomeworkUrl || "";
+  const homeworkSent = Boolean(currentLink) || ["Submitted", "Checked"].includes(effectiveStatus);
+
+  return [
+    {
+      key: "homework",
+      kind: "homework",
+      label: "ДЗ",
+      link: currentLink,
+      canEdit: Boolean(lesson.homeworkAssignmentId) && !homeworkSent && !lesson.homeworkAccessLocked,
+      readonly: homeworkSent || Boolean(currentLink),
+      disabled: !lesson.homeworkAssignmentId || homeworkSent || lesson.homeworkAccessLocked,
+      statusText: currentLink
+        ? "Ссылка уже отправлена. Изменить её нельзя."
+        : lesson.homeworkAssignmentId
+          ? "Вставьте ссылку на файл или документ в Google Drive."
+          : "Это ДЗ ещё не связано с заданием ученика в базе.",
+    },
+    getCorrectionAttemptRow(lesson, 1),
+    getCorrectionAttemptRow(lesson, 2),
+  ];
+}
+
+function renderHomeworkAttemptRow(row, lessonKey) {
+  const formAttr = row.canEdit
+    ? row.kind === "homework"
+      ? `data-homework-submit-form="${escapeHtml(lessonKey)}"`
+      : `data-correction-submit-form="${escapeHtml(lessonKey)}"`
+    : "";
+  const inputName = row.kind === "homework" ? "homeworkLink" : "correctionLink";
+  const inputId = `${row.kind}-link-input-${escapeHtml(row.key)}`;
+  const statusId = row.kind === "homework" ? "homework-upload-status" : row.isCurrent ? "correction-upload-status" : "";
+  const rowClass = row.canEdit ? "is-active" : row.readonly ? "is-readonly" : "is-disabled";
+
+  return `
+    <form class="homework-work-row ${rowClass}" ${formAttr}>
+      <label class="homework-work-field" for="${inputId}">
+        <span>${escapeHtml(row.label)}</span>
+        <input
+          id="${inputId}"
+          name="${escapeHtml(inputName)}"
+          type="text"
+          inputmode="url"
+          autocomplete="url"
+          placeholder="https://drive.google.com/..."
+          value="${escapeHtml(row.link || "")}"
+          ${row.canEdit ? "required" : "disabled"}
+        />
+      </label>
+      <div class="homework-work-actions">
+        <button class="button-yellow" type="button" data-copy-homework-link="${escapeHtml(row.link || "")}" ${row.link ? "" : "disabled"}>
+          <svg><use href="#icon-clipboard" /></svg>Скопировать
+        </button>
+        <button class="button-blue" type="submit" ${row.canEdit ? "" : "disabled"}>
+          <svg><use href="#icon-upload" /></svg>Сохранить
+        </button>
+      </div>
+      <p ${statusId ? `id="${statusId}"` : ""} class="homework-upload-status">${escapeHtml(row.statusText)}</p>
+    </form>
+  `;
+}
+
+function renderHomeworkSubmitPanel(lesson) {
+  const lessonKey = getLessonKey(lesson);
+  const rows = getHomeworkAttemptRows(lesson);
+  const reviewUrl = lesson.homeworkReviewUrl || "";
+
+  return `
+    <section class="homework-submit-panel" aria-label="Сдача домашнего задания">
+      <header>
+        <span>Сдача</span>
+        <h3>Ссылки на Google Drive</h3>
+        <p>Уже отправленные ссылки нельзя менять: так история проверки остаётся честной и понятной.</p>
+      </header>
+      ${createActionLink(getLessonHomeworkTaskUrl(lesson), "button-blue", "#icon-file", "Открыть условие ДЗ")}
+      <div class="homework-work-stack">
+        ${renderHomeworkAttemptRow(rows[0], lessonKey)}
+        <section class="homework-problem-block">
+          <div class="homework-problem-heading">
+            <span>На случай, если возникнут сложности с ДЗ</span>
+            <p>Работы над ошибками откроются только тогда, когда они действительно понадобятся.</p>
+          </div>
+          ${rows.slice(1).map((row) => renderHomeworkAttemptRow(row, lessonKey)).join("")}
+        </section>
+      </div>
+      <section class="homework-review-block ${reviewUrl ? "is-ready" : "is-muted"}">
+        <div>
+          <strong>Разбор домашнего задания</strong>
+          <p>Разбор будет, если кто-то не справится с трёх попыток. Не переживайте: в итоге все разберутся с ДЗ!</p>
+        </div>
+        ${
+          reviewUrl
+            ? `<a class="button-green" href="${escapeHtml(reviewUrl)}" target="_blank" rel="noopener noreferrer"><svg><use href="#icon-play" /></svg>Посмотреть разбор ДЗ</a>`
+            : `<button type="button" disabled><svg><use href="#icon-lock" /></svg>Посмотреть разбор ДЗ</button>`
+        }
+      </section>
+    </section>
+  `;
+}
+
 function getHomeworkButtonMeta(lesson) {
   const effectiveStatus = getEffectiveHomeworkStatus(lesson);
   const correctionAttempt = Number(lesson?.correctionAttempt || 1);
@@ -8268,6 +8581,7 @@ function applyLessonAccessRules(lessons, courseAccess = null) {
     homeworkDescription: "",
     homeworkTaskUrl: null,
     homeworkUrl: null,
+    homeworkReviewUrl: index === 0 ? lesson.homeworkReviewUrl : null,
     homeworkStatus: "Assigned",
     homeworkSubmissionId: null,
     submittedHomeworkUrl: null,
@@ -8376,9 +8690,18 @@ function renderLessonRow(lesson) {
         </button>
       `);
     }
+
+    if (lesson.homeworkReviewUrl) {
+      actionButtons.push(`
+        <button class="button-blue" type="button" data-video-url="${escapeHtml(lesson.homeworkReviewUrl)}" title="Посмотреть видео-разбор домашнего задания">
+          <svg><use href="#icon-message" /></svg>Разбор ДЗ
+        </button>
+      `);
+    }
   }
 
   const shortActionsClass = actionButtons.length <= 2 ? " lesson-actions--short" : "";
+  const reviewActionsClass = actionButtons.length >= 4 ? " lesson-actions--review" : "";
   const themeKey = getCourseThemeKey();
 
   return `
@@ -8391,7 +8714,7 @@ function renderLessonRow(lesson) {
       <span class="lesson-status ${meta.className}">
         <svg><use href="${meta.icon}" /></svg>${meta.label}
       </span>
-      <div class="lesson-actions${shortActionsClass}">
+      <div class="lesson-actions${shortActionsClass}${reviewActionsClass}">
         ${actionButtons.join("")}
       </div>
     </article>
@@ -8616,7 +8939,7 @@ function isGoogleHomeworkUrl(value) {
 
 async function submitHomeworkLink(lessonKey, form) {
   const lesson = findLessonByKey(lessonKey);
-  const input = form?.querySelector("#homework-link-input");
+  const input = form?.querySelector("[name='homeworkLink']");
   const submitButton = form?.querySelector("button[type='submit']");
   const homeworkLink = normalizeHomeworkLink(input?.value || "");
 
@@ -8634,8 +8957,8 @@ async function submitHomeworkLink(lessonKey, form) {
     return;
   }
 
-  if (getEffectiveHomeworkStatus(lesson) === "Checked") {
-    setHomeworkSubmitStatus("Проверенное ДЗ нельзя заменить с сайта.", "error");
+  if (lesson.submittedHomeworkUrl || isHomeworkSubmitted(lesson)) {
+    setHomeworkSubmitStatus("Отправленную ссылку на ДЗ нельзя заменить с сайта.", "error");
     return;
   }
 
@@ -8694,9 +9017,11 @@ async function submitHomeworkLink(lessonKey, form) {
 }
 
 async function submitCorrectionLink(lessonKey, form) {
-  const input = form?.querySelector("#correction-link-input");
+  const input = form?.querySelector("[name='correctionLink']");
   const lesson = findLessonByKey(lessonKey);
   const correctionLink = normalizeHomeworkLink(input?.value || "");
+  const correctionAttempt = Number(lesson?.correctionAttempt || 1);
+  const currentAttempt = getCorrectionAttemptByNumber(lesson, correctionAttempt);
 
   if (!hasAuthenticatedAccount()) {
     setCorrectionSubmitStatus("Войдите или создайте аккаунт, чтобы сдавать работу над ошибками.", "error");
@@ -8712,8 +9037,8 @@ async function submitCorrectionLink(lessonKey, form) {
     return;
   }
 
-  if (lesson.correctionStatus === "Checked" && isPassingScore(lesson.correctionScore)) {
-    setCorrectionSubmitStatus("Успешно проверенную работу над ошибками нельзя заменить с сайта.", "error");
+  if (lesson.correctionSubmittedUrl || currentAttempt?.submittedUrl || ["Submitted", "Checked"].includes(lesson.correctionStatus) || ["Submitted", "Checked"].includes(currentAttempt?.status)) {
+    setCorrectionSubmitStatus("Отправленную работу над ошибками нельзя заменить с сайта.", "error");
     return;
   }
 
@@ -8850,76 +9175,16 @@ function openHomeworkModal(lessonKey) {
   `;
 
   homeworkModalActions.innerHTML = `
-    ${renderCorrectionTimeline(lesson)}
-    ${renderHomeworkReviewResult(lesson)}
-    ${
-      lesson.correctionId
-        ? `
-          <section class="homework-correction-panel">
-            <header>
-              <span class="resource-chip ${correctionMeta.className}">${correctionMeta.label}</span>
-              ${getCorrectionScoreText(lesson) ? `<span class="resource-chip ${correctionScoreClass}">${getCorrectionScoreText(lesson)}</span>` : ""}
-            </header>
-            <h3>${escapeHtml(correctionTitle)}</h3>
-            <p>Это дополнительная работа по этому же уроку. Она появляется, если оценка за предыдущую попытку ниже 5.</p>
-            ${renderCorrectionResult(lesson)}
-            <div class="staff-card__actions">
-              ${correctionLink ? createActionLink(correctionLink, correctionActionClass, "#icon-clipboard", needsHomeworkReview ? "Открыть работу для разбора" : isCorrectionPassed ? "Открыть проверенную работу" : isCorrectionChecked ? "Открыть работу для переделки" : "Открыть работу на проверке") : ""}
-              ${correctionLink ? `<button class="button-yellow" type="button" data-copy-homework-link="${escapeHtml(correctionLink)}"><svg><use href="#icon-clipboard" /></svg>Скопировать ссылку</button>` : ""}
-            </div>
-            ${needsHomeworkReview ? `<div class="homework-review-needed"><strong>Необходимо посмотреть разбор ДЗ</strong><span>Преподаватель увидит эту работу в отдельном разделе и сможет назначить разбор непонятного задания.</span></div>` : ""}
-            <form class="homework-link-form" data-correction-submit-form="${escapeHtml(getLessonKey(lesson))}">
-              <label class="homework-link-field" for="correction-link-input">
-                <span>Ссылка на ${escapeHtml(correctionTitle.toLowerCase())} в Google Drive</span>
-                <input
-                  id="correction-link-input"
-                  name="correctionLink"
-                  type="text"
-                  inputmode="url"
-                  autocomplete="url"
-                  placeholder="https://drive.google.com/..."
-                  value="${escapeHtml(correctionLink)}"
-                  ${isCorrectionPassed || needsHomeworkReview ? "disabled" : ""}
-                  required
-                />
-              </label>
-              <button class="button-blue" type="submit" ${isCorrectionPassed || needsHomeworkReview ? "disabled" : ""}>
-                <svg><use href="#icon-upload" /></svg>Сохранить ${escapeHtml(correctionTitle.toLowerCase())}
-              </button>
-              <p id="correction-upload-status" class="homework-upload-status">${correctionStatusText}</p>
-            </form>
-          </section>
-        `
-        : ""
-    }
-    ${createActionLink(getLessonHomeworkTaskUrl(lesson), "", "#icon-file", "Открыть задание")}
-    ${currentLink ? createActionLink(currentLink, isChecked ? "button-green" : "button-blue", "#icon-clipboard", isChecked ? "Открыть проверенное ДЗ" : "Открыть ДЗ на проверке") : ""}
-    ${currentLink ? `<button class="button-yellow" type="button" data-copy-homework-link="${escapeHtml(currentLink)}"><svg><use href="#icon-clipboard" /></svg>Скопировать ссылку</button>` : ""}
-    <form class="homework-link-form" data-homework-submit-form="${escapeHtml(getLessonKey(lesson))}">
-      <label class="homework-link-field" for="homework-link-input">
-        <span>Ссылка на ДЗ в Google Drive</span>
-        <input
-          id="homework-link-input"
-          name="homeworkLink"
-          type="text"
-          inputmode="url"
-          autocomplete="url"
-          placeholder="https://drive.google.com/..."
-          value="${escapeHtml(currentLink)}"
-          ${!lesson.homeworkAssignmentId || isChecked ? "disabled" : ""}
-          required
-        />
-      </label>
-      <button class="button-blue" type="submit" ${!lesson.homeworkAssignmentId || isChecked ? "disabled" : ""}>
-        <svg><use href="#icon-upload" /></svg>Сохранить ссылку
-      </button>
-      <p id="homework-upload-status" class="homework-upload-status">${statusText}</p>
-    </form>
+    <div class="homework-modal-layout">
+      ${renderHomeworkHistoryPanel(lesson)}
+      ${renderHomeworkSubmitPanel(lesson)}
+    </div>
+    ${needsHomeworkReview ? `<div class="homework-review-needed"><strong>Необходимо посмотреть разбор ДЗ</strong><span>После двух работ над ошибками ниже 5 преподаватель добавит видео-разбор к этому уроку.</span></div>` : ""}
   `;
 
   homeworkModal.classList.remove("is-hidden");
   homeworkModal.setAttribute("aria-hidden", "false");
-  document.querySelector("#homework-link-input:not(:disabled)")?.focus();
+  homeworkModal.querySelector("input:not(:disabled)")?.focus();
 }
 
 function closeHomeworkModal() {
