@@ -7091,16 +7091,24 @@ async function getMessagesPayload(actor, requestedConversationId = 0, { markRead
         CONCAT(a.first_name, ' ', a.last_name) AS "adminName",
         COALESCE(CONCAT(t.first_name, ' ', t.last_name), CONCAT(cu.first_name, ' ', cu.last_name), CONCAT(a.first_name, ' ', a.last_name), CONCAT(fs.first_name, ' ', fs.last_name), CONCAT(s.first_name, ' ', s.last_name)) AS "staffName",
         ch.created_at AS "createdAt",
-        MAX(cm.sent_at) AS "lastMessageAt"
+        lm.sender_role AS "lastSenderRole",
+        lm.sender_name AS "lastSenderName",
+        lm.message_text AS "lastMessageText",
+        lm.sent_at AS "lastMessageAt"
       FROM chats ch
       LEFT JOIN students s ON s.id = ch.student_id
       LEFT JOIN students fs ON fs.id = ch.friend_student_id
       LEFT JOIN teachers t ON t.id = ch.teacher_id
       LEFT JOIN curators cu ON cu.id = ch.curator_id
       LEFT JOIN admin_accounts a ON a.id = ch.admin_id
-      LEFT JOIN chat_messages cm ON cm.chat_id = ch.id
+      LEFT JOIN LATERAL (
+        SELECT sender_role, sender_name, message_text, sent_at
+        FROM chat_messages
+        WHERE chat_id = ch.id
+        ORDER BY sent_at DESC, id DESC
+        LIMIT 1
+      ) lm ON TRUE
       WHERE ${where}
-      GROUP BY ch.id, s.id, fs.id, t.id, cu.id, a.id
       ORDER BY
         CASE ch.chat_type
           WHEN 'TeacherAdmin' THEN 1

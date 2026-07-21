@@ -6790,6 +6790,111 @@ function renderMessageTabs(tabs = []) {
   `;
 }
 
+function getConversationPeerName(conversation = {}, actor = getMessageActor()) {
+  if (conversation.chatType === "StudentFriend" && actor?.role === "Student") {
+    const ownName = String(actor.name || "").trim().toLowerCase();
+    const primaryName = String(conversation.studentName || "").trim();
+    const friendName = String(conversation.friendStudentName || "").trim();
+
+    return ownName && primaryName.toLowerCase() === ownName ? friendName || primaryName : primaryName || friendName;
+  }
+
+  if (actor?.role === "Admin") {
+    return conversation.teacherName || conversation.curatorName || conversation.studentName || conversation.title || "Чат";
+  }
+
+  if (actor?.role === "Teacher" || actor?.role === "Curator") {
+    return conversation.studentName || conversation.adminName || conversation.title || "Чат";
+  }
+
+  return conversation.teacherName || conversation.curatorName || conversation.adminName || conversation.friendStudentName || conversation.title || "Чат";
+}
+
+function getConversationInitials(name = "") {
+  const parts = String(name || "Чат")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2);
+
+  return (parts.map((part) => part[0]).join("") || "Ч").toUpperCase();
+}
+
+function getConversationKindLabel(conversation = {}) {
+  return conversation.chatType === "TeacherAdmin"
+    ? "Преподаватель"
+    : conversation.chatType === "CuratorAdmin"
+      ? "Куратор"
+      : conversation.chatType === "StudentAdmin"
+        ? "Администратор"
+        : conversation.chatType === "StudentFriend"
+          ? "Друг"
+          : conversation.chatType === "StudentCurator"
+            ? "Куратор"
+            : conversation.chatType === "StudentTeacher"
+              ? "Преподаватель"
+              : "Учебный чат";
+}
+
+function getConversationTone(conversation = {}) {
+  if (conversation.chatType === "StudentFriend") {
+    return "friend";
+  }
+
+  if (conversation.chatType === "StudentCurator" || conversation.chatType === "CuratorAdmin") {
+    return "curator";
+  }
+
+  if (conversation.chatType === "StudentAdmin" || conversation.chatType === "TeacherAdmin" || conversation.chatType === "CuratorAdmin") {
+    return "admin";
+  }
+
+  return "teacher";
+}
+
+function getConversationPreview(conversation = {}, actor = getMessageActor()) {
+  const rawText = String(conversation.lastMessageText || "").replace(/\s+/g, " ").trim();
+
+  if (!rawText) {
+    return "Чат создан. Можно написать первое сообщение.";
+  }
+
+  const isOwnLast =
+    conversation.lastSenderRole === actor?.role &&
+    String(conversation.lastSenderName || "").trim().toLowerCase() === String(actor?.name || "").trim().toLowerCase();
+  const prefix = isOwnLast ? "Вы: " : conversation.lastSenderRole === "System" ? "" : conversation.lastSenderName ? `${conversation.lastSenderName}: ` : "";
+  const text = `${prefix}${rawText}`;
+
+  return text.length > 94 ? `${text.slice(0, 91)}...` : text;
+}
+
+function renderConversationButton(conversation = {}, actor = getMessageActor(), activeConversationVisible = false) {
+  const peerName = getConversationPeerName(conversation, actor);
+  const unreadCount = Number(conversation.unreadCount) || 0;
+  const isActive = String(conversation.conversationId) === String(currentConversationId) && activeConversationVisible;
+  const companionLine = [conversation.studentName, conversation.friendStudentName, conversation.teacherName, conversation.curatorName, conversation.adminName]
+    .filter(Boolean)
+    .filter((item, index, list) => list.indexOf(item) === index)
+    .join(" · ");
+
+  return `
+    <button class="conversation-button ${isActive ? "is-active" : ""} ${unreadCount ? "has-unread" : ""}" type="button" data-conversation-id="${escapeHtml(conversation.conversationId)}">
+      <span class="conversation-avatar is-${escapeHtml(getConversationTone(conversation))}" aria-hidden="true">${escapeHtml(getConversationInitials(peerName))}</span>
+      <span class="conversation-button__content">
+        <span class="conversation-button__top">
+          <strong>${escapeHtml(peerName)}</strong>
+          <time>${escapeHtml(formatStreamDate(conversation.lastMessageAt || conversation.createdAt))}</time>
+        </span>
+        <span class="conversation-button__preview">${escapeHtml(getConversationPreview(conversation, actor))}</span>
+        <span class="conversation-button__bottom">
+          <span>${escapeHtml(getConversationKindLabel(conversation))}${companionLine ? ` · ${escapeHtml(companionLine)}` : ""}</span>
+          ${unreadCount ? `<em>${escapeHtml(formatNumber(Math.min(unreadCount, 99)))}</em>` : ""}
+        </span>
+      </span>
+    </button>
+  `;
+}
+
 function getRecipientGroupLabel(recipient = {}) {
   const fallbackGroups = {
     Admin: "Администраторы",
@@ -7034,11 +7139,11 @@ function renderMessages(payload) {
 
   if (messageThreadRole) {
     const tabMeta = getMessageTabMeta(currentMessageTab);
-    messageThreadRole.textContent = activeConversationVisible ? actor?.label || "Чат" : tabMeta.label;
+    messageThreadRole.textContent = activeConversationVisible ? getConversationKindLabel(activeConversation) : tabMeta.label;
   }
 
   if (messageThreadTitle) {
-    messageThreadTitle.textContent = activeConversationVisible ? activeConversation?.title || "Учебный чат" : actor ? "Выберите чат" : "Выберите чат";
+    messageThreadTitle.textContent = activeConversationVisible ? getConversationPeerName(activeConversation, actor) : actor ? "Выберите чат" : "Выберите чат";
   }
 
   if (conversationList) {
@@ -7056,17 +7161,7 @@ function renderMessages(payload) {
         startPanel +
         (currentMessageTab === "friends" ? friendsPanel : "") +
         filteredConversations
-        .map((conversation) => `
-          <button class="conversation-button ${String(conversation.conversationId) === String(currentConversationId) && activeConversationVisible ? "is-active" : ""} ${Number(conversation.unreadCount) ? "has-unread" : ""}" type="button" data-conversation-id="${escapeHtml(conversation.conversationId)}">
-            <span class="conversation-button__top">
-              <strong>${escapeHtml(conversation.title)}</strong>
-              ${Number(conversation.unreadCount) ? `<em>${escapeHtml(formatNumber(Math.min(Number(conversation.unreadCount), 99)))}</em>` : ""}
-            </span>
-            <span>${escapeHtml([conversation.studentName, conversation.friendStudentName, conversation.teacherName, conversation.curatorName, conversation.adminName].filter(Boolean).join(" · ") || conversation.staffName || "Учебный чат")}</span>
-            <span class="conversation-button__meta">${escapeHtml(conversation.chatType === "TeacherAdmin" ? "Чат с преподавателем" : conversation.chatType === "CuratorAdmin" ? "Чат с куратором" : conversation.chatType === "StudentAdmin" ? "Чат с учеником" : conversation.chatType === "StudentFriend" ? "Чат с другом" : "Учебный чат")}</span>
-            <span class="conversation-button__date">${escapeHtml(formatStreamDate(conversation.lastMessageAt || conversation.createdAt))}</span>
-          </button>
-        `)
+        .map((conversation) => renderConversationButton(conversation, actor, activeConversationVisible))
         .join("");
     }
   }
