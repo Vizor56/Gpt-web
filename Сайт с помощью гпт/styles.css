@@ -17806,3 +17806,284 @@ body[data-site-theme="theme-pixel-coffee"] {
 ) {
   display: none !important;
 }
+
+/* Messages and friends polish */
+.side-link {
+  position: relative;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+}
+
+.side-link > span:not(.side-link__badge) {
+  min-width: 0;
+}
+
+.side-link__badge {
+  display: inline-grid;
+  min-width: 22px;
+  height: 22px;
+  margin-left: 8px;
+  place-items: center;
+  padding: 0 6px;
+  border: 2px solid #fffdf8;
+  border-radius: 999px;
+  background: #e4543d;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 950;
+  line-height: 1;
+  box-shadow: 0 6px 14px rgba(228, 84, 61, 0.22);
+}
+
+.message-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: 7px;
+  padding: 6px;
+  border: 1px solid color-mix(in srgb, var(--academy-accent, #145c59) 16%, #ffffff);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.96), rgba(238, 248, 246, 0.92)),
+    var(--academy-paper, #fffdf8);
+  box-shadow: 0 12px 28px rgba(24, 59, 57, 0.07);
+}
+
+.message-tab {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--academy-muted, var(--muted));
+  cursor: pointer;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.message-tab span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.message-tab strong,
+.conversation-button__top em {
+  display: inline-grid;
+  min-width: 22px;
+  height: 22px;
+  place-items: center;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #e4543d;
+  color: #fff;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.message-tab:hover,
+.message-tab.is-active {
+  border-color: color-mix(in srgb, var(--academy-accent, #145c59) 30%, #ffffff);
+  background: color-mix(in srgb, var(--academy-accent, #145c59) 10%, #ffffff);
+  color: var(--academy-accent-dark, #0b4b48);
+}
+
+.message-recipient-panel {
+  border-color: color-mix(in srgb, var(--academy-accent, #145c59) 20%, #ffffff);
+  background:
+    linear-gradient(135deg, rgba(255, 253, 248, 0.98), rgba(238, 248, 246, 0.7)),
+    #fff;
+}
+
+.message-recipient-panel__head {
+  display: grid;
+  gap: 3px;
+}
+
+.message-recipient-panel__head strong {
+  color: var(--academy-ink, var(--ink));
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.message-recipient-panel__head span {
+  color: var(--academy-muted, var(--muted));
+  font-size: 12px;
+  font-weight: 780;
+  line-height: 1.35;
+}
+
+.conversation-start-form .message-start-button {
+  min-height: 42px;
+  border-color: var(--academy-accent, #145c59);
+  background: var(--academy-accent, #145c59);
+  color: #fffdf8;
+  box-shadow: 0 12px 24px rgba(20, 92, 89, 0.16);
+}
+
+.conversation-start-form .message-start-button span {
+  display: inline-grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.conversation-start-form .message-start-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: var(--academy-accent-dark, #0f4d49);
+}
+
+.conversation-button {
+  border-color: color-mix(in srgb, var(--academy-line, var(--line)) 78%, transparent);
+  background: rgba(255, 253, 248, 0.6);
+}
+
+.conversation-button.has-unread {
+  border-color: color-mix(in srgb, #e4543d 36%, #ffffff);
+  background: linear-gradient(90deg, rgba(255, 247, 237, 0.9), rgba(255, 253, 248, 0.9));
+}
+
+.conversation-button__top {
+  display: flex;
+  min-width: 0;
+  align-items: start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.conversation-button__top strong {
+  flex: 1 1 auto;
+}
+
+.conversation-button__meta {
+  color: var(--academy-accent-dark, #0f4d49) !important;
+}
+
+.conversation-button__date {
+  font-size: 11px !important;
+}
+
+.friends-panel {
+  border-color: color-mix(in srgb, var(--academy-accent, #145c59) 18%, #ffffff);
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.94), rgba(238, 248, 246, 0.72)),
+    var(--academy-paper, #fffdf8);
+}
+
+.friends-panel summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--academy-ink, var(--ink));
+}
+
+.friends-panel summary span {
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.friends-panel summary small {
+  color: var(--academy-muted, var(--muted));
+  font-size: 11px;
+  font-weight: 850;
+  text-align: right;
+}
+
+.friends-panel__grid {
+  grid-template-columns: 1fr;
+}
+
+.friend-card {
+  grid-template-columns: 52px minmax(0, 1fr);
+  border-color: color-mix(in srgb, var(--academy-accent, #145c59) 14%, #ffffff);
+  background: rgba(255, 253, 248, 0.84);
+  box-shadow: 0 10px 22px rgba(24, 59, 57, 0.045);
+}
+
+.friend-card.is-incoming {
+  border-color: color-mix(in srgb, #f1b84b 38%, #ffffff);
+  background: linear-gradient(135deg, rgba(255, 248, 230, 0.86), rgba(255, 253, 248, 0.9));
+}
+
+.friend-card.is-friend {
+  border-color: color-mix(in srgb, #45a36f 30%, #ffffff);
+}
+
+.friend-card__avatar {
+  width: 52px;
+  height: 52px;
+  border: 1px solid color-mix(in srgb, var(--academy-accent, #145c59) 18%, #ffffff);
+  background: linear-gradient(180deg, #eaf6f3, #fffdf8);
+  overflow: hidden;
+}
+
+.friend-card__top {
+  display: flex;
+  min-width: 0;
+  align-items: start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.friend-card__top small {
+  flex: 0 0 auto;
+  max-width: 96px;
+  padding: 3px 7px;
+  border: 1px solid color-mix(in srgb, var(--academy-accent, #145c59) 16%, #ffffff);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--academy-accent, #145c59) 8%, #ffffff);
+  color: var(--academy-accent-dark, #0f4d49);
+  font-size: 10px;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.friend-card__actions button {
+  min-height: 34px;
+  padding: 0 10px;
+  color: var(--academy-accent-dark, #0f4d49);
+  border-color: color-mix(in srgb, var(--academy-accent, #145c59) 24%, #ffffff);
+  background: rgba(255, 253, 248, 0.92);
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.friend-card__actions .friend-action-primary {
+  color: #fffdf8;
+  border-color: var(--academy-accent, #145c59);
+  background: var(--academy-accent, #145c59);
+}
+
+.friend-card__actions button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(24, 59, 57, 0.1);
+}
+
+@media (max-width: 760px) {
+  .message-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .friends-panel summary {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .friends-panel summary small {
+    text-align: left;
+  }
+}

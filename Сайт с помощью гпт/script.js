@@ -509,7 +509,9 @@ let latestShop = null;
 let latestMessages = null;
 let latestStaffWorkspace = null;
 let currentConversationId = null;
-let currentMessageFilter = "all";
+let currentMessageTab = "";
+let messageTabLockedByUser = false;
+let latestMessageUnreadState = { total: 0, byTab: {} };
 let activeStreamChatId = null;
 let streamsLoaded = false;
 let latestGlobalStreams = [];
@@ -939,6 +941,28 @@ function setActiveNav(pageName) {
   });
 }
 
+function updateMessagesNavUnread(count = latestMessageUnreadState.total || 0) {
+  document.querySelectorAll("[data-open-messages], [data-staff-page='messages']").forEach((button) => {
+    let badge = button.querySelector(".side-link__badge");
+
+    if (!count) {
+      badge?.remove();
+      button.classList.remove("has-unread");
+      return;
+    }
+
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.className = "side-link__badge";
+      button.append(badge);
+    }
+
+    badge.textContent = formatNumber(Math.min(Number(count) || 0, 99));
+    badge.setAttribute("aria-label", `${formatNumber(count)} непрочитанных сообщений`);
+    button.classList.add("has-unread");
+  });
+}
+
 function setApplicationStatus(message, type = "") {
   if (!applicationStatus) {
     return;
@@ -990,7 +1014,7 @@ function openMessages() {
   showPage("messages");
   setActiveNav("messages");
   history.replaceState(null, "", "#messages");
-  loadMessages();
+  loadMessages(currentConversationId, { markRead: true });
 }
 
 function openAccount() {
@@ -2658,6 +2682,7 @@ function renderStaffNav() {
     )
     .join("");
   setActiveStaffNav(currentStaffPage);
+  updateMessagesNavUnread();
 }
 
 function setActiveStaffNav(pageName) {
@@ -2779,7 +2804,7 @@ function openStaffPage(pageName = "messages") {
     showPage("messages");
     setActiveNav("");
     history.replaceState(null, "", "#staff-messages");
-    loadMessages();
+    loadMessages(currentConversationId, { markRead: true });
     return;
   }
 
@@ -6654,20 +6679,115 @@ function getMessageTargetLabel(role = "") {
   }[role] || role || "Адресат";
 }
 
-function getConversationFilterType(conversation = {}) {
-  if (conversation.chatType === "TeacherAdmin") {
+function getMessageTabMeta(tab = "") {
+  return {
+    friends: { label: "Друзья", hint: "Личные чаты с друзьями" },
+    teachers: { label: "Преподаватели", hint: "Учебные вопросы и проверки" },
+    curators: { label: "Кураторы", hint: "Поддержка по курсу" },
+    students: { label: "Ученики", hint: "Чаты с учениками" },
+    admins: { label: "Администраторы", hint: "Вопросы команде школы" },
+  }[tab] || { label: "Чаты", hint: "Сообщения" };
+}
+
+function getConversationTab(conversation = {}, actor = getMessageActor()) {
+  if (conversation.chatType === "StudentFriend") {
+    return "friends";
+  }
+
+  if (conversation.chatType === "StudentTeacher" || conversation.chatType === "TeacherAdmin") {
     return "teachers";
   }
 
-  if (conversation.chatType === "CuratorAdmin") {
+  if (conversation.chatType === "StudentCurator" || conversation.chatType === "CuratorAdmin") {
     return "curators";
   }
 
   if (conversation.chatType === "StudentAdmin") {
-    return "students";
+    return actor?.role === "Admin" ? "students" : "admins";
   }
 
-  return "all";
+  return actor?.role === "Student" ? "teachers" : "students";
+}
+
+function getRecipientTab(recipient = {}, actor = getMessageActor()) {
+  if (recipient.targetRole === "Student") {
+    return actor?.role === "Student" ? "friends" : "students";
+  }
+
+  if (recipient.targetRole === "Teacher") {
+    return "teachers";
+  }
+
+  if (recipient.targetRole === "Curator") {
+    return "curators";
+  }
+
+  if (recipient.targetRole === "Admin") {
+    return "admins";
+  }
+
+  return "students";
+}
+
+function getMessageTabOrder(actor = getMessageActor()) {
+  if (!actor) {
+    return [];
+  }
+
+  if (actor?.role === "Student") {
+    return ["friends", "teachers", "curators", "admins"];
+  }
+
+  if (actor?.role === "Admin") {
+    return ["students", "teachers", "curators"];
+  }
+
+  return ["students", "admins"];
+}
+
+function getMessageTabs(recipients = [], conversations = [], actor = getMessageActor()) {
+  const order = getMessageTabOrder(actor);
+  const available = new Set(order);
+
+  recipients.forEach((recipient) => available.add(getRecipientTab(recipient, actor)));
+  conversations.forEach((conversation) => available.add(getConversationTab(conversation, actor)));
+
+  return [...available]
+    .filter((tab) => order.includes(tab) || tab !== "friends")
+    .sort((first, second) => {
+      const firstIndex = order.indexOf(first);
+      const secondIndex = order.indexOf(second);
+      return (firstIndex === -1 ? 99 : firstIndex) - (secondIndex === -1 ? 99 : secondIndex);
+    })
+    .map((tab) => {
+      const meta = getMessageTabMeta(tab);
+      const unreadCount = conversations
+        .filter((conversation) => getConversationTab(conversation, actor) === tab)
+        .reduce((total, conversation) => total + (Number(conversation.unreadCount) || 0), 0);
+
+      return { key: tab, ...meta, unreadCount };
+    });
+}
+
+function renderMessageTabs(tabs = []) {
+  if (!tabs.length) {
+    return "";
+  }
+
+  return `
+    <div class="message-tabs" role="tablist" aria-label="Разделы сообщений">
+      ${tabs
+        .map(
+          (tab) => `
+            <button class="message-tab ${tab.key === currentMessageTab ? "is-active" : ""}" type="button" role="tab" aria-selected="${tab.key === currentMessageTab}" data-message-tab="${escapeHtml(tab.key)}">
+              <span>${escapeHtml(tab.label)}</span>
+              ${tab.unreadCount ? `<strong>${escapeHtml(formatNumber(Math.min(tab.unreadCount, 99)))}</strong>` : ""}
+            </button>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
 }
 
 function getRecipientGroupLabel(recipient = {}) {
@@ -6712,31 +6832,20 @@ function renderGroupedRecipientOptions(recipients = []) {
     .join("");
 }
 
-function renderMessageStartPanel(recipients = [], actor = getMessageActor()) {
+function renderMessageStartPanel(recipients = [], actor = getMessageActor(), activeTab = currentMessageTab) {
   if (!actor) {
     return "";
   }
 
   const options = renderGroupedRecipientOptions(recipients);
-
-  const filters =
-    actor.role === "Admin"
-      ? `
-        <div class="conversation-filters" data-message-filter-scope>
-          ${[
-            ["all", "Все"],
-            ["teachers", "Преподаватели"],
-            ["curators", "Кураторы"],
-            ["students", "Ученики"],
-          ]
-            .map((item) => `<button type="button" class="${currentMessageFilter === item[0] ? "is-active" : ""}" data-message-filter="${item[0]}">${item[1]}</button>`)
-            .join("")}
-        </div>
-      `
-      : "";
+  const tabMeta = getMessageTabMeta(activeTab);
 
   return `
-    <form class="conversation-start-form" data-message-start-form>
+    <form class="conversation-start-form message-recipient-panel" data-message-start-form>
+      <div class="message-recipient-panel__head">
+        <strong>Новый чат</strong>
+        <span>${escapeHtml(tabMeta.hint)}</span>
+      </div>
       <label>
         Поиск адресата
         <input class="message-recipient-search" type="search" data-message-recipient-search placeholder="Имя, логин, курс или роль" autocomplete="off" ${recipients.length ? "" : "disabled"} />
@@ -6748,13 +6857,13 @@ function renderMessageStartPanel(recipients = [], actor = getMessageActor()) {
           ${options}
         </select>
       </label>
-      <button type="submit" ${recipients.length ? "" : "disabled"}>
-        <svg><use href="#icon-message" /></svg>Создать чат
+      <button class="message-start-button" type="submit" ${recipients.length ? "" : "disabled"}>
+        <span><svg><use href="#icon-message" /></svg></span>
+        Написать
       </button>
       <p class="message-recipient-empty is-hidden" data-message-recipient-empty>Адресаты по поиску не найдены.</p>
       ${recipients.length ? "" : `<p>Нет доступных адресатов.</p>`}
     </form>
-    ${filters}
   `;
 }
 
@@ -6767,19 +6876,23 @@ function renderStudentFriendsPanel(friendState = null, actor = getMessageActor()
   const incoming = friendState?.incomingRequests || [];
   const outgoing = friendState?.outgoingRequests || [];
   const suggestions = friendState?.suggestions || [];
-  const renderPerson = (person, actions = "") => {
+  const renderPerson = (person, actions = "", tone = "") => {
     const badgeMarkup = renderProfileBadgeMarkup(person, "friend-card__badge");
     const avatarMarkup = renderPixelPetMarkup(person.profileItems || [], {
       wrapperClass: "friend-card__avatar",
       petClass: "friend-card__pet",
     });
+    const statusLabel = getProfileStatusLabel(person.profileStatus);
 
     return `
-      <article class="friend-card">
+      <article class="friend-card ${tone ? `is-${tone}` : ""}">
         ${avatarMarkup}
         <div class="friend-card__body">
-          <strong>${escapeHtml(person.studentName || "Ученик")}</strong>
-          <span>${escapeHtml(person.subtitle || getProfileStatusLabel(person.profileStatus) || "Профиль ученика")}</span>
+          <div class="friend-card__top">
+            <strong>${escapeHtml(person.studentName || "Ученик")}</strong>
+            ${statusLabel ? `<small>${escapeHtml(statusLabel)}</small>` : ""}
+          </div>
+          <span>${escapeHtml(person.subtitle || "Профиль ученика")}</span>
           ${badgeMarkup ? `<div class="friend-card__badges">${badgeMarkup}</div>` : ""}
         </div>
         <div class="friend-card__actions">${actions}</div>
@@ -6790,7 +6903,10 @@ function renderStudentFriendsPanel(friendState = null, actor = getMessageActor()
   return `
     <section class="friends-panel">
       <details ${open ? "open" : ""}>
-        <summary>Друзья и заявки</summary>
+        <summary>
+          <span>Друзья</span>
+          <small>${escapeHtml(formatNumber(friends.length))} друзей · ${escapeHtml(formatNumber(incoming.length))} входящих · ${escapeHtml(formatNumber(outgoing.length))} исходящих</small>
+        </summary>
         <div class="friends-panel__grid">
           <section>
             <h3>Друзья</h3>
@@ -6801,9 +6917,10 @@ function renderStudentFriendsPanel(friendState = null, actor = getMessageActor()
                       renderPerson(
                         friend,
                         `
-                          <button type="button" data-start-friend-chat="${escapeHtml(friend.studentId)}"><svg><use href="#icon-message" /></svg>Написать</button>
+                          <button class="friend-action-primary" type="button" data-start-friend-chat="${escapeHtml(friend.studentId)}"><svg><use href="#icon-message" /></svg>Написать</button>
                           <button type="button" data-friend-remove="${escapeHtml(friend.studentId)}">Удалить</button>
                         `,
+                        "friend",
                       ),
                     )
                     .join("")
@@ -6819,9 +6936,10 @@ function renderStudentFriendsPanel(friendState = null, actor = getMessageActor()
                       renderPerson(
                         request,
                         `
-                          <button type="button" data-friend-respond="${escapeHtml(request.requestId)}" data-friend-action="accept">Принять</button>
+                          <button class="friend-action-primary" type="button" data-friend-respond="${escapeHtml(request.requestId)}" data-friend-action="accept">Принять</button>
                           <button type="button" data-friend-respond="${escapeHtml(request.requestId)}" data-friend-action="decline">Отклонить</button>
                         `,
+                        "incoming",
                       ),
                     )
                     .join("")
@@ -6834,7 +6952,7 @@ function renderStudentFriendsPanel(friendState = null, actor = getMessageActor()
               outgoing.length
                 ? outgoing
                     .map((request) =>
-                      renderPerson(request, `<button type="button" data-friend-cancel="${escapeHtml(request.requestId)}">Отозвать</button>`),
+                      renderPerson(request, `<button type="button" data-friend-cancel="${escapeHtml(request.requestId)}">Отозвать</button>`, "outgoing"),
                     )
                     .join("")
                 : `<p class="resource-empty">Исходящих заявок нет.</p>`
@@ -6846,7 +6964,7 @@ function renderStudentFriendsPanel(friendState = null, actor = getMessageActor()
               suggestions.length
                 ? suggestions
                     .map((student) =>
-                      renderPerson(student, `<button type="button" data-friend-request="${escapeHtml(student.studentId)}">Добавить</button>`),
+                      renderPerson(student, `<button class="friend-action-primary" type="button" data-friend-request="${escapeHtml(student.studentId)}">Добавить</button>`, "suggestion"),
                     )
                     .join("")
                 : `<p class="resource-empty">Новых учеников для заявки пока нет.</p>`
@@ -6863,39 +6981,90 @@ function renderMessages(payload) {
   const actor = getMessageActor();
   const conversations = payload?.conversations || [];
   const messages = payload?.messages || [];
-  currentConversationId = payload?.activeConversationId || conversations[0]?.conversationId || currentConversationId;
+  const recipients = payload?.recipients || [];
+  const tabs = getMessageTabs(recipients, conversations, actor);
+  const unreadTotal =
+    typeof payload?.unreadTotal === "number"
+      ? payload.unreadTotal
+      : conversations.reduce((total, conversation) => total + (Number(conversation.unreadCount) || 0), 0);
+  const unreadByTab = tabs.reduce((acc, tab) => {
+    acc[tab.key] = Number(tab.unreadCount) || 0;
+    return acc;
+  }, {});
+  latestMessageUnreadState = { total: unreadTotal, byTab: unreadByTab };
+  updateMessagesNavUnread(unreadTotal);
 
-  if (messageThreadRole) {
-    messageThreadRole.textContent = actor ? actor.label : "Чат";
+  if (!actor) {
+    currentConversationId = null;
+    messageForm?.querySelectorAll("textarea, button[type='submit']").forEach((control) => {
+      control.disabled = true;
+    });
+
+    if (messageThreadRole) {
+      messageThreadRole.textContent = "Чат";
+    }
+
+    if (messageThreadTitle) {
+      messageThreadTitle.textContent = "Выберите чат";
+    }
+
+    if (conversationList) {
+      conversationList.innerHTML = `<div class="resource-empty">Войдите в аккаунт ученика или команды, чтобы открыть чаты.</div>`;
+    }
+
+    if (messageList) {
+      messageList.innerHTML = `<div class="resource-empty">Войдите в аккаунт ученика или команды, чтобы читать сообщения.</div>`;
+    }
+
+    return;
   }
 
+  currentConversationId = payload?.activeConversationId || conversations[0]?.conversationId || currentConversationId;
   const activeConversation = conversations.find((conversation) => String(conversation.conversationId) === String(currentConversationId));
+  const activeConversationTab = activeConversation ? getConversationTab(activeConversation, actor) : "";
+
+  if (!currentMessageTab || !tabs.some((tab) => tab.key === currentMessageTab)) {
+    currentMessageTab = activeConversationTab || tabs[0]?.key || "friends";
+    messageTabLockedByUser = false;
+  } else if (!messageTabLockedByUser && activeConversationTab) {
+    currentMessageTab = activeConversationTab;
+  }
+
+  const activeConversationVisible = Boolean(activeConversation && getConversationTab(activeConversation, actor) === currentMessageTab);
+
+  if (messageThreadRole) {
+    const tabMeta = getMessageTabMeta(currentMessageTab);
+    messageThreadRole.textContent = activeConversationVisible ? actor?.label || "Чат" : tabMeta.label;
+  }
 
   if (messageThreadTitle) {
-    messageThreadTitle.textContent = activeConversation?.title || (actor ? "Учебный чат" : "Выберите чат");
+    messageThreadTitle.textContent = activeConversationVisible ? activeConversation?.title || "Учебный чат" : actor ? "Выберите чат" : "Выберите чат";
   }
 
   if (conversationList) {
-    const recipients = payload?.recipients || [];
-    const filteredConversations =
-      actor?.role === "Admin" && currentMessageFilter !== "all"
-        ? conversations.filter((conversation) => getConversationFilterType(conversation) === currentMessageFilter)
-        : conversations;
+    const filteredRecipients = recipients.filter((recipient) => getRecipientTab(recipient, actor) === currentMessageTab);
+    const filteredConversations = conversations.filter((conversation) => getConversationTab(conversation, actor) === currentMessageTab);
     const friendsPanel = renderStudentFriendsPanel(payload?.friends, actor);
+    const startPanel = renderMessageStartPanel(filteredRecipients, actor, currentMessageTab);
+    const emptyText = `В разделе «${getMessageTabMeta(currentMessageTab).label}» чатов пока нет.`;
 
     if (filteredConversations.length === 0) {
-      conversationList.innerHTML = `${renderMessageStartPanel(recipients, actor)}${friendsPanel}<div class="resource-empty">Чаты пока не найдены.</div>`;
+      conversationList.innerHTML = `${renderMessageTabs(tabs)}${startPanel}${currentMessageTab === "friends" ? friendsPanel : ""}<div class="resource-empty">${escapeHtml(emptyText)}</div>`;
     } else {
       conversationList.innerHTML =
-        renderMessageStartPanel(recipients, actor) +
-        friendsPanel +
+        renderMessageTabs(tabs) +
+        startPanel +
+        (currentMessageTab === "friends" ? friendsPanel : "") +
         filteredConversations
         .map((conversation) => `
-          <button class="conversation-button ${String(conversation.conversationId) === String(currentConversationId) ? "is-active" : ""}" type="button" data-conversation-id="${escapeHtml(conversation.conversationId)}">
-            <strong>${escapeHtml(conversation.title)}</strong>
+          <button class="conversation-button ${String(conversation.conversationId) === String(currentConversationId) && activeConversationVisible ? "is-active" : ""} ${Number(conversation.unreadCount) ? "has-unread" : ""}" type="button" data-conversation-id="${escapeHtml(conversation.conversationId)}">
+            <span class="conversation-button__top">
+              <strong>${escapeHtml(conversation.title)}</strong>
+              ${Number(conversation.unreadCount) ? `<em>${escapeHtml(formatNumber(Math.min(Number(conversation.unreadCount), 99)))}</em>` : ""}
+            </span>
             <span>${escapeHtml([conversation.studentName, conversation.friendStudentName, conversation.teacherName, conversation.curatorName, conversation.adminName].filter(Boolean).join(" · ") || conversation.staffName || "Учебный чат")}</span>
-            <span>${escapeHtml(conversation.chatType === "TeacherAdmin" ? "Чат с преподавателем" : conversation.chatType === "CuratorAdmin" ? "Чат с куратором" : conversation.chatType === "StudentAdmin" ? "Чат с учеником" : conversation.chatType === "StudentFriend" ? "Чат с другом" : "Учебный чат")}</span>
-            <span>${escapeHtml(formatStreamDate(conversation.lastMessageAt || conversation.createdAt))}</span>
+            <span class="conversation-button__meta">${escapeHtml(conversation.chatType === "TeacherAdmin" ? "Чат с преподавателем" : conversation.chatType === "CuratorAdmin" ? "Чат с куратором" : conversation.chatType === "StudentAdmin" ? "Чат с учеником" : conversation.chatType === "StudentFriend" ? "Чат с другом" : "Учебный чат")}</span>
+            <span class="conversation-button__date">${escapeHtml(formatStreamDate(conversation.lastMessageAt || conversation.createdAt))}</span>
           </button>
         `)
         .join("");
@@ -6906,8 +7075,12 @@ function renderMessages(payload) {
     return;
   }
 
-  if (!actor) {
-    messageList.innerHTML = `<div class="resource-empty">Войдите в аккаунт ученика или команды, чтобы читать сообщения.</div>`;
+  messageForm?.querySelectorAll("textarea, button[type='submit']").forEach((control) => {
+    control.disabled = !actor || !activeConversationVisible;
+  });
+
+  if (!activeConversationVisible) {
+    messageList.innerHTML = `<div class="resource-empty">Выберите чат во вкладке «${escapeHtml(getMessageTabMeta(currentMessageTab).label)}» или создайте новый.</div>`;
     return;
   }
 
@@ -6941,7 +7114,12 @@ function renderMessages(payload) {
     .join("");
 }
 
-async function loadMessages(conversationId = currentConversationId) {
+function isMessagesPageVisible() {
+  const messagesPage = document.querySelector('[data-page="messages"]');
+  return Boolean(messagesPage && !messagesPage.classList.contains("is-hidden"));
+}
+
+async function loadMessages(conversationId = currentConversationId, options = {}) {
   const actor = getMessageActor();
 
   if (!actor) {
@@ -6954,8 +7132,19 @@ async function loadMessages(conversationId = currentConversationId) {
   setMessageStatus("Загружаю сообщения...", "pending");
 
   try {
-    const query = conversationId ? `?conversationId=${encodeURIComponent(conversationId)}` : "";
-    const response = await apiFetch(`/api/messages${query}`, { cache: "no-store" });
+    const query = new URLSearchParams();
+    const shouldMarkRead = options.markRead ?? isMessagesPageVisible();
+
+    if (conversationId) {
+      query.set("conversationId", conversationId);
+    }
+
+    if (shouldMarkRead) {
+      query.set("markRead", "1");
+    }
+
+    const queryText = query.toString() ? `?${query.toString()}` : "";
+    const response = await apiFetch(`/api/messages${queryText}`, { cache: "no-store" });
     const payload = await response.json().catch(() => ({}));
 
     if (!response.ok) {
@@ -7046,10 +7235,9 @@ async function startMessageConversation(form) {
     }
 
     currentConversationId = result.activeConversationId;
-    if (getMessageActor()?.role === "Admin") {
-      currentMessageFilter = targetRole === "Teacher" ? "teachers" : targetRole === "Curator" ? "curators" : targetRole === "Student" ? "students" : currentMessageFilter;
-    }
-    await loadMessages(currentConversationId);
+    currentMessageTab = getRecipientTab({ targetRole }, getMessageActor());
+    messageTabLockedByUser = false;
+    await loadMessages(currentConversationId, { markRead: true });
     setMessageStatus("Чат открыт.", "success");
   } catch (error) {
     setMessageStatus(error.message || "Не удалось создать чат.", "error");
@@ -7082,10 +7270,12 @@ async function startStudentFriendChat(friendId) {
     }
 
     currentConversationId = result.activeConversationId;
+    currentMessageTab = "friends";
+    messageTabLockedByUser = false;
     showPage("messages");
     setActiveNav("messages");
     history.replaceState(null, "", "#messages");
-    await loadMessages(currentConversationId);
+    await loadMessages(currentConversationId, { markRead: true });
     setMessageStatus("Чат с другом открыт.", "success");
   } catch (error) {
     setMessageStatus(error.message || "Не удалось открыть чат с другом.", "error");
@@ -7134,8 +7324,10 @@ async function startCurrentCourseCuratorChat() {
     }
 
     currentConversationId = result.activeConversationId;
+    currentMessageTab = "curators";
+    messageTabLockedByUser = false;
     openMessages();
-    await loadMessages(currentConversationId);
+    await loadMessages(currentConversationId, { markRead: true });
     setMessageStatus(`Чат с куратором ${curator.curatorName || ""} открыт.`, "success");
   } catch (error) {
     setAuthStatus(error.message || "Не удалось открыть чат с куратором.", "error");
@@ -9950,7 +10142,7 @@ document.addEventListener("click", (event) => {
     event.preventDefault();
     loadStaffWorkspace();
     if (currentStaffPage === "messages") {
-      loadMessages(currentConversationId);
+      loadMessages(currentConversationId, { markRead: true });
     }
     return;
   }
@@ -10297,11 +10489,20 @@ if (conversationList) {
   });
 
   conversationList.addEventListener("click", (event) => {
-    const filterButton = event.target.closest("[data-message-filter]");
+    const tabButton = event.target.closest("[data-message-tab]");
 
-    if (filterButton) {
+    if (tabButton) {
       event.preventDefault();
-      currentMessageFilter = filterButton.dataset.messageFilter || "all";
+      currentMessageTab = tabButton.dataset.messageTab || currentMessageTab;
+      messageTabLockedByUser = true;
+
+      const matchingConversation = (latestMessages?.conversations || []).find((conversation) => getConversationTab(conversation, getMessageActor()) === currentMessageTab);
+      if (matchingConversation && String(matchingConversation.conversationId) !== String(currentConversationId)) {
+        currentConversationId = matchingConversation.conversationId;
+        loadMessages(currentConversationId, { markRead: true });
+        return;
+      }
+
       renderMessages(latestMessages || { conversations: [], messages: [] });
       return;
     }
@@ -10353,7 +10554,8 @@ if (conversationList) {
 
     if (button) {
       currentConversationId = button.dataset.conversationId;
-      loadMessages(currentConversationId);
+      messageTabLockedByUser = false;
+      loadMessages(currentConversationId, { markRead: true });
     }
   });
 }
@@ -10481,7 +10683,7 @@ if (messageForm) {
 
 if (messagesRefreshButton) {
   messagesRefreshButton.addEventListener("click", () => {
-    loadMessages(currentConversationId);
+    loadMessages(currentConversationId, { markRead: true });
   });
 }
 

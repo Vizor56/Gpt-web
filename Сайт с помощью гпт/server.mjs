@@ -372,6 +372,15 @@ async function runRuntimeMigrations() {
     CREATE INDEX IF NOT EXISTS idx_chat_messages_sender_student ON chat_messages(sender_student_id);
     CREATE INDEX IF NOT EXISTS idx_chat_messages_sender_staff ON chat_messages(sender_staff_role, sender_staff_id);
 
+    CREATE TABLE IF NOT EXISTS chat_reads (
+      chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+      reader_role TEXT NOT NULL CHECK (reader_role IN ('Student', 'Teacher', 'Curator', 'Admin')),
+      reader_id INTEGER NOT NULL,
+      last_read_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (chat_id, reader_role, reader_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_chat_reads_reader ON chat_reads(reader_role, reader_id);
+
     ALTER TABLE students ADD COLUMN IF NOT EXISTS profile_status TEXT NOT NULL DEFAULT 'focused';
     ALTER TABLE students ADD COLUMN IF NOT EXISTS active_badge_id INTEGER;
     ALTER TABLE lessons ADD COLUMN IF NOT EXISTS homework_review_url TEXT;
@@ -6448,8 +6457,19 @@ app.post(
       throw createHttpError(404, "Ученик не найден.");
     }
 
-    const alreadyFriend = await dbOne("SELECT 1 FROM student_friends WHERE student_id = $1 AND friend_id = $2", [student.studentId, receiverId]);
+    const alreadyFriend = await dbOne(
+      "SELECT 1 FROM student_friends WHERE (student_id = $1 AND friend_id = $2) OR (student_id = $2 AND friend_id = $1)",
+      [student.studentId, receiverId],
+    );
     if (alreadyFriend) {
+      await dbQuery(
+        `
+          INSERT INTO student_friends (student_id, friend_id)
+          VALUES ($1, $2), ($2, $1)
+          ON CONFLICT DO NOTHING
+        `,
+        [student.studentId, receiverId],
+      );
       response.json({ ok: true, source: "database", message: "Вы уже друзья.", ...(await getStudentFriendsPayload(student.studentId)) });
       return;
     }
@@ -6459,7 +6479,18 @@ app.post(
       [receiverId, student.studentId],
     );
     if (reversePending) {
-      response.json({ ok: true, source: "database", message: "У этого ученика уже есть входящая заявка вам.", ...(await getStudentFriendsPayload(student.studentId)) });
+      await withTransaction(async (client) => {
+        await client.query("UPDATE student_friend_requests SET status = 'Accepted', updated_at = NOW() WHERE id = $1", [reversePending.id]);
+        await client.query(
+          `
+            INSERT INTO student_friends (student_id, friend_id)
+            VALUES ($1, $2), ($2, $1)
+            ON CONFLICT DO NOTHING
+          `,
+          [student.studentId, receiverId],
+        );
+      });
+      response.json({ ok: true, source: "database", message: "Встречная заявка принята. Теперь вы друзья.", ...(await getStudentFriendsPayload(student.studentId)) });
       return;
     }
 
@@ -6573,7 +6604,7 @@ app.get(
   asyncRoute(async (request, response) => {
     const actor = await getMessageActorFromRequest(request);
     const conversationId = toInt(request.query.conversationId, 0);
-    response.json(await getMessagesPayload(actor, conversationId));
+    response.json(await getMessagesPayload(actor, conversationId, { markRead: request.query.markRead === "1" }));
   }),
 );
 
@@ -6620,6 +6651,7 @@ app.post(
       `,
       [conversationId, actor.role, actor.name, messageText, actor.senderStudentId || null, actor.senderStaffRole || null, actor.senderStaffId || null],
     );
+    await markConversationRead(actor, conversationId);
 
     response.status(201).json({ ok: true, source: "database", activeConversationId: conversationId });
   }),
@@ -6964,7 +6996,73 @@ async function assertConversationAllowed(actor, conversationId) {
   }
 }
 
-async function getMessagesPayload(actor, requestedConversationId = 0) {
+async function markConversationRead(actor, conversationId) {
+  if (!actor || !conversationId || actor.role === "System") {
+    return;
+  }
+
+  await dbQuery(
+    `
+      INSERT INTO chat_reads (chat_id, reader_role, reader_id, last_read_at)
+      VALUES ($1, $2, $3, NOW())
+      ON CONFLICT (chat_id, reader_role, reader_id)
+      DO UPDATE SET last_read_at = EXCLUDED.last_read_at
+    `,
+    [conversationId, actor.role, actor.id],
+  );
+}
+
+async function getConversationUnreadCounts(actor, conversationIds = []) {
+  const ids = conversationIds.map((id) => Number(id)).filter(Boolean);
+
+  if (!actor || ids.length === 0) {
+    return new Map();
+  }
+
+  const ownMessageFilter =
+    actor.role === "Student"
+      ? `
+        NOT (
+          cm.sender_role = 'Student'
+          AND (
+            cm.sender_student_id = $3
+            OR (cm.sender_student_id IS NULL AND LOWER(cm.sender_name) = LOWER($4))
+          )
+        )
+      `
+      : `
+        NOT (
+          cm.sender_role = $2
+          AND (
+            (cm.sender_staff_role = $2 AND cm.sender_staff_id = $3)
+            OR (cm.sender_staff_id IS NULL AND LOWER(cm.sender_name) = LOWER($4))
+          )
+        )
+      `;
+
+  const result = await dbQuery(
+    `
+      SELECT
+        cm.chat_id AS "conversationId",
+        COUNT(*)::int AS "unreadCount"
+      FROM chat_messages cm
+      LEFT JOIN chat_reads cr
+        ON cr.chat_id = cm.chat_id
+       AND cr.reader_role = $2
+       AND cr.reader_id = $3
+      WHERE cm.chat_id = ANY($1::int[])
+        AND cm.sender_role <> 'System'
+        AND ${ownMessageFilter}
+        AND cm.sent_at > COALESCE(cr.last_read_at, '-infinity'::timestamptz)
+      GROUP BY cm.chat_id
+    `,
+    [ids, actor.role, actor.id, actor.name || ""],
+  );
+
+  return new Map(result.rows.map((row) => [Number(row.conversationId), Number(row.unreadCount) || 0]));
+}
+
+async function getMessagesPayload(actor, requestedConversationId = 0, { markRead = false } = {}) {
   const where =
     actor.role === "Student"
       ? "((ch.student_id = $1 AND ch.chat_type IN ('StudentTeacher', 'StudentCurator', 'StudentAdmin')) OR (ch.chat_type = 'StudentFriend' AND (ch.student_id = $1 OR ch.friend_student_id = $1)))"
@@ -7021,6 +7119,10 @@ async function getMessagesPayload(actor, requestedConversationId = 0) {
 
   const allowedIds = new Set(conversations.rows.map((row) => Number(row.conversationId)));
   const activeConversationId = allowedIds.has(requestedConversationId) ? requestedConversationId : conversations.rows[0]?.conversationId || null;
+  if (markRead && activeConversationId) {
+    await markConversationRead(actor, activeConversationId);
+  }
+  const unreadCounts = await getConversationUnreadCounts(actor, conversations.rows.map((row) => row.conversationId));
   const messages = activeConversationId
     ? await dbQuery(
         `
@@ -7129,7 +7231,9 @@ async function getMessagesPayload(actor, requestedConversationId = 0) {
       ...row,
       createdAt: toDateText(row.createdAt),
       lastMessageAt: toDateText(row.lastMessageAt),
+      unreadCount: unreadCounts.get(Number(row.conversationId)) || 0,
     })),
+    unreadTotal: conversations.rows.reduce((total, row) => total + (unreadCounts.get(Number(row.conversationId)) || 0), 0),
     messages: messages.rows.map((row) => ({
       ...row,
       sentAt: toDateText(row.sentAt),
