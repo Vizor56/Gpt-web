@@ -5732,7 +5732,6 @@ function renderAdminStudentCard(student) {
   ]);
   const courseTags = courses.map((course) => `${course.courseTitle} · ${course.teacherName || "преподаватель не указан"} · ${course.curatorName || "куратор не указан"}`);
   const parentTags = parents.map((parent) => parent.parentName);
-
   return `
     <article class="staff-card admin-student-card admin-compact-card" data-admin-directory-card data-admin-search-text="${escapeHtml(searchText)}"${courses.length === 1 ? getCourseThemeAttr(courses[0]) : ""}>
       ${renderAdminCardHeader({
@@ -5998,6 +5997,97 @@ function renderAdminPreviewTags(items = [], emptyText = "Пока не указ�
       ${restCount > 0 ? `<span class="resource-chip is-blue">+${formatNumber(restCount)}</span>` : ""}
     </div>
   `;
+}
+
+function getAdminRuntimeTabMeta(section, index = 0) {
+  const title = section?.querySelector("h4")?.textContent?.trim() || "";
+  const normalized = title.toLowerCase();
+
+  if (normalized.includes("лич") || normalized.includes("данн")) {
+    return { key: "profile", label: "Профиль", hint: title || "Данные" };
+  }
+
+  if (normalized.includes("коммент") || normalized.includes("замет")) {
+    return { key: "comments", label: "Заметки", hint: title || "История" };
+  }
+
+  if (normalized.includes("учен") && !normalized.includes("лич")) {
+    return { key: "study", label: "Учёба", hint: title || "Прогресс" };
+  }
+
+  if (normalized.includes("курс") || normalized.includes("дет") || normalized.includes("связ") || normalized.includes("родител")) {
+    return { key: "links", label: "Связи", hint: title || "Связи" };
+  }
+
+  if (normalized.includes("преподав") || normalized.includes("куратор")) {
+    return { key: `team-${index}`, label: "Команда", hint: title || "Команда" };
+  }
+
+  return { key: `section-${index}`, label: title || `Раздел ${index + 1}`, hint: "" };
+}
+
+function setAdminRuntimeTab(details, key) {
+  if (!details) {
+    return;
+  }
+
+  details.querySelectorAll("[data-admin-runtime-tab]").forEach((button) => {
+    const active = button.dataset.adminRuntimeTab === key;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-selected", active ? "true" : "false");
+  });
+
+  details.querySelectorAll(":scope > .admin-detail-block[data-profile-panel]").forEach((section) => {
+    section.classList.toggle("is-active", section.dataset.profilePanel === key);
+  });
+}
+
+function enhanceAdminProfileDrawer(details) {
+  if (!details || details.dataset.adminProfileEnhanced === "true") {
+    return;
+  }
+
+  const sections = Array.from(details.querySelectorAll(":scope > .admin-detail-block"));
+  const summary = details.querySelector(":scope > summary");
+
+  if (!sections.length || !summary) {
+    return;
+  }
+
+  details.dataset.adminProfileEnhanced = "true";
+  details.classList.add("is-tabbed-profile");
+
+  const usedKeys = new Set();
+  const tabbar = document.createElement("div");
+  tabbar.className = "admin-profile-tabbar admin-profile-tabbar--runtime";
+  tabbar.setAttribute("role", "tablist");
+  tabbar.setAttribute("aria-label", "Разделы профиля");
+
+  sections.forEach((section, index) => {
+    const meta = getAdminRuntimeTabMeta(section, index);
+    let key = meta.key;
+    let duplicateIndex = 2;
+
+    while (usedKeys.has(key)) {
+      key = `${meta.key}-${duplicateIndex}`;
+      duplicateIndex += 1;
+    }
+
+    usedKeys.add(key);
+    section.dataset.profilePanel = key;
+    section.classList.toggle("is-active", index === 0);
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `admin-profile-tab${index === 0 ? " is-active" : ""}`;
+    button.dataset.adminRuntimeTab = key;
+    button.setAttribute("role", "tab");
+    button.setAttribute("aria-selected", index === 0 ? "true" : "false");
+    button.innerHTML = `<span>${escapeHtml(meta.label)}</span>${meta.hint ? `<small>${escapeHtml(meta.hint)}</small>` : ""}`;
+    tabbar.append(button);
+  });
+
+  summary.insertAdjacentElement("afterend", tabbar);
 }
 
 function renderAdminDirectory(sectionName, { title, subtitle, total, searchPlaceholder, children, emptyText }) {
@@ -10180,6 +10270,13 @@ if (notificationButton) {
 document.addEventListener("click", (event) => {
   const openAdminDrawer = document.querySelector(".admin-person-details[open], .admin-add-details[open]");
   const clickedAdminSummary = event.target.closest(".admin-person-details > summary, .admin-add-details > summary");
+  const adminRuntimeTabButton = event.target.closest("[data-admin-runtime-tab]");
+
+  if (adminRuntimeTabButton) {
+    event.preventDefault();
+    setAdminRuntimeTab(adminRuntimeTabButton.closest(".admin-person-details"), adminRuntimeTabButton.dataset.adminRuntimeTab);
+    return;
+  }
 
   if (clickedAdminSummary) {
     document.querySelectorAll(".admin-person-details[open], .admin-add-details[open]").forEach((details) => {
@@ -10331,6 +10428,18 @@ document.addEventListener("click", (event) => {
     }
   }
 });
+
+document.addEventListener(
+  "toggle",
+  (event) => {
+    const details = event.target.closest?.(".admin-person-details");
+
+    if (details?.open) {
+      enhanceAdminProfileDrawer(details);
+    }
+  },
+  true,
+);
 
 document.addEventListener("keydown", (event) => {
   if (event.key !== "Escape") {

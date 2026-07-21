@@ -19912,3 +19912,152 @@ body:has(.admin-add-details[open]) .admin-directory::after {
     padding: 14px;
   }
 }
+
+/* Staff people directories */
+.admin-person-details[open].is-tabbed-profile > .admin-detail-block {
+  display: none;
+}
+
+.admin-person-details[open].is-tabbed-profile > .admin-detail-block.is-active {
+  display: grid;
+}
+
+.admin-profile-tabbar--runtime {
+  position: sticky;
+  top: 76px;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 8px;
+  padding: 14px 20px 2px;
+  border-bottom: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 12%, #ffffff);
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.96), rgba(248, 250, 247, 0.92)),
+    var(--academy-paper-solid, var(--surface));
+  box-shadow: 0 10px 24px rgba(32, 42, 45, 0.055);
+}
+
+.admin-profile-tabbar--runtime .admin-profile-tab {
+  display: grid;
+  gap: 2px;
+  min-height: 54px;
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 13%, #ffffff);
+  border-radius: 10px;
+  background: rgba(255, 253, 248, 0.74);
+  color: var(--academy-ink, var(--ink));
+  text-align: left;
+  box-shadow: none;
+  transform: none;
+}
+
+.admin-profile-tabbar--runtime .admin-profile-tab span {
+  font-size: 13px;
+  font-weight: 950;
+  line-height: 1.15;
+}
+
+.admin-profile-tabbar--runtime .admin-profile-tab small {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--academy-muted, var(--muted));
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-profile-tabbar--runtime .admin-profile-tab:hover,
+.admin-profile-tabbar--runtime .admin-profile-tab.is-active {
+  border-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 34%, #ffffff);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--academy-accent, var(--blue)) 12%, #ffffff), rgba(255, 253, 248, 0.94));
+  color: var(--academy-accent-dark, var(--blue-dark));
+}
+
+.admin-profile-tabbar--runtime .admin-profile-tab.is-active {
+  box-shadow: inset 0 -3px 0 var(--academy-accent, var(--blue));
+}
+
+.admin-profile-summary {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-profile-summary .admin-card-preview {
+  margin: 0;
+}
+
+.admin-person-details[open] .admin-detail-block.is-active {
+  animation: staffPanelIn 160ms ease;
+}
+
+@keyframes staffPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.staff-group .staff-card:has([data-staff-student-comment-form]),
+.staff-teacher-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.staff-group .staff-card:has([data-staff-student-comment-form])::before,
+.staff-teacher-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: color-mix(in srgb, var(--academy-accent, var(--blue)) 72%, #ffffff);
+}
+
+.staff-group .staff-card:has([data-staff-student-comment-form]) h3,
+.staff-teacher-card h3 {
+  margin-top: 4px;
+}
+
+.staff-group .staff-card:has([data-staff-student-comment-form]) .staff-inline-form {
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 11%, #ffffff);
+  border-radius: 10px;
+  background: rgba(255, 253, 248, 0.64);
+}
+
+.staff-teacher-details-grid {
+  gap: 12px;
+}
+
+.staff-teacher-details-grid > section,
+.staff-mini-row {
+  border-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 12%, #ffffff);
+  background:
+    linear-gradient(135deg, rgba(238, 248, 246, 0.56), rgba(255, 253, 248, 0.86)),
+    var(--academy-paper, var(--surface));
+}
+
+@media (max-width: 720px) {
+  .admin-profile-tabbar--runtime {
+    top: 112px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 10px 12px 2px;
+  }
+
+  .admin-profile-tabbar--runtime .admin-profile-tab {
+    min-height: 48px;
+    padding: 8px;
+  }
+
+  .admin-profile-tabbar--runtime .admin-profile-tab small {
+    display: none;
+  }
+}
