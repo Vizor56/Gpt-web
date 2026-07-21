@@ -18462,3 +18462,886 @@ body[data-site-theme="theme-pixel-coffee"] {
     width: 100%;
   }
 }
+
+/* Phone optimization layer */
+@media (max-width: 720px) {
+  :root {
+    --mobile-page-x: clamp(12px, 4vw, 18px);
+    --mobile-bottom-nav-height: 88px;
+  }
+
+  html,
+  body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    min-width: 320px;
+    font-size: 15px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  .app,
+  .app.is-staff-mode {
+    display: block;
+    min-height: 100dvh;
+    padding-bottom: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+  }
+
+  .workspace,
+  .content,
+  .primary-column,
+  .right-column,
+  .panel,
+  .course-card,
+  .resource-card,
+  .stream-card,
+  .staff-panel,
+  .staff-card,
+  .admin-compact-card,
+  .admin-person-details,
+  .admin-detail-block,
+  .messages-panel,
+  .conversation-list,
+  .message-thread {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .sidebar,
+  .app.is-staff-mode .sidebar {
+    position: fixed;
+    z-index: 90000;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: block;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    max-height: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+    padding: 8px max(10px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px))
+      max(10px, env(safe-area-inset-left, 0px));
+    overflow: hidden;
+    border-right: 0;
+    border-top: 1px solid color-mix(in srgb, var(--line) 88%, #ffffff);
+    border-bottom: 0;
+    background:
+      linear-gradient(180deg, rgba(255, 253, 248, 0.86), rgba(255, 253, 248, 0.98)),
+      var(--theme-shell);
+    box-shadow: 0 -18px 48px rgba(32, 42, 45, 0.12);
+    backdrop-filter: blur(18px);
+  }
+
+  .sidebar .brand,
+  .sidebar .goal-card {
+    display: none;
+  }
+
+  .side-nav,
+  .staff-side-nav,
+  .app.is-staff-mode .side-nav,
+  .app.is-staff-mode .staff-side-nav {
+    display: flex;
+    width: 100%;
+    gap: 7px;
+    margin: 0;
+    padding: 0 2px 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .side-nav::-webkit-scrollbar,
+  .staff-side-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .side-link,
+  .app.is-staff-mode .side-link {
+    position: relative;
+    display: grid;
+    flex: 0 0 76px;
+    grid-template-columns: 1fr;
+    align-content: center;
+    justify-items: center;
+    min-height: 62px;
+    padding: 7px 6px 6px;
+    scroll-snap-align: center;
+    color: color-mix(in srgb, var(--ink) 72%, var(--blue));
+    border: 1px solid transparent;
+    border-radius: 12px;
+    font-size: 10.5px;
+    font-weight: 850;
+    line-height: 1.12;
+    text-align: center;
+    white-space: normal;
+  }
+
+  .side-link svg,
+  .app.is-staff-mode .side-link svg {
+    width: 23px;
+    height: 23px;
+    margin-bottom: 4px;
+  }
+
+  .side-link span,
+  .app.is-staff-mode .side-link span {
+    display: -webkit-box;
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: none;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .side-link.is-active,
+  .app.is-staff-mode .side-link.is-active {
+    border-color: color-mix(in srgb, var(--blue) 18%, transparent);
+    background:
+      linear-gradient(180deg, rgba(255, 253, 248, 0.92), rgba(238, 248, 246, 0.92)),
+      var(--theme-nav-active);
+    box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--blue) 72%, var(--mint));
+  }
+
+  .side-link__badge {
+    position: absolute;
+    top: 4px;
+    right: 8px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border: 2px solid var(--surface);
+    border-radius: 999px;
+    background: #ff3030;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 950;
+    line-height: 14px;
+  }
+
+  .topbar,
+  .staff-topbar,
+  .app.is-staff-mode .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 85000;
+    height: 62px;
+    padding: 0 var(--mobile-page-x);
+    gap: 10px;
+    background:
+      linear-gradient(180deg, rgba(255, 253, 248, 0.94), rgba(255, 253, 248, 0.82)),
+      var(--theme-shell);
+    backdrop-filter: blur(16px);
+  }
+
+  .notification-button {
+    width: 42px;
+    height: 42px;
+    border: 1px solid color-mix(in srgb, var(--line) 88%, #ffffff);
+    border-radius: 12px;
+    background: rgba(255, 253, 248, 0.72);
+  }
+
+  .notification-button svg {
+    width: 25px;
+    height: 25px;
+  }
+
+  .notification-button span {
+    top: -5px;
+    right: -5px;
+    width: 20px;
+    height: 20px;
+    font-size: 11px;
+  }
+
+  .profile-button {
+    min-width: 0;
+    min-height: 42px;
+    max-width: min(56vw, 210px);
+    gap: 8px;
+    padding: 0 4px 0 0;
+    font-size: 14px;
+  }
+
+  .profile-button .avatar {
+    width: 42px;
+    height: 42px;
+    border-width: 2px;
+  }
+
+  .profile-button > span:not(.avatar) {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .profile-button > svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .notification-popover {
+    top: 70px;
+    right: var(--mobile-page-x);
+    left: var(--mobile-page-x);
+    z-index: 100200;
+    width: auto;
+    max-height: calc(100dvh - 150px);
+    border-radius: 12px;
+  }
+
+  .notification-popover__list {
+    max-height: calc(100dvh - 230px);
+  }
+
+  .home-page,
+  .library-page,
+  .support-page,
+  .account-page,
+  .messages-page,
+  .study-page,
+  .course-page,
+  .staff-workspace-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 18px;
+    width: 100%;
+    max-width: 100%;
+    padding: 24px var(--mobile-page-x) 28px !important;
+  }
+
+  .page-grid,
+  .study-page,
+  .course-page {
+    align-items: stretch;
+  }
+
+  .right-column,
+  .study-aside {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .page-heading,
+  .home-heading,
+  .staff-workspace-header {
+    margin-bottom: 22px;
+  }
+
+  .page-heading h1,
+  .staff-workspace-header h1,
+  .course-hero h1,
+  .home-heading h1 {
+    max-width: 100%;
+    font-size: clamp(31px, 9vw, 40px);
+    line-height: 1.04;
+    overflow-wrap: anywhere;
+  }
+
+  .page-heading p,
+  .staff-workspace-header p,
+  .course-hero p,
+  .home-heading p {
+    max-width: 100%;
+    font-size: 15px;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+
+  .panel,
+  .course-card,
+  .resource-card,
+  .stream-card,
+  .staff-panel,
+  .staff-card,
+  .admin-compact-card,
+  .admin-person-details,
+  .admin-add-details,
+  .messages-panel,
+  .account-summary-panel,
+  .capybara-shop-panel,
+  .shop-item {
+    border-radius: 10px;
+    box-shadow: 0 12px 30px rgba(32, 42, 45, 0.06);
+  }
+
+  .home-summary,
+  .home-stats,
+  .home-course-list,
+  .home-method-steps,
+  .course-grid,
+  .course-card__body,
+  .course-actions,
+  .lesson-actions,
+  .course-section-tabs,
+  .lesson-actions--review,
+  .lesson-actions--short,
+  .stats-strip,
+  .resource-card,
+  .resource-grid,
+  .stream-card,
+  .support-actions,
+  .account-summary-panel,
+  .account-course-row__main,
+  .account-course-row__stats,
+  .account-auth-panel,
+  .account-form,
+  .account-session,
+  .profile-status-form,
+  .capybara-shop-layout,
+  .staff-shop-layout,
+  .staff-card-grid,
+  .staff-step-grid,
+  .staff-teacher-details-grid,
+  .staff-homework-overview,
+  .staff-course-tools,
+  .staff-metrics,
+  .staff-info-grid,
+  .staff-review-form,
+  .staff-lesson-form,
+  .staff-stream-form,
+  .staff-filterbar,
+  .staff-inline-form,
+  .admin-directory-header,
+  .admin-directory-tools,
+  .admin-directory-grid,
+  .admin-card-header,
+  .admin-card-kpis,
+  .admin-enrollment-form,
+  .admin-course-staff-form,
+  .admin-parent-child-form,
+  .form-row,
+  .homework-modal-layout,
+  .homework-review-block,
+  .homework-work-row {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .home-summary {
+    min-height: 0;
+    padding: 22px 18px;
+  }
+
+  .home-summary h2 {
+    font-size: clamp(26px, 8vw, 34px);
+    line-height: 1.1;
+  }
+
+  .home-summary__button,
+  .library-toolbar button,
+  .resource-card__actions,
+  .resource-card button,
+  .resource-card a,
+  .stream-card a,
+  .stream-card button,
+  .shop-item button,
+  .staff-refresh-button,
+  .staff-card__actions > *,
+  .homework-modal__actions button,
+  .homework-modal__actions a,
+  .support-actions button,
+  .application-form button,
+  .account-form button {
+    width: 100%;
+  }
+
+  .home-stats {
+    gap: 12px;
+  }
+
+  .home-stats article,
+  .staff-metrics article {
+    min-height: 0;
+    padding: 16px;
+  }
+
+  .tabs,
+  .course-section-tabs,
+  .account-tabs,
+  .shop-section-tabs,
+  .auth-mode-toggle,
+  .conversation-filters {
+    display: flex;
+    width: 100%;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 4px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tabs::-webkit-scrollbar,
+  .course-section-tabs::-webkit-scrollbar,
+  .account-tabs::-webkit-scrollbar,
+  .shop-section-tabs::-webkit-scrollbar,
+  .auth-mode-toggle::-webkit-scrollbar,
+  .conversation-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab,
+  .course-section-tabs button,
+  .account-tabs button,
+  .shop-section-tabs button,
+  .auth-mode-toggle button,
+  .conversation-filters button {
+    flex: 0 0 auto;
+    min-height: 40px;
+    padding: 0 12px;
+    white-space: nowrap;
+  }
+
+  .course-card {
+    min-height: 0;
+    padding: 18px;
+  }
+
+  .course-card[data-course] {
+    min-height: 0;
+    padding: 18px;
+  }
+
+  .course-card__body {
+    gap: 14px;
+  }
+
+  .course-card[data-course] .course-card__body {
+    grid-template-columns: 88px minmax(0, 1fr) !important;
+    align-items: center;
+    gap: 14px;
+    padding-top: 4px;
+  }
+
+  .course-illustration,
+  .course-hero__icon {
+    width: min(110px, 34vw);
+    height: min(122px, 38vw);
+    transform: none;
+  }
+
+  .course-card[data-course] .course-illustration {
+    width: 88px;
+    height: 98px;
+  }
+
+  .course-card[data-course] .course-illustration::before {
+    inset: 9px;
+    background-size: 18px 18px, 18px 18px;
+  }
+
+  .course-card[data-course] .course-illustration::after {
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+  }
+
+  .course-card[data-course] .course-illustration__icon {
+    width: 58px;
+    height: 58px;
+  }
+
+  .course-info h2,
+  .course-card[data-course] .course-info h2 {
+    padding-right: 24px;
+    margin-bottom: 12px;
+    font-size: 22px;
+    line-height: 1.18;
+  }
+
+  .course-card[data-course] .progress-text {
+    font-size: 13px;
+    line-height: 1.25;
+  }
+
+  .course-card[data-course] .progress-line {
+    gap: 7px 8px;
+  }
+
+  .course-card[data-course] .course-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .card-chevron {
+    top: 18px;
+    right: 14px;
+  }
+
+  .course-hero {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 16px;
+    padding: 18px;
+  }
+
+  .lesson-row,
+  .staff-teacher-lesson-row {
+    grid-template-columns: 46px minmax(0, 1fr);
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .lesson-status,
+  .lesson-actions,
+  .staff-teacher-lesson-row .lesson-status,
+  .staff-teacher-lesson-row .lesson-actions,
+  .staff-lesson-editor {
+    grid-column: 1 / -1;
+  }
+
+  .lesson-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 7px;
+  }
+
+  .lesson-actions button,
+  .lesson-actions a {
+    min-width: 0;
+    padding: 0 8px;
+    font-size: 12px;
+  }
+
+  .library-toolbar,
+  .account-section-heading,
+  .event-top,
+  .lessons-heading,
+  .staff-workspace-header,
+  .staff-step-heading,
+  .staff-group-heading {
+    display: grid;
+    align-items: start;
+    gap: 12px;
+  }
+
+  .library-filter,
+  .library-toolbar button,
+  .staff-workspace-actions,
+  .staff-step-heading__actions {
+    width: 100%;
+    max-width: none;
+  }
+
+  .library-list,
+  .shop-items,
+  .nearest-list,
+  .home-stream-list,
+  .message-list,
+  .conversation-list {
+    max-width: 100%;
+    scrollbar-gutter: auto;
+  }
+
+  .capybara-shop-layout,
+  .staff-shop-layout {
+    gap: 14px;
+  }
+
+  .capybara-stage,
+  .staff-capybara-stage {
+    min-height: 260px;
+  }
+
+  .shop-item {
+    display: grid;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .shop-item__preview {
+    justify-self: start;
+  }
+
+  .messages-page {
+    min-height: auto;
+  }
+
+  .messages-page .primary-column {
+    max-width: none;
+  }
+
+  .messages-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) !important;
+    min-height: calc(100dvh - 180px);
+    overflow: hidden;
+    border-radius: 12px;
+  }
+
+  .conversation-list {
+    max-height: 42dvh;
+    padding: 12px;
+    border-right: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--line) 88%, #ffffff);
+  }
+
+  .conversation-start-form {
+    position: static;
+    gap: 10px;
+  }
+
+  .conversation-button {
+    min-height: 70px;
+    padding: 11px 11px 11px 50px;
+  }
+
+  .message-thread {
+    min-height: 56dvh;
+  }
+
+  .message-thread__header {
+    display: grid;
+    align-items: start;
+    gap: 8px;
+    min-height: 0;
+    padding: 14px;
+  }
+
+  .message-thread__header h2 {
+    font-size: 19px;
+  }
+
+  .message-thread__header button {
+    width: 100%;
+  }
+
+  .message-list {
+    max-height: 48dvh;
+    padding: 14px;
+  }
+
+  .message-bubble,
+  .message-bubble.is-own {
+    max-width: 94%;
+  }
+
+  .message-profile-badge {
+    max-width: min(190px, 58vw);
+  }
+
+  .message-form {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 9px;
+    padding: 12px;
+  }
+
+  .message-form .submit-button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .application-panel,
+  .account-auth-panel,
+  .account-summary-panel,
+  .staff-panel,
+  .admin-directory,
+  .admin-detail-block {
+    padding: 16px;
+  }
+
+  .application-form input,
+  .application-form select,
+  .application-form textarea,
+  .account-form input,
+  .account-form select,
+  .account-form textarea,
+  .staff-inline-form input,
+  .staff-inline-form select,
+  .staff-inline-form textarea,
+  .staff-lesson-form input,
+  .staff-lesson-form select,
+  .staff-lesson-form textarea,
+  .staff-stream-form input,
+  .staff-stream-form select,
+  .staff-stream-form textarea,
+  .staff-review-form input,
+  .staff-review-form textarea,
+  .admin-edit-form input,
+  .admin-edit-form select,
+  .admin-edit-form textarea,
+  .admin-enrollment-form input,
+  .admin-enrollment-form select,
+  .admin-course-staff-form input,
+  .admin-course-staff-form select,
+  .admin-parent-child-form input,
+  .admin-parent-child-form select {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .admin-directory-header {
+    padding: 16px;
+  }
+
+  .admin-card-avatar {
+    width: 48px;
+    height: 48px;
+  }
+
+  .admin-card-kpis,
+  .staff-metrics {
+    gap: 8px;
+  }
+
+  .admin-kpi,
+  .staff-metrics article {
+    min-height: 0;
+  }
+
+  .admin-person-details > summary,
+  .admin-add-details > summary {
+    min-height: 46px;
+    padding: 12px 14px;
+  }
+
+  .staff-card__actions,
+  .resource-card__actions,
+  .homework-modal__actions,
+  .homework-work-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 8px;
+  }
+
+  .modal-backdrop,
+  .stream-chat-modal {
+    align-items: stretch;
+    justify-content: stretch;
+    padding: 10px;
+  }
+
+  .homework-modal,
+  .homework-modal__dialog,
+  .stream-chat-modal__dialog {
+    width: 100%;
+    max-width: none;
+    max-height: calc(100dvh - 20px);
+    margin: 0;
+    padding: 16px;
+    overflow-y: auto;
+    border-radius: 12px;
+  }
+
+  .homework-modal header,
+  .stream-chat-modal__header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+
+  .homework-modal h2,
+  .stream-chat-modal h2 {
+    max-width: 100%;
+    font-size: 24px;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+  }
+
+  .homework-history-list,
+  .homework-work-list,
+  .stream-chat-messages {
+    max-height: 46dvh;
+  }
+
+  .stream-chat-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .stream-chat-form {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .stream-chat-form button {
+    width: 100%;
+  }
+
+  button,
+  .side-link,
+  .tab,
+  .course-section-tabs button,
+  .account-tabs button,
+  .shop-section-tabs button,
+  .auth-mode-toggle button,
+  .conversation-filters button,
+  .submit-button,
+  input,
+  select {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 420px) {
+  :root {
+    --mobile-page-x: 12px;
+  }
+
+  .side-link,
+  .app.is-staff-mode .side-link {
+    flex-basis: 78px;
+    min-height: 58px;
+    font-size: 10px;
+  }
+
+  .side-link svg,
+  .app.is-staff-mode .side-link svg {
+    width: 21px;
+    height: 21px;
+  }
+
+  .topbar,
+  .staff-topbar,
+  .app.is-staff-mode .topbar {
+    height: 58px;
+  }
+
+  .profile-button {
+    max-width: 52vw;
+  }
+
+  .profile-button .avatar {
+    width: 38px;
+    height: 38px;
+  }
+
+  .page-heading h1,
+  .staff-workspace-header h1,
+  .course-hero h1,
+  .home-heading h1 {
+    font-size: clamp(29px, 10vw, 36px);
+  }
+
+  .lesson-actions {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .course-info h2,
+  .course-card[data-course] .course-info h2 {
+    font-size: 21px;
+  }
+
+  .message-bubble,
+  .message-bubble.is-own {
+    max-width: 100%;
+  }
+}
+
+.is-hidden,
+[hidden] {
+  display: none !important;
+}
