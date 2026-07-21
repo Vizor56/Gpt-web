@@ -20159,3 +20159,106 @@ body:has(.admin-add-details[open]) .admin-directory::after {
     left: 0;
   }
 }
+
+/* Pixel points badge in the side menu */
+:is(.side-link[data-open-points], .side-link[data-staff-page="points"]) {
+  isolation: isolate;
+  overflow: hidden;
+  border: 2px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 28%, #ffffff);
+  background:
+    linear-gradient(135deg, rgba(255, 253, 248, 0.94), rgba(238, 248, 246, 0.82)),
+    linear-gradient(90deg, color-mix(in srgb, var(--academy-accent, var(--blue)) 9%, transparent) 50%, transparent 50%) 0 0 / 18px 18px,
+    linear-gradient(0deg, color-mix(in srgb, var(--academy-gold, var(--gold)) 15%, transparent) 50%, transparent 50%) 0 0 / 18px 18px,
+    var(--academy-paper, var(--surface));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 253, 248, 0.82),
+    inset 0 -6px 0 color-mix(in srgb, var(--academy-accent, var(--blue)) 11%, transparent),
+    0 12px 24px rgba(20, 92, 89, 0.08);
+}
+
+:is(.side-link[data-open-points], .side-link[data-staff-page="points"])::before,
+:is(.side-link[data-open-points], .side-link[data-staff-page="points"])::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+:is(.side-link[data-open-points], .side-link[data-staff-page="points"])::before {
+  inset: 7px;
+  z-index: -1;
+  border: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 18%, #ffffff);
+  background:
+    linear-gradient(90deg, rgba(255, 253, 248, 0.56) 1px, transparent 1px) 0 0 / 10px 10px,
+    linear-gradient(0deg, rgba(20, 92, 89, 0.055) 1px, transparent 1px) 0 0 / 10px 10px;
+}
+
+:is(.side-link[data-open-points], .side-link[data-staff-page="points"])::after {
+  top: 12px;
+  right: 17px;
+  width: 7px;
+  height: 7px;
+  background: var(--academy-gold, var(--gold));
+  box-shadow:
+    -18px 14px 0 color-mix(in srgb, var(--academy-accent, var(--blue)) 42%, #ffffff),
+    -34px -3px 0 color-mix(in srgb, var(--academy-mint, var(--mint)) 58%, #ffffff),
+    9px 27px 0 color-mix(in srgb, var(--academy-gold, var(--gold)) 52%, #ffffff);
+  opacity: 0.72;
+  image-rendering: pixelated;
+}
+
+:is(.side-link[data-open-points], .side-link[data-staff-page="points"]) > :is(svg, span, .side-link__badge) {
+  position: relative;
+  z-index: 1;
+}
+
+:is(.side-link[data-open-points], .side-link[data-staff-page="points"]) svg {
+  color: color-mix(in srgb, var(--academy-accent, var(--blue)) 82%, #202a2d);
+  filter: drop-shadow(2px 2px 0 rgba(241, 184, 75, 0.2));
+}
+
+:is(.side-link[data-open-points], .side-link[data-staff-page="points"]):hover {
+  border-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 38%, #ffffff);
+  background:
+    linear-gradient(135deg, rgba(255, 253, 248, 0.98), color-mix(in srgb, var(--academy-mint, var(--mint)) 13%, #ffffff)),
+    linear-gradient(90deg, color-mix(in srgb, var(--academy-accent, var(--blue)) 10%, transparent) 50%, transparent 50%) 0 0 / 18px 18px,
+    linear-gradient(0deg, color-mix(in srgb, var(--academy-gold, var(--gold)) 17%, transparent) 50%, transparent 50%) 0 0 / 18px 18px,
+    var(--academy-paper, var(--surface));
+  transform: translateY(-1px);
+}
+
+:is(.side-link[data-open-points], .side-link[data-staff-page="points"]).is-active {
+  color: var(--academy-accent-dark, var(--blue-dark));
+  border-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 46%, #ffffff);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--academy-mint, var(--mint)) 18%, #ffffff), rgba(255, 253, 248, 0.98)),
+    linear-gradient(90deg, color-mix(in srgb, var(--academy-accent, var(--blue)) 13%, transparent) 50%, transparent 50%) 0 0 / 18px 18px,
+    linear-gradient(0deg, color-mix(in srgb, var(--academy-gold, var(--gold)) 20%, transparent) 50%, transparent 50%) 0 0 / 18px 18px,
+    var(--academy-paper, var(--surface));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 253, 248, 0.9),
+    inset 0 -6px 0 color-mix(in srgb, var(--academy-accent, var(--blue)) 20%, transparent),
+    0 14px 26px rgba(20, 92, 89, 0.12);
+}
+
+@media (max-width: 720px) {
+  :is(.side-link[data-open-points], .side-link[data-staff-page="points"]) {
+    border-width: 1px;
+    box-shadow:
+      inset 0 -3px 0 color-mix(in srgb, var(--academy-accent, var(--blue)) 12%, transparent),
+      0 8px 18px rgba(20, 92, 89, 0.07);
+  }
+
+  :is(.side-link[data-open-points], .side-link[data-staff-page="points"])::before {
+    inset: 5px;
+  }
+
+  :is(.side-link[data-open-points], .side-link[data-staff-page="points"])::after {
+    top: 7px;
+    right: 10px;
+    width: 5px;
+    height: 5px;
+    box-shadow:
+      -12px 13px 0 color-mix(in srgb, var(--academy-accent, var(--blue)) 38%, #ffffff),
+      -24px -1px 0 color-mix(in srgb, var(--academy-mint, var(--mint)) 54%, #ffffff);
+  }
+}
