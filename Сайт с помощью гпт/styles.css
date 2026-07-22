@@ -20277,6 +20277,55 @@ body:has(.admin-add-details[open]) .admin-directory::after {
   }
 }
 
+/* Keep the points nav item pixel-styled, but visually equal to the other menu items. */
+:is(.side-link[data-open-points], .side-link[data-staff-page="points"]) {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(90deg, rgba(20, 92, 89, 0.055) 1px, transparent 1px) 0 0 / 11px 11px,
+    linear-gradient(0deg, rgba(241, 184, 75, 0.075) 1px, transparent 1px) 0 0 / 11px 11px,
+    color-mix(in srgb, var(--theme-panel-soft, #eef8f6) 72%, transparent);
+  box-shadow: none;
+}
+
+:is(.side-link[data-open-points], .side-link[data-staff-page="points"])::before,
+:is(.side-link[data-open-points], .side-link[data-staff-page="points"])::after {
+  display: none;
+}
+
+:is(.side-link[data-open-points], .side-link[data-staff-page="points"]) svg {
+  color: color-mix(in srgb, var(--academy-accent) 74%, var(--academy-muted));
+  filter: none;
+}
+
+:is(.side-link[data-open-points], .side-link[data-staff-page="points"]):hover {
+  border-color: var(--academy-line);
+  background:
+    linear-gradient(90deg, rgba(20, 92, 89, 0.065) 1px, transparent 1px) 0 0 / 11px 11px,
+    linear-gradient(0deg, rgba(241, 184, 75, 0.085) 1px, transparent 1px) 0 0 / 11px 11px,
+    var(--theme-panel-soft);
+  transform: none;
+}
+
+:is(.side-link[data-open-points], .side-link[data-staff-page="points"]).is-active {
+  color: var(--blue);
+  border-color: color-mix(in srgb, var(--academy-accent) 17%, transparent);
+  background:
+    linear-gradient(90deg, rgba(20, 92, 89, 0.075) 1px, transparent 1px) 0 0 / 11px 11px,
+    linear-gradient(0deg, rgba(241, 184, 75, 0.095) 1px, transparent 1px) 0 0 / 11px 11px,
+    linear-gradient(100deg, var(--theme-nav-active) 0%, var(--theme-panel-soft) 68%, var(--theme-warm-accent) 100%);
+  box-shadow: inset 3px 0 0 var(--academy-accent);
+}
+
+:is(.side-link[data-open-points], .side-link[data-staff-page="points"]).is-active svg {
+  color: var(--blue);
+}
+
+@media (max-width: 720px) {
+  :is(.side-link[data-open-points], .side-link[data-staff-page="points"]).is-active {
+    box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--blue) 72%, var(--mint));
+  }
+}
+
 /* Homework review button, admin drawer, and message start modal refinements */
 .lesson-actions .lesson-review-button {
   justify-self: stretch;

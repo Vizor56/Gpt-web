@@ -6717,6 +6717,12 @@ async function getStudentFriendsPayload(studentId) {
       JOIN students s ON s.id = sfr.requester_id
       LEFT JOIN profile_badges pb ON pb.id = s.active_badge_id
       WHERE sfr.receiver_id = $1 AND sfr.status = 'Pending'
+        AND NOT EXISTS (
+          SELECT 1
+          FROM student_friends sf
+          WHERE (sf.student_id = $1 AND sf.friend_id = s.id)
+             OR (sf.student_id = s.id AND sf.friend_id = $1)
+        )
       ORDER BY sfr.created_at DESC
     `,
     [studentId],
@@ -6737,6 +6743,12 @@ async function getStudentFriendsPayload(studentId) {
       JOIN students s ON s.id = sfr.receiver_id
       LEFT JOIN profile_badges pb ON pb.id = s.active_badge_id
       WHERE sfr.requester_id = $1 AND sfr.status = 'Pending'
+        AND NOT EXISTS (
+          SELECT 1
+          FROM student_friends sf
+          WHERE (sf.student_id = $1 AND sf.friend_id = s.id)
+             OR (sf.student_id = s.id AND sf.friend_id = $1)
+        )
       ORDER BY sfr.created_at DESC
     `,
     [studentId],
@@ -6755,7 +6767,10 @@ async function getStudentFriendsPayload(studentId) {
       LEFT JOIN profile_badges pb ON pb.id = s.active_badge_id
       WHERE s.id <> $1
         AND NOT EXISTS (
-          SELECT 1 FROM student_friends sf WHERE sf.student_id = $1 AND sf.friend_id = s.id
+          SELECT 1
+          FROM student_friends sf
+          WHERE (sf.student_id = $1 AND sf.friend_id = s.id)
+             OR (sf.student_id = s.id AND sf.friend_id = $1)
         )
         AND NOT EXISTS (
           SELECT 1

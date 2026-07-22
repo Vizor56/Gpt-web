@@ -7284,15 +7284,60 @@ function renderMessageStartPanel(recipients = [], actor = getMessageActor(), act
   `;
 }
 
+function hasStudentFriendPayload(payload = null) {
+  return Boolean(
+    payload &&
+      (Array.isArray(payload.friends) ||
+        Array.isArray(payload.incomingRequests) ||
+        Array.isArray(payload.outgoingRequests) ||
+        Array.isArray(payload.suggestions)),
+  );
+}
+
+function normalizeStudentFriendsPayload(payload = null) {
+  const uniqueByStudentId = (items = []) => {
+    const seen = new Set();
+    return items.filter((item) => {
+      const id = String(item?.studentId || "");
+
+      if (!id || seen.has(id)) {
+        return false;
+      }
+
+      seen.add(id);
+      return true;
+    });
+  };
+
+  const friends = uniqueByStudentId(payload?.friends || []);
+  const friendIds = new Set(friends.map((friend) => String(friend.studentId)));
+  const incomingRequests = uniqueByStudentId(payload?.incomingRequests || []).filter((request) => !friendIds.has(String(request.studentId)));
+  const incomingIds = new Set(incomingRequests.map((request) => String(request.studentId)));
+  const outgoingRequests = uniqueByStudentId(payload?.outgoingRequests || []).filter((request) => !friendIds.has(String(request.studentId)));
+  const outgoingIds = new Set(outgoingRequests.map((request) => String(request.studentId)));
+  const suggestions = uniqueByStudentId(payload?.suggestions || []).filter((student) => {
+    const id = String(student.studentId);
+    return !friendIds.has(id) && !incomingIds.has(id) && !outgoingIds.has(id);
+  });
+
+  return {
+    friends,
+    incomingRequests,
+    outgoingRequests,
+    suggestions,
+  };
+}
+
 function renderStudentFriendsPanel(friendState = null, actor = getMessageActor(), { open = false } = {}) {
   if (actor?.role !== "Student") {
     return "";
   }
 
-  const friends = friendState?.friends || [];
-  const incoming = friendState?.incomingRequests || [];
-  const outgoing = friendState?.outgoingRequests || [];
-  const suggestions = friendState?.suggestions || [];
+  const normalizedFriendState = normalizeStudentFriendsPayload(friendState);
+  const friends = normalizedFriendState.friends;
+  const incoming = normalizedFriendState.incomingRequests;
+  const outgoing = normalizedFriendState.outgoingRequests;
+  const suggestions = normalizedFriendState.suggestions;
   const renderPerson = (person, actions = "", tone = "") => {
     const badgeMarkup = renderProfileBadgeMarkup(person, "friend-card__badge");
     const avatarMarkup = renderPixelPetMarkup(person.profileItems || [], {
@@ -7798,6 +7843,20 @@ async function sendFriendAction(endpoint, payload = {}) {
 
     if (!response.ok) {
       throw new Error(result.message || result.error || "Не удалось обновить друзей.");
+    }
+
+    if (hasStudentFriendPayload(result)) {
+      const nextFriendState = normalizeStudentFriendsPayload(result);
+
+      if (latestMessages) {
+        latestMessages = {
+          ...latestMessages,
+          friends: nextFriendState,
+        };
+        renderMessages(latestMessages);
+      }
+
+      renderAccountFriends(nextFriendState);
     }
 
     await Promise.allSettled([loadMessages(currentConversationId), loadAccountFriends()]);
