@@ -1548,6 +1548,8 @@ body[data-site-theme] :is(.shop-section-tabs button.is-active, .account-tabs but
 .course-actions button,
 .lesson-actions button,
 .lesson-actions a,
+.lesson-review-actions button,
+.lesson-review-actions a,
 .curator-panel button {
   display: inline-flex;
   align-items: center;
@@ -1576,13 +1578,16 @@ body[data-site-theme] :is(.shop-section-tabs button.is-active, .account-tabs but
 .course-actions button:hover,
 .lesson-actions button:hover,
 .lesson-actions a:hover,
+.lesson-review-actions button:hover,
+.lesson-review-actions a:hover,
 .curator-panel button:hover {
   border-color: #b9cbe7;
   background: #f8fbff;
 }
 
 .course-actions button:disabled,
-.lesson-actions button:disabled {
+.lesson-actions button:disabled,
+.lesson-review-actions button:disabled {
   color: #71809c;
   background: #f5f7fa;
   border-color: #d5dfec;
@@ -1590,7 +1595,8 @@ body[data-site-theme] :is(.shop-section-tabs button.is-active, .account-tabs but
 }
 
 .course-actions button:disabled:hover,
-.lesson-actions button:disabled:hover {
+.lesson-actions button:disabled:hover,
+.lesson-review-actions button:disabled:hover {
   background: #f5f7fa;
   border-color: #d5dfec;
 }
@@ -1598,6 +1604,8 @@ body[data-site-theme] :is(.shop-section-tabs button.is-active, .account-tabs but
 .course-actions svg,
 .lesson-actions svg,
 .lesson-actions a svg,
+.lesson-review-actions svg,
+.lesson-review-actions a svg,
 .curator-panel button svg {
   width: 19px;
   height: 19px;
@@ -1607,6 +1615,8 @@ body[data-site-theme] :is(.shop-section-tabs button.is-active, .account-tabs but
 .course-actions svg *,
 .lesson-actions svg *,
 .lesson-actions a svg *,
+.lesson-review-actions svg *,
+.lesson-review-actions a svg *,
 .curator-panel button svg * {
   fill: none;
   stroke: currentColor;
@@ -2064,6 +2074,10 @@ body[data-site-theme] :is(.shop-section-tabs button.is-active, .account-tabs but
   border-bottom: 1px solid var(--line);
 }
 
+.lesson-row:has(.lesson-review-actions) {
+  grid-template-columns: 48px minmax(170px, 1fr) minmax(150px, 210px) minmax(250px, 36%) minmax(116px, 15%);
+}
+
 .lesson-row:last-child {
   border-bottom: 0;
 }
@@ -2180,8 +2194,17 @@ body[data-site-theme] :is(.shop-section-tabs button.is-active, .account-tabs but
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.lesson-review-actions {
+  display: grid;
+  gap: 8px;
+  align-self: stretch;
+  min-width: 0;
+}
+
 .lesson-actions button,
-.lesson-actions a {
+.lesson-actions a,
+.lesson-review-actions button,
+.lesson-review-actions a {
   min-width: 0;
   min-height: 44px;
   gap: 6px;
@@ -2228,6 +2251,26 @@ body[data-site-theme] :is(.shop-section-tabs button.is-active, .account-tabs but
   color: #b4533f;
   border-color: #f3c2b7;
   background: #fff3ef;
+}
+
+.lesson-review-actions .lesson-review-button {
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 9px;
+  border-color: color-mix(in srgb, var(--academy-gold, var(--gold)) 50%, #ffffff);
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.94), rgba(241, 184, 75, 0.15)),
+    color-mix(in srgb, var(--academy-gold, var(--gold)) 10%, #ffffff);
+  color: color-mix(in srgb, var(--academy-accent-dark, var(--blue-dark)) 72%, #8a641c);
+  font-size: 12px;
+  line-height: 1.08;
+}
+
+.lesson-review-actions .lesson-review-button--v2 {
+  border-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 38%, #ffffff);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(88, 201, 191, 0.13)),
+    color-mix(in srgb, var(--academy-mint, var(--mint)) 10%, #ffffff);
 }
 
 .lesson-actions .lesson-homework-button {
@@ -6503,7 +6546,8 @@ button:disabled {
 .homework-history-panel,
 .homework-submit-panel,
 .homework-problem-block,
-.homework-review-block {
+.homework-review-block,
+.homework-review-homework-block {
   display: grid;
   gap: 12px;
   min-width: 0;
@@ -6711,6 +6755,23 @@ button:disabled {
     rgba(255, 253, 248, 0.9);
 }
 
+.homework-review-homework-block {
+  border-color: #d6e7dd;
+  background:
+    linear-gradient(135deg, rgba(88, 201, 191, 0.11), transparent 58%),
+    rgba(250, 254, 252, 0.92);
+}
+
+.homework-review-homework-block.is-active {
+  border-color: #8bcfbf;
+  background: #f0fbf8;
+}
+
+.homework-review-homework-block.is-ready {
+  border-color: #addfc1;
+  background: #f2fbf5;
+}
+
 .homework-problem-heading {
   display: grid;
   gap: 4px;
@@ -6818,6 +6879,16 @@ button:disabled {
   font-size: 13px;
   font-weight: 700;
   line-height: 1.4;
+}
+
+.homework-review-needed.is-blue {
+  color: #265077;
+  border-color: #b9d9ff;
+  background: #eef7ff;
+}
+
+.homework-review-needed.is-blue strong {
+  color: var(--blue);
 }
 
 .homework-review-result div {
@@ -10239,7 +10310,8 @@ body[data-site-theme] :is(
 .homework-modal[data-course-theme] .homework-history-panel,
 .homework-modal[data-course-theme] .homework-submit-panel,
 .homework-modal[data-course-theme] .homework-problem-block,
-.homework-modal[data-course-theme] .homework-review-block {
+.homework-modal[data-course-theme] .homework-review-block,
+.homework-modal[data-course-theme] .homework-review-homework-block {
   border-color: rgba(var(--course-rgb), 0.16);
   background:
     linear-gradient(135deg, rgba(var(--course-rgb), 0.055), transparent 58%),
@@ -14586,6 +14658,11 @@ body[data-site-theme] :is(.capybara-shop-panel, .staff-shop-panel, .staff-panel:
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .lesson-review-actions {
+    grid-column: 2 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .lesson-actions--review {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
@@ -14759,7 +14836,8 @@ body[data-site-theme] :is(.capybara-shop-panel, .staff-shop-panel, .staff-panel:
   .staff-lesson-form label:nth-of-type(3),
   .staff-lesson-form label:nth-of-type(4),
   .staff-lesson-form label:nth-of-type(5),
-  .staff-lesson-form label:nth-of-type(6) {
+  .staff-lesson-form label:nth-of-type(6),
+  .staff-lesson-form label:nth-of-type(7) {
     grid-column: auto;
   }
 
@@ -14795,6 +14873,7 @@ body[data-site-theme] :is(.capybara-shop-panel, .staff-shop-panel, .staff-panel:
 
   .staff-teacher-lesson-row .lesson-status,
   .staff-teacher-lesson-row .lesson-actions,
+  .staff-teacher-lesson-row .lesson-review-actions,
   .staff-lesson-editor {
     grid-column: 2 / -1;
   }
@@ -14871,7 +14950,8 @@ body[data-site-theme] :is(.capybara-shop-panel, .staff-shop-panel, .staff-panel:
   }
 
   .lesson-status,
-  .lesson-actions {
+  .lesson-actions,
+  .lesson-review-actions {
     grid-column: 2 / -1;
   }
 
@@ -15050,7 +15130,8 @@ body[data-site-theme] :is(.capybara-shop-panel, .staff-shop-panel, .staff-panel:
   }
 
   .homework-modal-layout,
-  .homework-review-block {
+  .homework-review-block,
+  .homework-review-homework-block {
     grid-template-columns: 1fr;
   }
 
@@ -18842,6 +18923,7 @@ body[data-site-theme="theme-pixel-coffee"] {
   .form-row,
   .homework-modal-layout,
   .homework-review-block,
+  .homework-review-homework-block,
   .homework-work-row {
     grid-template-columns: minmax(0, 1fr) !important;
   }
@@ -19013,20 +19095,25 @@ body[data-site-theme="theme-pixel-coffee"] {
 
   .lesson-status,
   .lesson-actions,
+  .lesson-review-actions,
   .staff-teacher-lesson-row .lesson-status,
   .staff-teacher-lesson-row .lesson-actions,
+  .staff-teacher-lesson-row .lesson-review-actions,
   .staff-lesson-editor {
     grid-column: 1 / -1;
   }
 
-  .lesson-actions {
+  .lesson-actions,
+  .lesson-review-actions {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     gap: 7px;
   }
 
   .lesson-actions button,
-  .lesson-actions a {
+  .lesson-actions a,
+  .lesson-review-actions button,
+  .lesson-review-actions a {
     min-width: 0;
     padding: 0 8px;
     font-size: 12px;
@@ -19340,7 +19427,8 @@ body[data-site-theme="theme-pixel-coffee"] {
     font-size: clamp(29px, 10vw, 36px);
   }
 
-  .lesson-actions {
+  .lesson-actions,
+  .lesson-review-actions {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 
@@ -20327,7 +20415,8 @@ body:has(.admin-add-details[open]) .admin-directory::after {
 }
 
 /* Homework review button, admin drawer, and message start modal refinements */
-.lesson-actions .lesson-review-button {
+.lesson-actions .lesson-review-button,
+.lesson-review-actions .lesson-review-button {
   justify-self: stretch;
   min-height: 40px;
   max-width: 124px;
@@ -20341,12 +20430,14 @@ body:has(.admin-add-details[open]) .admin-directory::after {
   line-height: 1.05;
 }
 
-.lesson-actions .lesson-review-button svg {
+.lesson-actions .lesson-review-button svg,
+.lesson-review-actions .lesson-review-button svg {
   width: 15px;
   height: 15px;
 }
 
-.lesson-actions .lesson-review-button:hover {
+.lesson-actions .lesson-review-button:hover,
+.lesson-review-actions .lesson-review-button:hover {
   border-color: color-mix(in srgb, var(--academy-gold, var(--gold)) 70%, #ffffff);
   background:
     linear-gradient(180deg, rgba(255, 253, 248, 0.96), rgba(241, 184, 75, 0.22)),
@@ -20698,7 +20789,8 @@ body:has(.admin-add-details[open]) .admin-directory::after {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
-  .lesson-actions .lesson-review-button {
+  .lesson-actions .lesson-review-button,
+  .lesson-review-actions .lesson-review-button {
     max-width: none;
   }
 
