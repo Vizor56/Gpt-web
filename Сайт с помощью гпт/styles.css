@@ -1381,6 +1381,20 @@ body[data-site-theme] :is(.shop-section-tabs button.is-active, .account-tabs but
   display: none;
 }
 
+.course-grid__empty {
+  grid-column: 1 / -1;
+  min-height: 156px;
+  align-content: center;
+  border: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 14%, #ffffff);
+  background:
+    linear-gradient(135deg, rgba(255, 253, 248, 0.96), rgba(238, 248, 246, 0.82)),
+    linear-gradient(90deg, rgba(20, 92, 89, 0.035) 1px, transparent 1px) 0 0 / 18px 18px,
+    linear-gradient(0deg, rgba(20, 92, 89, 0.03) 1px, transparent 1px) 0 0 / 18px 18px;
+  color: var(--muted);
+  font-weight: 750;
+  text-align: center;
+}
+
 .course-card--locked {
   cursor: default;
 }

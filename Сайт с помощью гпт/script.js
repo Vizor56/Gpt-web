@@ -1074,6 +1074,47 @@ function openPoints() {
   loadShop();
 }
 
+function getStudyCourseEmptyState() {
+  if (!courseGrid) {
+    return null;
+  }
+
+  let empty = courseGrid.querySelector("[data-study-course-empty]");
+
+  if (!empty) {
+    empty = document.createElement("div");
+    empty.className = "resource-empty course-grid__empty is-hidden";
+    empty.dataset.studyCourseEmpty = "";
+    empty.setAttribute("role", "status");
+    empty.setAttribute("aria-hidden", "true");
+    courseGrid.append(empty);
+  }
+
+  return empty;
+}
+
+function updateStudyCourseEmptyState(tabName, hasSession) {
+  const empty = getStudyCourseEmptyState();
+
+  if (!empty) {
+    return;
+  }
+
+  const visibleCourses = Array.from(studyCourseCards).filter((card) => !card.classList.contains("is-hidden")).length;
+  const shouldShow = tabName !== "all" && visibleCourses === 0;
+
+  empty.classList.toggle("is-hidden", !shouldShow);
+  empty.setAttribute("aria-hidden", String(!shouldShow));
+
+  if (!shouldShow) {
+    return;
+  }
+
+  empty.textContent = hasSession
+    ? "Купленные курсы пока не найдены в базе."
+    : "Доступные курсы появятся после входа. Пробные первые уроки можно открыть во вкладке «Все курсы».";
+}
+
 function setStudyTab(tabName = "owned") {
   const hasSession = hasAuthenticatedAccount();
   const ownedTab = document.querySelector('[data-tab="owned"]');
@@ -1093,10 +1134,13 @@ function setStudyTab(tabName = "owned") {
   studyCourseCards.forEach((card) => {
     const isCatalogOnly = card.dataset.catalog === "true";
     const isNotOwned = card.dataset.owned === "false";
-    const isHidden = tabName !== "all" && (isCatalogOnly || (hasSession && isNotOwned));
+    const isGuestOwnedTab = !hasSession && tabName !== "all";
+    const isHidden = tabName !== "all" && (isGuestOwnedTab || isCatalogOnly || (hasSession && isNotOwned));
     card.classList.toggle("is-hidden", isHidden);
     card.setAttribute("aria-hidden", String(isHidden));
   });
+
+  updateStudyCourseEmptyState(tabName, hasSession);
 }
 
 function setAccountMode(mode = "profile") {
