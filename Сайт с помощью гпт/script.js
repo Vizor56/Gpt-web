@@ -514,6 +514,9 @@ let latestStaffWorkspace = null;
 let currentConversationId = null;
 let currentMessageTab = "";
 let messageTabLockedByUser = false;
+let messageStartModalOpen = false;
+let messageStartRoleFilter = "all";
+let messageStartCourseFilter = "all";
 let latestMessageUnreadState = { total: 0, byTab: {} };
 let activeStreamChatId = null;
 let streamsLoaded = false;
@@ -4384,7 +4387,7 @@ function renderTeacherLessonRow(course, lesson) {
         ${lesson.videoUrl ? `<a href="${escapeHtml(lesson.videoUrl)}" target="_blank" rel="noopener noreferrer"><svg><use href="#icon-play" /></svg>Видео</a>` : `<button type="button" disabled><svg><use href="#icon-play" /></svg>Видео</button>`}
         ${lesson.notesUrl ? `<a href="${escapeHtml(lesson.notesUrl)}" target="_blank" rel="noopener noreferrer"><svg><use href="#icon-file" /></svg>Конспект</a>` : `<button type="button" disabled><svg><use href="#icon-file" /></svg>Конспект</button>`}
         ${lesson.homeworkUrl ? `<a href="${escapeHtml(lesson.homeworkUrl)}" target="_blank" rel="noopener noreferrer"><svg><use href="#icon-clipboard" /></svg>ДЗ</a>` : `<button type="button" disabled><svg><use href="#icon-clipboard" /></svg>ДЗ</button>`}
-        ${lesson.homeworkReviewUrl ? `<a href="${escapeHtml(lesson.homeworkReviewUrl)}" target="_blank" rel="noopener noreferrer"><svg><use href="#icon-message" /></svg>Разбор ДЗ</a>` : ""}
+        ${lesson.homeworkReviewUrl ? `<a class="lesson-review-button" href="${escapeHtml(lesson.homeworkReviewUrl)}" target="_blank" rel="noopener noreferrer"><svg><use href="#icon-message" /></svg>Разбор ДЗ</a>` : ""}
       </div>
       <details class="staff-details staff-lesson-editor">
         <summary>Редактировать урок и материалы</summary>
@@ -6115,6 +6118,22 @@ function setAdminRuntimeTab(details, key) {
   });
 }
 
+function ensureAdminDrawerCloseButton(details) {
+  const summary = details?.querySelector(":scope > summary");
+
+  if (!summary || summary.querySelector("[data-admin-drawer-close]")) {
+    return;
+  }
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "admin-drawer-close";
+  button.dataset.adminDrawerClose = "";
+  button.setAttribute("aria-label", "Закрыть окно редактирования");
+  button.innerHTML = "<span aria-hidden=\"true\">×</span>";
+  summary.append(button);
+}
+
 function enhanceAdminProfileDrawer(details) {
   if (!details || details.dataset.adminProfileEnhanced === "true") {
     return;
@@ -6127,6 +6146,7 @@ function enhanceAdminProfileDrawer(details) {
     return;
   }
 
+  ensureAdminDrawerCloseButton(details);
   details.dataset.adminProfileEnhanced = "true";
   details.classList.add("is-tabbed-profile");
 
@@ -7100,38 +7120,167 @@ function renderGroupedRecipientOptions(recipients = []) {
     .join("");
 }
 
+function getMessageRoleForTab(tab = "") {
+  return {
+    friends: "Student",
+    students: "Student",
+    teachers: "Teacher",
+    curators: "Curator",
+    admins: "Admin",
+  }[tab] || "all";
+}
+
+function getRecipientCourseLabel(recipient = {}) {
+  const directCourse = [recipient.courseTitle, recipient.courseName, recipient.course]
+    .map((value) => String(value || "").trim())
+    .find(Boolean);
+
+  if (directCourse) {
+    return directCourse;
+  }
+
+  const subtitle = String(recipient.subtitle || "").trim();
+  const looksLikeCourse = subtitle && !subtitle.includes("@") && !/^https?:/i.test(subtitle) && !/^\+?\d/.test(subtitle) && !/класс/i.test(subtitle);
+  return looksLikeCourse ? subtitle : "Без курса";
+}
+
+function getRecipientSearchText(recipient = {}) {
+  const roleLabel = getMessageTargetLabel(recipient.targetRole);
+  return [roleLabel, recipient.targetName, recipient.subtitle, recipient.courseTitle, recipient.recipientGroup, recipient.targetRole, recipient.targetId]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+function getRecipientCourseOptions(recipients = []) {
+  return [...new Set(recipients.map(getRecipientCourseLabel).filter(Boolean))].sort((first, second) => {
+    if (first === "Без курса") {
+      return 1;
+    }
+
+    if (second === "Без курса") {
+      return -1;
+    }
+
+    return first.localeCompare(second, "ru");
+  });
+}
+
+function getRecipientRoleOptions(recipients = []) {
+  const order = ["Student", "Teacher", "Curator", "Admin"];
+  const roles = new Set(recipients.map((recipient) => recipient.targetRole).filter(Boolean));
+  return order.filter((role) => roles.has(role));
+}
+
+function setMessageStartModalOpen(open = false, { useCurrentTab = false } = {}) {
+  messageStartModalOpen = Boolean(open);
+
+  if (messageStartModalOpen) {
+    const recipients = latestMessages?.recipients || [];
+    const preferredRole = useCurrentTab ? getMessageRoleForTab(currentMessageTab) : messageStartRoleFilter;
+    const hasPreferredRole = preferredRole === "all" || recipients.some((recipient) => recipient.targetRole === preferredRole);
+    messageStartRoleFilter = hasPreferredRole ? preferredRole : "all";
+    messageStartCourseFilter = "all";
+  }
+
+  renderMessages(latestMessages || { conversations: [], messages: [] });
+}
+
 function renderMessageStartPanel(recipients = [], actor = getMessageActor(), activeTab = currentMessageTab) {
   if (!actor) {
     return "";
   }
 
-  const options = renderGroupedRecipientOptions(recipients);
   const tabMeta = getMessageTabMeta(activeTab);
+  const roleOptions = getRecipientRoleOptions(recipients);
+  const courseOptions = getRecipientCourseOptions(recipients);
+  const activeRole = roleOptions.includes(messageStartRoleFilter) ? messageStartRoleFilter : "all";
+  const activeCourse = courseOptions.includes(messageStartCourseFilter) ? messageStartCourseFilter : "all";
 
-  return `
-    <form class="conversation-start-form message-recipient-panel" data-message-start-form>
-      <div class="message-recipient-panel__head">
-        <strong>Новый чат</strong>
+  const toolbar = `
+    <section class="message-start-toolbar">
+      <div>
+        <strong>${escapeHtml(tabMeta.label)}</strong>
         <span>${escapeHtml(tabMeta.hint)}</span>
       </div>
-      <label>
-        Поиск адресата
-        <input class="message-recipient-search" type="search" data-message-recipient-search placeholder="Имя, логин, курс или роль" autocomplete="off" ${recipients.length ? "" : "disabled"} />
-      </label>
-      <label>
-        Кому написать
-        <select name="recipient" ${recipients.length ? "" : "disabled"} required>
-          <option value="">Выберите адресата</option>
-          ${options}
-        </select>
-      </label>
-      <button class="message-start-button" type="submit" ${recipients.length ? "" : "disabled"}>
-        <span><svg><use href="#icon-message" /></svg></span>
-        Написать
+      <button class="message-new-chat-button" type="button" data-open-message-start ${recipients.length ? "" : "disabled"}>
+        <svg><use href="#icon-message" /></svg>
+        Написать кому-то новому
       </button>
-      <p class="message-recipient-empty is-hidden" data-message-recipient-empty>Адресаты по поиску не найдены.</p>
-      ${recipients.length ? "" : `<p>Нет доступных адресатов.</p>`}
-    </form>
+    </section>
+  `;
+
+  if (!messageStartModalOpen) {
+    return toolbar;
+  }
+
+  const roleButtons = [
+    `<button type="button" class="${activeRole === "all" ? "is-active" : ""}" data-message-recipient-role="all" aria-pressed="${activeRole === "all"}">Все</button>`,
+    ...roleOptions.map((role) => {
+      const isActive = activeRole === role;
+      return `<button type="button" class="${isActive ? "is-active" : ""}" data-message-recipient-role="${escapeHtml(role)}" aria-pressed="${isActive}">${escapeHtml(getMessageTargetLabel(role))}</button>`;
+    }),
+  ].join("");
+
+  const cards = recipients
+    .map((recipient) => {
+      const roleLabel = getMessageTargetLabel(recipient.targetRole);
+      const courseLabel = getRecipientCourseLabel(recipient);
+      const searchText = getRecipientSearchText(recipient);
+      const isHidden = (activeRole !== "all" && recipient.targetRole !== activeRole) || (activeCourse !== "all" && courseLabel !== activeCourse);
+
+      return `
+        <label class="message-recipient-card ${isHidden ? "is-hidden" : ""}" data-message-recipient-option data-role="${escapeHtml(recipient.targetRole)}" data-course="${escapeHtml(courseLabel)}" data-search-text="${escapeHtml(searchText)}">
+          <input type="radio" name="recipient" value="${escapeHtml(`${recipient.targetRole}:${recipient.targetId}`)}" required />
+          <span class="message-recipient-card__avatar is-${escapeHtml(getRecipientTab(recipient, actor))}" aria-hidden="true">${escapeHtml(getConversationInitials(recipient.targetName))}</span>
+          <span class="message-recipient-card__body">
+            <strong>${escapeHtml(recipient.targetName || "Адресат")}</strong>
+            <small>${escapeHtml(roleLabel)} · ${escapeHtml(courseLabel === "Без курса" ? recipient.subtitle || courseLabel : courseLabel)}</small>
+          </span>
+        </label>
+      `;
+    })
+    .join("");
+
+  return `
+    ${toolbar}
+    <div class="message-start-backdrop" data-message-start-modal>
+      <form class="conversation-start-form message-recipient-panel message-start-modal" data-message-start-form>
+        <div class="message-start-modal__header">
+          <div>
+            <strong>Написать кому-то новому</strong>
+            <span>Выберите адресата, роль и курс. Чат создастся через базу.</span>
+          </div>
+          <button class="message-start-modal__close" type="button" data-close-message-start aria-label="Закрыть выбор адресата">
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
+        <div class="message-start-modal__filters">
+          <label>
+            Поиск
+            <input class="message-recipient-search" type="search" data-message-recipient-search placeholder="Имя, логин, курс или роль" autocomplete="off" ${recipients.length ? "" : "disabled"} />
+          </label>
+          <label>
+            Курс
+            <select data-message-recipient-course ${courseOptions.length ? "" : "disabled"}>
+              <option value="all">Все курсы</option>
+              ${courseOptions.map((course) => `<option value="${escapeHtml(course)}" ${course === activeCourse ? "selected" : ""}>${escapeHtml(course)}</option>`).join("")}
+            </select>
+          </label>
+        </div>
+        <div class="message-start-modal__roles" aria-label="Тип адресата">
+          ${roleButtons}
+        </div>
+        <div class="message-recipient-cards" data-message-recipient-list>
+          ${cards || `<div class="resource-empty">Нет доступных адресатов.</div>`}
+        </div>
+        <p class="message-recipient-empty is-hidden" data-message-recipient-empty>Адресаты по выбранным фильтрам не найдены.</p>
+        <button class="message-start-button" type="submit" ${recipients.length ? "" : "disabled"}>
+          <span><svg><use href="#icon-message" /></svg></span>
+          Создать чат
+        </button>
+      </form>
+    </div>
   `;
 }
 
@@ -7311,10 +7460,9 @@ function renderMessages(payload) {
   }
 
   if (conversationList) {
-    const filteredRecipients = recipients.filter((recipient) => getRecipientTab(recipient, actor) === currentMessageTab);
     const filteredConversations = conversations.filter((conversation) => getConversationTab(conversation, actor) === currentMessageTab);
     const friendsPanel = renderStudentFriendsPanel(payload?.friends, actor);
-    const startPanel = renderMessageStartPanel(filteredRecipients, actor, currentMessageTab);
+    const startPanel = renderMessageStartPanel(recipients, actor, currentMessageTab);
     const emptyText = `В разделе «${getMessageTabMeta(currentMessageTab).label}» чатов пока нет.`;
 
     if (filteredConversations.length === 0) {
@@ -7466,6 +7614,41 @@ async function loadAccountFriends() {
   }
 }
 
+function filterMessageRecipientOptions(form) {
+  if (!form) {
+    return;
+  }
+
+  const query = form.querySelector("[data-message-recipient-search]")?.value.trim().toLowerCase() || "";
+  const role = form.querySelector("[data-message-recipient-role].is-active")?.dataset.messageRecipientRole || "all";
+  const course = form.querySelector("[data-message-recipient-course]")?.value || "all";
+  const emptyText = form.querySelector("[data-message-recipient-empty]");
+  let visibleCount = 0;
+
+  form.querySelectorAll("[data-message-recipient-option]").forEach((option) => {
+    const roleMatches = role === "all" || option.dataset.role === role;
+    const courseMatches = course === "all" || option.dataset.course === course;
+    const searchMatches = !query || String(option.dataset.searchText || "").includes(query);
+    const visible = roleMatches && courseMatches && searchMatches;
+    option.classList.toggle("is-hidden", !visible);
+    option.setAttribute("aria-hidden", String(!visible));
+
+    const input = option.querySelector("input");
+
+    if (input) {
+      input.disabled = !visible;
+
+      if (!visible && input.checked) {
+        input.checked = false;
+      }
+    }
+
+    visibleCount += visible ? 1 : 0;
+  });
+
+  emptyText?.classList.toggle("is-hidden", visibleCount > 0);
+}
+
 async function startMessageConversation(form) {
   const value = String(new FormData(form).get("recipient") || "");
   const [targetRole, targetId] = value.split(":");
@@ -7500,6 +7683,7 @@ async function startMessageConversation(form) {
     currentConversationId = result.activeConversationId;
     currentMessageTab = getRecipientTab({ targetRole }, getMessageActor());
     messageTabLockedByUser = false;
+    messageStartModalOpen = false;
     await loadMessages(currentConversationId, { markRead: true });
     setMessageStatus("Чат открыт.", "success");
   } catch (error) {
@@ -9149,7 +9333,7 @@ function renderLessonRow(lesson) {
 
     if (lesson.homeworkReviewUrl) {
       actionButtons.push(`
-        <button class="button-blue" type="button" data-video-url="${escapeHtml(lesson.homeworkReviewUrl)}" title="Посмотреть видео-разбор домашнего задания">
+        <button class="button-blue lesson-review-button" type="button" data-video-url="${escapeHtml(lesson.homeworkReviewUrl)}" title="Посмотреть видео-разбор домашнего задания">
           <svg><use href="#icon-message" /></svg>Разбор ДЗ
         </button>
       `);
@@ -10347,15 +10531,34 @@ if (notificationButton) {
 }
 
 document.addEventListener("click", (event) => {
-  const openAdminDrawer = document.querySelector(".admin-person-details[open], .admin-add-details[open]");
   const clickedAdminSummary = event.target.closest(".admin-person-details > summary, .admin-add-details > summary");
+  const adminCloseButton = event.target.closest("[data-admin-drawer-close]");
   const adminRuntimeTabButton = event.target.closest("[data-admin-runtime-tab]");
+  const messageStartCloseButton = event.target.closest("[data-close-message-start]");
   const emojiToggleButton = event.target.closest("[data-message-emoji-toggle]");
   const emojiButton = event.target.closest("[data-message-emoji]");
+
+  if (adminCloseButton) {
+    event.preventDefault();
+    event.stopPropagation();
+    const drawer = adminCloseButton.closest(".admin-person-details, .admin-add-details");
+
+    if (drawer) {
+      drawer.open = false;
+    }
+
+    return;
+  }
 
   if (adminRuntimeTabButton) {
     event.preventDefault();
     setAdminRuntimeTab(adminRuntimeTabButton.closest(".admin-person-details"), adminRuntimeTabButton.dataset.adminRuntimeTab);
+    return;
+  }
+
+  if (messageStartCloseButton || event.target.matches?.("[data-message-start-modal]")) {
+    event.preventDefault();
+    setMessageStartModalOpen(false);
     return;
   }
 
@@ -10374,15 +10577,18 @@ document.addEventListener("click", (event) => {
   }
 
   if (clickedAdminSummary) {
+    const currentDrawer = clickedAdminSummary.parentElement;
+
+    if (currentDrawer?.open) {
+      event.preventDefault();
+      return;
+    }
+
     document.querySelectorAll(".admin-person-details[open], .admin-add-details[open]").forEach((details) => {
-      if (details !== clickedAdminSummary.parentElement) {
+      if (details !== currentDrawer) {
         details.open = false;
       }
     });
-  } else if (openAdminDrawer && !openAdminDrawer.contains(event.target)) {
-    event.preventDefault();
-    openAdminDrawer.open = false;
-    return;
   }
 
   if (messageEmojiPanel && !messageEmojiPanel.classList.contains("is-hidden") && !event.target.closest("[data-message-emoji-picker]")) {
@@ -10531,10 +10737,14 @@ document.addEventListener("click", (event) => {
 document.addEventListener(
   "toggle",
   (event) => {
-    const details = event.target.closest?.(".admin-person-details");
+    const details = event.target.closest?.(".admin-person-details, .admin-add-details");
 
     if (details?.open) {
-      enhanceAdminProfileDrawer(details);
+      ensureAdminDrawerCloseButton(details);
+
+      if (details.classList.contains("admin-person-details")) {
+        enhanceAdminProfileDrawer(details);
+      }
     }
   },
   true,
@@ -10542,6 +10752,12 @@ document.addEventListener(
 
 document.addEventListener("keydown", (event) => {
   if (event.key !== "Escape") {
+    return;
+  }
+
+  if (messageStartModalOpen) {
+    event.preventDefault();
+    setMessageStartModalOpen(false);
     return;
   }
 
@@ -10796,32 +11012,35 @@ if (conversationList) {
       return;
     }
 
-    const form = searchInput.closest("[data-message-start-form]");
-    const query = searchInput.value.trim().toLowerCase();
-    const select = form?.querySelector("select[name='recipient']");
-    const emptyText = form?.querySelector("[data-message-recipient-empty]");
-    let visibleCount = 0;
-
-    form?.querySelectorAll("option[data-search-text]").forEach((option) => {
-      const visible = !query || String(option.dataset.searchText || "").includes(query);
-      option.hidden = !visible;
-      option.disabled = !visible;
-      visibleCount += visible ? 1 : 0;
-    });
-
-    form?.querySelectorAll("optgroup").forEach((group) => {
-      const hasVisibleOptions = Array.from(group.querySelectorAll("option[data-search-text]")).some((option) => !option.hidden);
-      group.hidden = !hasVisibleOptions;
-    });
-
-    if (select?.selectedOptions?.[0]?.disabled) {
-      select.value = "";
-    }
-
-    emptyText?.classList.toggle("is-hidden", visibleCount > 0);
+    filterMessageRecipientOptions(searchInput.closest("[data-message-start-form]"));
   });
 
   conversationList.addEventListener("click", (event) => {
+    const openMessageStartButton = event.target.closest("[data-open-message-start]");
+
+    if (openMessageStartButton) {
+      event.preventDefault();
+      if (!openMessageStartButton.disabled) {
+        setMessageStartModalOpen(true, { useCurrentTab: true });
+      }
+      return;
+    }
+
+    const recipientRoleButton = event.target.closest("[data-message-recipient-role]");
+
+    if (recipientRoleButton) {
+      event.preventDefault();
+      const form = recipientRoleButton.closest("[data-message-start-form]");
+      messageStartRoleFilter = recipientRoleButton.dataset.messageRecipientRole || "all";
+      form?.querySelectorAll("[data-message-recipient-role]").forEach((button) => {
+        const active = button === recipientRoleButton;
+        button.classList.toggle("is-active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
+      filterMessageRecipientOptions(form);
+      return;
+    }
+
     const tabButton = event.target.closest("[data-message-tab]");
 
     if (tabButton) {
@@ -10890,6 +11109,17 @@ if (conversationList) {
       messageTabLockedByUser = false;
       loadMessages(currentConversationId, { markRead: true });
     }
+  });
+
+  conversationList.addEventListener("change", (event) => {
+    const courseSelect = event.target.closest("[data-message-recipient-course]");
+
+    if (!courseSelect) {
+      return;
+    }
+
+    messageStartCourseFilter = courseSelect.value || "all";
+    filterMessageRecipientOptions(courseSelect.closest("[data-message-start-form]"));
   });
 }
 

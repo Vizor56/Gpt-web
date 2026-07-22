@@ -20276,3 +20276,399 @@ body:has(.admin-add-details[open]) .admin-directory::after {
       -24px -1px 0 color-mix(in srgb, var(--academy-mint, var(--mint)) 54%, #ffffff);
   }
 }
+
+/* Homework review button, admin drawer, and message start modal refinements */
+.lesson-actions .lesson-review-button {
+  justify-self: stretch;
+  min-height: 40px;
+  max-width: 124px;
+  padding: 0 9px;
+  border-color: color-mix(in srgb, var(--academy-gold, var(--gold)) 52%, #ffffff);
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.92), rgba(241, 184, 75, 0.16)),
+    color-mix(in srgb, var(--academy-gold, var(--gold)) 11%, #ffffff);
+  color: color-mix(in srgb, var(--academy-accent-dark, var(--blue-dark)) 72%, #8a641c);
+  font-size: 12px;
+  line-height: 1.05;
+}
+
+.lesson-actions .lesson-review-button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.lesson-actions .lesson-review-button:hover {
+  border-color: color-mix(in srgb, var(--academy-gold, var(--gold)) 70%, #ffffff);
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.96), rgba(241, 184, 75, 0.22)),
+    color-mix(in srgb, var(--academy-gold, var(--gold)) 15%, #ffffff);
+}
+
+.lesson-actions--review {
+  grid-template-columns: minmax(92px, 1fr) minmax(92px, 1fr) minmax(116px, 1.1fr) minmax(96px, 0.72fr);
+  align-items: center;
+}
+
+:is(.admin-person-details, .admin-add-details)[open] > summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  cursor: default;
+}
+
+:is(.admin-person-details, .admin-add-details)[open] > summary::after {
+  display: none;
+}
+
+.admin-drawer-close {
+  display: inline-grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 18%, #ffffff);
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.94);
+  color: var(--academy-accent-dark, var(--blue-dark));
+  cursor: pointer;
+  font-size: 26px;
+  font-weight: 850;
+  line-height: 1;
+  box-shadow: 0 8px 18px rgba(20, 42, 45, 0.08);
+}
+
+.admin-drawer-close:hover {
+  border-color: color-mix(in srgb, #d64d3e 36%, #ffffff);
+  background: #fff6f4;
+  color: #b33b30;
+  transform: translateY(-1px);
+}
+
+:is(.admin-person-details, .admin-add-details)[open] :is(input, select, textarea) {
+  position: relative;
+  z-index: 1;
+}
+
+.message-start-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 14%, #ffffff);
+  border-radius: 12px;
+  background:
+    linear-gradient(135deg, rgba(255, 253, 248, 0.98), rgba(238, 248, 246, 0.82)),
+    var(--academy-paper-solid, var(--surface));
+  box-shadow: 0 12px 26px rgba(32, 42, 45, 0.06);
+}
+
+.message-start-toolbar strong {
+  display: block;
+  color: var(--academy-ink, var(--ink));
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.message-start-toolbar span {
+  display: block;
+  margin-top: 2px;
+  color: var(--academy-muted, var(--muted));
+  font-size: 12px;
+  font-weight: 780;
+  line-height: 1.35;
+}
+
+.message-new-chat-button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 13px;
+  border: 1px solid var(--academy-accent, var(--blue));
+  border-radius: 10px;
+  background: var(--academy-accent, var(--blue));
+  color: #fffdf8;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 920;
+  line-height: 1.15;
+  box-shadow: 0 12px 24px rgba(20, 92, 89, 0.16);
+}
+
+.message-new-chat-button svg {
+  width: 17px;
+  height: 17px;
+}
+
+.message-new-chat-button:hover:not(:disabled) {
+  background: var(--academy-accent-dark, var(--blue-dark));
+  transform: translateY(-1px);
+}
+
+.message-new-chat-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
+}
+
+.message-start-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100420;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(20, 42, 45, 0.36);
+  backdrop-filter: blur(5px);
+}
+
+.message-start-modal {
+  position: relative;
+  top: auto;
+  z-index: 1;
+  display: grid;
+  width: min(760px, calc(100vw - 40px));
+  max-height: min(760px, calc(100dvh - 40px));
+  overflow: hidden;
+  padding: 0;
+  border-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 22%, #ffffff);
+  border-radius: 14px;
+  background:
+    linear-gradient(90deg, rgba(20, 92, 89, 0.045) 1px, transparent 1px) 0 0 / 28px 28px,
+    linear-gradient(0deg, rgba(20, 92, 89, 0.035) 1px, transparent 1px) 0 0 / 28px 28px,
+    var(--academy-paper-solid, var(--surface));
+  box-shadow: 0 30px 90px rgba(15, 31, 36, 0.28);
+}
+
+.message-start-modal__header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 14%, #ffffff);
+  background: rgba(255, 253, 248, 0.94);
+}
+
+.message-start-modal__header strong {
+  color: var(--academy-ink, var(--ink));
+  font-size: 21px;
+  font-weight: 950;
+  line-height: 1.15;
+}
+
+.message-start-modal__header span {
+  display: block;
+  margin-top: 4px;
+  color: var(--academy-muted, var(--muted));
+  font-size: 13px;
+  font-weight: 780;
+}
+
+.message-start-modal__close {
+  display: inline-grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 18%, #ffffff);
+  border-radius: 999px;
+  background: #fffdf8;
+  color: var(--academy-accent-dark, var(--blue-dark));
+  cursor: pointer;
+  font-size: 25px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.message-start-modal__close:hover {
+  border-color: color-mix(in srgb, #d64d3e 34%, #ffffff);
+  color: #b33b30;
+}
+
+.message-start-modal__filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(180px, 0.75fr);
+  gap: 10px;
+  padding: 14px 20px 8px;
+}
+
+.message-start-modal__filters label {
+  display: grid;
+  gap: 6px;
+  color: var(--academy-muted, var(--muted));
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.message-start-modal__filters :is(input, select) {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 18%, #ffffff);
+  border-radius: 10px;
+  background: rgba(255, 253, 248, 0.96);
+  color: var(--academy-ink, var(--ink));
+  font-weight: 820;
+}
+
+.message-start-modal__roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 0 20px 12px;
+}
+
+.message-start-modal__roles button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 18%, #ffffff);
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.88);
+  color: var(--academy-accent-dark, var(--blue-dark));
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.message-start-modal__roles button.is-active {
+  border-color: var(--academy-accent, var(--blue));
+  background: var(--academy-accent, var(--blue));
+  color: #fffdf8;
+}
+
+.message-recipient-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 9px;
+  max-height: min(360px, calc(100dvh - 330px));
+  overflow-y: auto;
+  padding: 0 20px 14px;
+}
+
+.message-recipient-card {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  min-height: 70px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 13%, #ffffff);
+  border-radius: 12px;
+  background: rgba(255, 253, 248, 0.84);
+  cursor: pointer;
+}
+
+.message-recipient-card:hover,
+.message-recipient-card:has(input:checked) {
+  border-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 34%, #ffffff);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--academy-accent, var(--blue)) 10%, #ffffff), rgba(255, 253, 248, 0.95));
+}
+
+.message-recipient-card input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.message-recipient-card__avatar {
+  display: inline-grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--academy-mint, var(--mint)), var(--academy-accent, var(--blue)));
+  color: #fffdf8;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.message-recipient-card__avatar.is-friends,
+.message-recipient-card__avatar.is-students {
+  background: linear-gradient(135deg, #58c9bf, #2f8f6f);
+}
+
+.message-recipient-card__avatar.is-teachers {
+  background: linear-gradient(135deg, #5aa0d8, #145c59);
+}
+
+.message-recipient-card__avatar.is-curators {
+  background: linear-gradient(135deg, #8ad4b2, #0f766e);
+}
+
+.message-recipient-card__avatar.is-admins {
+  background: linear-gradient(135deg, #f1b84b, #9a6920);
+}
+
+.message-recipient-card__body {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.message-recipient-card__body strong,
+.message-recipient-card__body small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.message-recipient-card__body strong {
+  color: var(--academy-ink, var(--ink));
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.message-recipient-card__body small {
+  color: var(--academy-muted, var(--muted));
+  font-size: 12px;
+  font-weight: 780;
+}
+
+.message-start-modal > .message-recipient-empty {
+  margin: -4px 20px 12px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--academy-gold, var(--gold)) 28%, #ffffff);
+  border-radius: 10px;
+  background: rgba(255, 248, 231, 0.72);
+}
+
+.message-start-modal > .message-start-button {
+  min-height: 48px;
+  margin: 0 20px 20px;
+  border-radius: 11px;
+}
+
+@media (max-width: 760px) {
+  .lesson-actions--review {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .lesson-actions .lesson-review-button {
+    max-width: none;
+  }
+
+  .message-start-backdrop {
+    align-items: end;
+    padding: 12px;
+  }
+
+  .message-start-modal {
+    width: 100%;
+    max-height: calc(100dvh - 24px);
+  }
+
+  .message-start-modal__filters,
+  .message-recipient-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .message-recipient-cards {
+    max-height: calc(100dvh - 360px);
+  }
+}

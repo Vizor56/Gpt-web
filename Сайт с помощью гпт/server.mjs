@@ -6789,16 +6789,40 @@ async function getMessageRecipients(actor) {
   if (actor.role === "Admin") {
     const result = await dbQuery(
       `
-        SELECT 'Teacher' AS "targetRole", id AS "targetId", CONCAT(first_name, ' ', last_name) AS "targetName", 'Преподаватель' AS "recipientGroup", email AS subtitle
-        FROM teachers
-        WHERE active = TRUE
+        SELECT
+          'Teacher' AS "targetRole",
+          t.id AS "targetId",
+          CONCAT(t.first_name, ' ', t.last_name) AS "targetName",
+          'Преподаватель' AS "recipientGroup",
+          t.email AS subtitle,
+          COALESCE((SELECT string_agg(DISTINCT c.title, ', ' ORDER BY c.title) FROM courses c WHERE c.teacher_id = t.id), '') AS "courseTitle"
+        FROM teachers t
+        WHERE t.active = TRUE
         UNION ALL
-        SELECT 'Curator' AS "targetRole", id AS "targetId", CONCAT(first_name, ' ', last_name) AS "targetName", 'Куратор' AS "recipientGroup", email AS subtitle
-        FROM curators
-        WHERE active = TRUE
+        SELECT
+          'Curator' AS "targetRole",
+          cu.id AS "targetId",
+          CONCAT(cu.first_name, ' ', cu.last_name) AS "targetName",
+          'Куратор' AS "recipientGroup",
+          cu.email AS subtitle,
+          COALESCE((SELECT string_agg(DISTINCT c.title, ', ' ORDER BY c.title) FROM courses c WHERE c.curator_id = cu.id), '') AS "courseTitle"
+        FROM curators cu
+        WHERE cu.active = TRUE
         UNION ALL
-        SELECT 'Student' AS "targetRole", id AS "targetId", CONCAT(first_name, ' ', last_name) AS "targetName", 'Ученики' AS "recipientGroup", COALESCE(email, phone, grade::text || ' класс') AS subtitle
-        FROM students
+        SELECT
+          'Student' AS "targetRole",
+          s.id AS "targetId",
+          CONCAT(s.first_name, ' ', s.last_name) AS "targetName",
+          'Ученики' AS "recipientGroup",
+          COALESCE(s.email, s.phone, s.grade::text || ' класс') AS subtitle,
+          COALESCE((
+            SELECT string_agg(DISTINCT c.title, ', ' ORDER BY c.title)
+            FROM course_enrollments ce
+            JOIN courses c ON c.id = ce.course_id
+            WHERE ce.student_id = s.id
+              AND ce.status = 'Active'
+          ), '') AS "courseTitle"
+        FROM students s
         ORDER BY "recipientGroup", "targetName"
       `,
     );
@@ -6808,10 +6832,10 @@ async function getMessageRecipients(actor) {
   if (actor.role === "Teacher") {
     const result = await dbQuery(
       `
-        SELECT 'Admin' AS "targetRole", id AS "targetId", CONCAT(first_name, ' ', last_name) AS "targetName", 'Администратор' AS "recipientGroup", login AS subtitle
+        SELECT 'Admin' AS "targetRole", id AS "targetId", CONCAT(first_name, ' ', last_name) AS "targetName", 'Администратор' AS "recipientGroup", login AS subtitle, '' AS "courseTitle"
         FROM admin_accounts
         UNION ALL
-        SELECT DISTINCT 'Student' AS "targetRole", s.id AS "targetId", CONCAT(s.first_name, ' ', s.last_name) AS "targetName", 'Ученики' AS "recipientGroup", c.title AS subtitle
+        SELECT DISTINCT 'Student' AS "targetRole", s.id AS "targetId", CONCAT(s.first_name, ' ', s.last_name) AS "targetName", 'Ученики' AS "recipientGroup", c.title AS subtitle, c.title AS "courseTitle"
         FROM course_enrollments ce
         JOIN courses c ON c.id = ce.course_id
         JOIN students s ON s.id = ce.student_id
@@ -6827,10 +6851,10 @@ async function getMessageRecipients(actor) {
   if (actor.role === "Curator") {
     const result = await dbQuery(
       `
-        SELECT 'Admin' AS "targetRole", id AS "targetId", CONCAT(first_name, ' ', last_name) AS "targetName", 'Администратор' AS "recipientGroup", login AS subtitle
+        SELECT 'Admin' AS "targetRole", id AS "targetId", CONCAT(first_name, ' ', last_name) AS "targetName", 'Администратор' AS "recipientGroup", login AS subtitle, '' AS "courseTitle"
         FROM admin_accounts
         UNION ALL
-        SELECT DISTINCT 'Student' AS "targetRole", s.id AS "targetId", CONCAT(s.first_name, ' ', s.last_name) AS "targetName", 'Ученики' AS "recipientGroup", c.title AS subtitle
+        SELECT DISTINCT 'Student' AS "targetRole", s.id AS "targetId", CONCAT(s.first_name, ' ', s.last_name) AS "targetName", 'Ученики' AS "recipientGroup", c.title AS subtitle, c.title AS "courseTitle"
         FROM course_enrollments ce
         JOIN courses c ON c.id = ce.course_id
         JOIN students s ON s.id = ce.student_id
@@ -6845,21 +6869,21 @@ async function getMessageRecipients(actor) {
 
   const result = await dbQuery(
     `
-      SELECT DISTINCT 'Teacher' AS "targetRole", COALESCE(ce.teacher_id, c.teacher_id) AS "targetId", CONCAT(t.first_name, ' ', t.last_name) AS "targetName", 'Преподаватели' AS "recipientGroup", c.title AS subtitle
+      SELECT DISTINCT 'Teacher' AS "targetRole", COALESCE(ce.teacher_id, c.teacher_id) AS "targetId", CONCAT(t.first_name, ' ', t.last_name) AS "targetName", 'Преподаватели' AS "recipientGroup", c.title AS subtitle, c.title AS "courseTitle"
       FROM course_enrollments ce
       JOIN courses c ON c.id = ce.course_id
       JOIN teachers t ON t.id = COALESCE(ce.teacher_id, c.teacher_id)
       WHERE ce.student_id = $1
         AND ce.status = 'Active'
       UNION ALL
-      SELECT DISTINCT 'Curator' AS "targetRole", COALESCE(ce.curator_id, c.curator_id) AS "targetId", CONCAT(cu.first_name, ' ', cu.last_name) AS "targetName", 'Кураторы' AS "recipientGroup", c.title AS subtitle
+      SELECT DISTINCT 'Curator' AS "targetRole", COALESCE(ce.curator_id, c.curator_id) AS "targetId", CONCAT(cu.first_name, ' ', cu.last_name) AS "targetName", 'Кураторы' AS "recipientGroup", c.title AS subtitle, c.title AS "courseTitle"
       FROM course_enrollments ce
       JOIN courses c ON c.id = ce.course_id
       JOIN curators cu ON cu.id = COALESCE(ce.curator_id, c.curator_id)
       WHERE ce.student_id = $1
         AND ce.status = 'Active'
       UNION ALL
-      SELECT DISTINCT 'Student' AS "targetRole", sf.friend_id AS "targetId", CONCAT(s.first_name, ' ', s.last_name) AS "targetName", 'Друзья' AS "recipientGroup", COALESCE(s.grade::text || ' класс', '') AS subtitle
+      SELECT DISTINCT 'Student' AS "targetRole", sf.friend_id AS "targetId", CONCAT(s.first_name, ' ', s.last_name) AS "targetName", 'Друзья' AS "recipientGroup", COALESCE(s.grade::text || ' класс', '') AS subtitle, '' AS "courseTitle"
       FROM student_friends sf
       JOIN students s ON s.id = sf.friend_id
       WHERE sf.student_id = $1
