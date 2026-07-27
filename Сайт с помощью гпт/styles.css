@@ -14917,6 +14917,233 @@ body[data-site-theme] :is(.capybara-shop-panel, .staff-shop-panel, .staff-panel:
   animation: pet-scan 1.2s steps(2) infinite;
 }
 
+/* Final pet anatomy pass: keep one readable face per animal and make the library pose upright. */
+.capybara__eye {
+  min-width: 6px;
+  min-height: 6px;
+  z-index: 9;
+}
+
+.capybara:is([data-animal="cat"], [data-animal="fox"], [data-animal="dog"]) .capybara__head::before {
+  position: absolute;
+  content: "";
+  right: 12px;
+  top: 29px;
+  width: 8px;
+  height: 2px;
+  border-radius: 999px;
+  background: rgba(32, 42, 45, 0.55);
+  box-shadow:
+    0 7px 0 rgba(32, 42, 45, 0.5),
+    34px 0 0 rgba(32, 42, 45, 0.5),
+    34px 7px 0 rgba(32, 42, 45, 0.45);
+  opacity: 0.62;
+}
+
+.capybara[data-animal="panda"] .capybara__head::before {
+  position: absolute;
+  content: "";
+  right: 39px;
+  top: 17px;
+  z-index: 1;
+  width: 20px;
+  height: 19px;
+  border-radius: 12px 11px 10px 12px;
+  background: var(--pet-mark);
+  box-shadow: 29px 0 0 var(--pet-mark);
+}
+
+.capybara[data-animal="panda"] .capybara__eye {
+  width: 6px;
+  height: 6px;
+  min-width: 6px;
+  min-height: 6px;
+  box-shadow: 0 0 0 2px rgba(255, 253, 248, 0.28);
+}
+
+.capybara[data-animal="frog"] .capybara__ear {
+  background:
+    radial-gradient(circle at 50% 45%, #fffdf8 0 7px, var(--pet-eye) 8px 11px, transparent 12px),
+    var(--pet-light);
+}
+
+.capybara[data-animal="frog"] .capybara__eye {
+  width: 0 !important;
+  height: 0 !important;
+  min-width: 0;
+  min-height: 0;
+  opacity: 0;
+  box-shadow: none;
+}
+
+.capybara[data-animal="teacher-owl"] .capybara__body {
+  --pet-body-bg:
+    radial-gradient(circle at 35% 24%, #fff8db 0 12px, transparent 13px),
+    radial-gradient(circle at 65% 24%, #fff8db 0 12px, transparent 13px),
+    linear-gradient(90deg, var(--pet-dark) 0 16%, var(--pet-main) 17% 83%, var(--pet-dark) 84%);
+}
+
+.capybara[data-animal="teacher-owl"] .capybara__eye {
+  width: 7px;
+  height: 7px;
+  min-width: 7px;
+  min-height: 7px;
+}
+
+.capybara[data-animal="admin-robot"] .capybara__head::before {
+  position: absolute;
+  content: "";
+  left: 35px;
+  top: -15px;
+  width: 6px;
+  height: 15px;
+  border-radius: 3px 3px 0 0;
+  background: var(--pet-dark);
+  box-shadow: 0 -6px 0 2px rgba(34, 211, 238, 0.82);
+}
+
+.library-reader__pet {
+  display: grid;
+  place-items: end center;
+  overflow: visible;
+}
+
+.library-reader__animal.capybara {
+  left: 50%;
+  top: auto;
+  bottom: -4px;
+  transform: translateX(-50%) scale(0.82);
+  transform-origin: 50% 100%;
+  --pet-body-left: 58px;
+  --pet-body-bottom: 28px;
+  --pet-body-width: 92px;
+  --pet-body-height: 82px;
+  --pet-body-radius: 36px 36px 24px 24px;
+  --pet-head-right: 58px;
+  --pet-head-bottom: 94px;
+  --pet-head-width: 70px;
+  --pet-head-height: 58px;
+  --pet-head-radius: 24px 24px 18px 18px;
+  --pet-tail-left: 42px;
+  --pet-tail-bottom: 57px;
+  --pet-tail-width: 28px;
+  --pet-tail-height: 20px;
+  --pet-tail-radius: 16px 5px 12px 16px;
+  --pet-ear-width: 19px;
+  --pet-ear-height: 21px;
+  --pet-ear-left-right: 104px;
+  --pet-ear-right-right: 63px;
+  --pet-ear-left-bottom: 141px;
+  --pet-ear-right-bottom: 141px;
+  --pet-eye-width: 7px;
+  --pet-eye-height: 7px;
+  --pet-eye-left-right: 93px;
+  --pet-eye-right-right: 72px;
+  --pet-eye-left-bottom: 121px;
+  --pet-eye-right-bottom: 121px;
+  --pet-nose-right: 78px;
+  --pet-nose-bottom: 108px;
+  --pet-nose-width: 18px;
+  --pet-nose-height: 10px;
+  --pet-leg-bottom: 15px;
+  --pet-leg-width: 18px;
+  --pet-leg-height: 18px;
+  --pet-back-leg-left: 72px;
+  --pet-front-leg-left: 112px;
+  --pet-back-leg-shadow: none;
+  --pet-front-leg-shadow: none;
+  --pet-clothes-left: 60px;
+  --pet-clothes-bottom: 36px;
+  --pet-clothes-width: 88px;
+  --pet-clothes-height: 58px;
+  --pet-hat-right: 55px;
+  --pet-hat-bottom: 143px;
+  --pet-face-right: 57px;
+  --pet-face-bottom: 117px;
+  --pet-neck-right: 63px;
+  --pet-neck-bottom: 91px;
+  --pet-neck-width: 76px;
+  --pet-hand-right: 41px;
+  --pet-hand-bottom: 55px;
+}
+
+.library-reader--compact .library-reader__animal.capybara {
+  bottom: -10px;
+  transform: translateX(-50%) scale(0.56);
+}
+
+.library-reader__animal.capybara .capybara__body {
+  transform: none;
+}
+
+.library-reader__animal.capybara .capybara__head {
+  transform: none;
+}
+
+.library-reader__animal.capybara .capybara__leg {
+  border-radius: 4px 4px 8px 8px;
+}
+
+.library-reader__animal.capybara .capybara__shadow {
+  left: 48px;
+  bottom: 7px;
+  width: 118px;
+}
+
+.library-reader__animal.capybara[data-animal="cat"],
+.library-reader__animal.capybara[data-animal="fox"],
+.library-reader__animal.capybara[data-animal="dog"],
+.library-reader__animal.capybara[data-animal="teacher-lion"],
+.library-reader__animal.capybara[data-animal="curator-deer"],
+.library-reader__animal.capybara[data-animal="curator-otter"],
+.library-reader__animal.capybara[data-animal="admin-raven"] {
+  --pet-tail-opacity: 1;
+}
+
+.library-reader__animal.capybara[data-animal="frog"] {
+  --pet-head-bottom: 91px;
+  --pet-head-width: 76px;
+  --pet-head-height: 48px;
+  --pet-ear-left-right: 101px;
+  --pet-ear-right-right: 61px;
+  --pet-ear-left-bottom: 126px;
+  --pet-ear-right-bottom: 126px;
+  --pet-nose-right: 70px;
+  --pet-nose-bottom: 104px;
+}
+
+.library-reader__animal.capybara[data-animal="penguin"] {
+  --pet-body-width: 84px;
+  --pet-body-height: 86px;
+  --pet-body-left: 64px;
+  --pet-head-right: 67px;
+  --pet-head-bottom: 99px;
+  --pet-eye-left-right: 94px;
+  --pet-eye-right-right: 75px;
+  --pet-nose-right: 81px;
+}
+
+.library-reader__animal.capybara[data-animal="teacher-owl"] {
+  --pet-body-height: 88px;
+  --pet-head-right: 56px;
+  --pet-head-bottom: 102px;
+  --pet-eye-left-right: 92px;
+  --pet-eye-right-right: 73px;
+  --pet-nose-right: 80px;
+  --pet-ear-left-bottom: 137px;
+  --pet-ear-right-bottom: 137px;
+}
+
+.library-reader__book {
+  bottom: 42px;
+  z-index: 12;
+}
+
+.library-reader--compact .library-reader__book {
+  bottom: 24px;
+  z-index: 12;
+}
+
 @media (max-width: 1180px) {
   .home-method-steps {
     grid-template-columns: repeat(2, minmax(0, 1fr));
