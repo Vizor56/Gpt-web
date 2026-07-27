@@ -483,6 +483,7 @@ const studyPointsBalance = document.querySelector("#study-points-balance");
 const studyPointsToNext = document.querySelector("#study-points-to-next");
 const shopBalance = document.querySelector("#shop-balance");
 const shopItemsList = document.querySelector("#shop-items-list");
+const libraryPetScene = document.querySelector("#library-pet-scene");
 const capybaraPreview = document.querySelector("#capybara-preview");
 const staffLoginForm = document.querySelector("#staff-login-form");
 const staffLogoutButton = document.querySelector("#staff-logout-button");
@@ -508,6 +509,14 @@ let libraryLoaded = false;
 let libraryAccessKey = "";
 let latestLibraryNotes = [];
 let currentLibraryCourse = "all";
+let librarySpeechIndex = 0;
+const librarySpeechPhrases = [
+  "Я приступил к учёбе, а значит бояться нечего.",
+  "Один конспект за раз, и тема становится понятнее.",
+  "Спокойно читаем: формулы тоже умеют объясняться.",
+  "Если стало непонятно, значит скоро станет ясно.",
+  "Маленький шаг по теории — большой шаг к баллам.",
+];
 let currentAccount = readStoredAccount();
 let currentStaff = readStoredStaff();
 let currentAuthMode = hasAuthenticatedStaff(currentStaff) ? "staff" : "student";
@@ -1032,6 +1041,7 @@ function openLibrary() {
   showPage("library");
   setActiveNav("library");
   history.replaceState(null, "", "#library");
+  updateLibraryReader();
   loadNotesLibrary();
 }
 
@@ -1760,6 +1770,7 @@ function applyAccountToUi(account = latestAccount) {
   latestAccount = account;
   if (Array.isArray(account.profileItems)) {
     applySiteTheme(account.profileItems);
+    updateLibraryReader(account.profileItems);
   }
   updateProfileSummary(account);
   updatePointsPanels(account);
@@ -1811,6 +1822,8 @@ function getShopTypeLabel(type = "") {
     fur: "Шерсть",
     eyes: "Глаза",
     scene: "Окружение",
+    library_book: "Книга",
+    library_place: "Место чтения",
     animation: "Анимация",
     outfit: "Одежда",
     head: "Голова",
@@ -1823,7 +1836,7 @@ function getShopTypeLabel(type = "") {
 }
 
 function getShopSectionOrder(slot = "") {
-  const order = ["theme", "animal", "fur", "eyes", "scene", "animation", "outfit", "head", "face", "neck", "hand"];
+  const order = ["theme", "animal", "fur", "eyes", "scene", "library_book", "library_place", "animation", "outfit", "head", "face", "neck", "hand"];
   const index = order.indexOf(getShopSlot(slot));
   return index === -1 ? order.length : index;
 }
@@ -1839,6 +1852,10 @@ function getShopDisplaySection(type = "") {
     return "accessory";
   }
 
+  if (slot === "library_book" || slot === "library_place") {
+    return "library_style";
+  }
+
   return slot;
 }
 
@@ -1849,6 +1866,7 @@ function getShopSectionTabs() {
     ["animal", "Питомцы"],
     ["appearance", "Внешность"],
     ["scene", "Окружение"],
+    ["library_style", "Стилизовать библиотеку"],
     ["animation", "Анимации"],
     ["outfit", "Одежда"],
     ["accessory", "Аксессуары"],
@@ -1862,6 +1880,8 @@ const shopSlotTones = {
   fur: ["#9a6340", "#fff5ea", "#e5c9a9"],
   eyes: ["#1d65d8", "#eef5ff", "#bdd5ff"],
   scene: ["#2f637b", "#edf7fa", "#bddbe6"],
+  library_book: ["#8f6a2f", "#fff7e6", "#ead7a9"],
+  library_place: ["#315f61", "#eef8f4", "#c8e4dc"],
   animation: ["#7c3aed", "#f4efff", "#d7c7ff"],
   outfit: ["#147a46", "#edf9f2", "#bde8ce"],
   head: ["#806b34", "#fff7df", "#ead89f"],
@@ -1926,6 +1946,17 @@ const shopItemTones = {
   theme_pixel_dogs: ["#5f523f", "#f8f2e8", "#dfd1bb"],
   theme_pixel_hearts: ["#7c4f5f", "#fff2f5", "#ead0d8"],
   theme_pixel_coffee: ["#5b4632", "#f6efe4", "#dec9ad"],
+  library_book_math: ["#145c59", "#eef8f4", "#c6e3dc"],
+  library_book_physics: ["#2f637b", "#edf7fa", "#bddbe6"],
+  library_book_comics: ["#b7791f", "#fff7df", "#ecd99b"],
+  library_book_notes: ["#7c4f5f", "#fff2f5", "#ead0d8"],
+  library_place_park: ["#2f855a", "#edf8f0", "#bfe4cd"],
+  library_place_science: ["#334155", "#f1f5f9", "#cbd5e1"],
+  library_place_garden: ["#5f8f56", "#f0faec", "#cce7c3"],
+  library_place_river: ["#2f80ed", "#edf5ff", "#bfd8ff"],
+  library_place_laptop: ["#27364f", "#f1f5f9", "#cbd5e1"],
+  library_place_school: ["#8f6a2f", "#fff4e4", "#e9d1a4"],
+  library_place_home: ["#9a6340", "#fff3e8", "#e8c6a6"],
   teacher_pet_owl: ["#8b6f47", "#fff4dd", "#e5cca0"],
   teacher_pet_lion: ["#c78337", "#fff0dd", "#efc79b"],
   teacher_fur_graphite: ["#526070", "#f1f5f8", "#cad3dc"],
@@ -2053,6 +2084,10 @@ function getPixelPetAttributes(items = []) {
         return;
       }
 
+      if (slot === "library_book" || slot === "library_place") {
+        return;
+      }
+
       if (slot === "scene") {
         scene = item.cssClass;
         return;
@@ -2062,6 +2097,54 @@ function getPixelPetAttributes(items = []) {
     });
 
   return { attrs, scene };
+}
+
+function getLibraryStyleAttributes(items = []) {
+  const equipped = (items || []).filter((item) => item?.isEquipped && item?.cssClass);
+  const book = equipped.find((item) => getShopSlot(item.itemType) === "library_book")?.cssClass || "library-book-math";
+  const place = equipped.find((item) => getShopSlot(item.itemType) === "library_place")?.cssClass || "library-place-home";
+
+  return { book, place };
+}
+
+function renderLibraryReaderMarkup(items = [], { compact = false } = {}) {
+  const { book, place } = getLibraryStyleAttributes(items);
+
+  return `
+    <div class="library-reader ${compact ? "library-reader--compact" : ""}" data-library-book="${escapeHtml(book)}" data-library-place="${escapeHtml(place)}">
+      ${renderPixelPetMarkup(items, { wrapperClass: "library-reader__pet", petClass: "library-reader__animal" })}
+      <span class="library-reader__book" aria-hidden="true"></span>
+      <span class="library-reader__table" aria-hidden="true"></span>
+      <span class="library-reader__speech" data-library-speech>Я приступил к учёбе, а значит бояться нечего.</span>
+    </div>
+  `;
+}
+
+function updateLibraryReader(items = latestShop?.items || currentAccount?.profileItems || []) {
+  if (!libraryPetScene) {
+    return;
+  }
+
+  libraryPetScene.innerHTML = renderLibraryReaderMarkup(items);
+  const speech = libraryPetScene.querySelector("[data-library-speech]");
+  if (speech) {
+    speech.textContent = librarySpeechPhrases[librarySpeechIndex % librarySpeechPhrases.length];
+  }
+}
+
+function startLibrarySpeechRotation() {
+  window.setInterval(() => {
+    const libraryPage = document.querySelector('[data-page="library"]');
+    if (!libraryPage || libraryPage.classList.contains("is-hidden")) {
+      return;
+    }
+
+    librarySpeechIndex = (librarySpeechIndex + 1) % librarySpeechPhrases.length;
+    const speech = libraryPetScene?.querySelector("[data-library-speech]");
+    if (speech) {
+      speech.textContent = librarySpeechPhrases[librarySpeechIndex];
+    }
+  }, 14000);
 }
 
 function renderPixelPetMarkup(items = [], { wrapperClass = "profile-pet-chip", petClass = "profile-pet-chip__pet", asButton = false, buttonAttrs = "" } = {}) {
@@ -2126,6 +2209,14 @@ function renderShopItemPreview(item, equippedItems = []) {
     `;
   }
 
+  if (getShopDisplaySection(item?.itemType) === "library_style") {
+    return `
+      <div class="shop-item__preview shop-item__preview--library" aria-hidden="true"${getShopItemAttrs(item)}>
+        ${renderLibraryReaderMarkup(getShopPreviewItems(item, equippedItems), { compact: true })}
+      </div>
+    `;
+  }
+
   return `
     <div class="shop-item__preview" aria-hidden="true"${getShopItemAttrs(item)}>
       ${renderPixelPetMarkup(getShopPreviewItems(item, equippedItems), {
@@ -2141,7 +2232,7 @@ function clearPixelPetElement(petElement) {
     return;
   }
 
-  ["animal", "fur", "eyes", "animation", "outfit", "head", "face", "neck", "hand"].forEach((key) => {
+  ["animal", "fur", "eyes", "animation", "outfit", "head", "face", "neck", "hand", "library_book", "library_place"].forEach((key) => {
     delete petElement.dataset[key];
   });
   getPixelPetSceneTarget(petElement)?.removeAttribute("data-scene");
@@ -2160,6 +2251,10 @@ function applyPixelPetOutfit(petElement, items = []) {
       const slot = getShopSlot(item.itemType);
 
       if (slot === "theme") {
+        return;
+      }
+
+      if (slot === "library_book" || slot === "library_place") {
         return;
       }
 
@@ -2185,6 +2280,7 @@ function applyCapybaraOutfit(items = []) {
   applySiteTheme(items);
   applyPixelPetOutfit(capybaraPreview, items);
   applyPixelPetOutfit(profilePetPreview, items);
+  updateLibraryReader(items);
 
   if (profileAvatar && hasAuthenticatedAccount() && !isStaffMode()) {
     profileAvatar.classList.add("has-pet-avatar");
@@ -2298,7 +2394,16 @@ function renderShop(shop) {
 
   const badgeSection = currentShopSection === "all" || currentShopSection === "badge" ? renderBadgeShopSection(shop) : "";
   const emptyText = currentShopSection === "badge" ? "Плашки пока не найдены." : "В этом разделе пока нет предметов.";
-  const content = itemSections || badgeSection ? `${itemSections}${badgeSection}` : `<div class="resource-empty">${escapeHtml(emptyText)}</div>`;
+  const libraryPreview =
+    currentShopSection === "library_style"
+      ? `
+        <section class="shop-section shop-library-preview-section">
+          <h3>Предпросмотр библиотеки</h3>
+          ${renderLibraryReaderMarkup(equippedItems)}
+        </section>
+      `
+      : "";
+  const content = libraryPreview || itemSections || badgeSection ? `${libraryPreview}${itemSections}${badgeSection}` : `<div class="resource-empty">${escapeHtml(emptyText)}</div>`;
   shopItemsList.innerHTML = `${renderShopSectionTabs()}${content}`;
   renderAccountAchievements(shop);
 }
@@ -4109,7 +4214,7 @@ function renderTeacherAnalysisHomeworkCard(item) {
         ${item.checkedAt ? `<span class="resource-chip">${escapeHtml(formatStreamDate(item.checkedAt))}</span>` : ""}
         ${reviewed ? `<span class="resource-chip is-green">Фидбек куратора есть</span>` : ""}
       </div>
-      <h3>${escapeHtml(getHomeworkDisplayTitle(item, "Разбор непонятного ДЗ"))}</h3>
+      <h3>${escapeHtml(getHomeworkDisplayTitle(item, "Работа над ошибками 2"))}</h3>
       <p>${escapeHtml(getHomeworkDisplayDescription(item))}</p>
       <div class="staff-card__actions">
         ${createStaffLink(item.taskLink, "Задание", "#icon-file")}
@@ -4135,8 +4240,8 @@ function getStaffHomeworkModeConfig(mode = "homeworks") {
       mode: "analysis",
       itemsKey: "analysisHomeworks",
       statsKey: "analysisStats",
-      emptyText: "Работ для разбора непонятного ДЗ пока нет.",
-      title: "Разбор непонятного ДЗ",
+      emptyText: "Вторых работ над ошибками по этим курсам пока нет.",
+      title: "Работа над ошибками 2",
     };
   }
 
@@ -4191,7 +4296,7 @@ function renderHomeworkModeTabs(mode = "homeworks") {
         <svg><use href="#icon-clock" /></svg>Работа над ошибками
       </button>
       <button type="button" class="${normalizedMode === "analysis" ? "is-active" : ""}" data-staff-homework-mode="analysis">
-        <svg><use href="#icon-message" /></svg>Разбор непонятного ДЗ
+        <svg><use href="#icon-message" /></svg>Работа над ошибками 2
       </button>
       <button type="button" class="${normalizedMode === "reviewHomeworks" ? "is-active" : ""}" data-staff-homework-mode="reviewHomeworks">
         <svg><use href="#icon-file" /></svg>ДЗ V.2.0
@@ -5166,7 +5271,7 @@ function renderCuratorArchivePage() {
     ],
     [
       "analysis",
-      "Разбор непонятного ДЗ",
+      "Работа над ошибками 2",
       {
         items: getStaffItems("analysisHomeworks"),
         resourceType: "Correction",
@@ -8162,6 +8267,25 @@ function sortUpcomingEvents(items = []) {
     .sort((left, right) => new Date(left.startsAt || 0) - new Date(right.startsAt || 0));
 }
 
+function isOwnedCourseEvent(eventItem = {}) {
+  if (eventItem.eventType === "call") {
+    return true;
+  }
+
+  const course = getAccountCourse(eventItem.courseSlug || eventItem.courseKey);
+  return Boolean(course?.isOwned);
+}
+
+function sortStudyUpcomingEvents(items = []) {
+  return [...items]
+    .filter(isFutureEvent)
+    .sort((left, right) => {
+      const leftOwned = isOwnedCourseEvent(left) ? 0 : 1;
+      const rightOwned = isOwnedCourseEvent(right) ? 0 : 1;
+      return leftOwned - rightOwned || new Date(left.startsAt || 0) - new Date(right.startsAt || 0);
+    });
+}
+
 function formatRelativeEventTime(milliseconds) {
   const minutes = Math.max(1, Math.round(milliseconds / 60000));
 
@@ -8270,12 +8394,12 @@ function toDateTimeLocalValue(value) {
   return localDate.toISOString().slice(0, 16);
 }
 
-function renderStreamCards(target, streams, { limit = 0, emptyText = "Ближайших трансляций пока нет." } = {}) {
+function renderStreamCards(target, streams, { limit = 0, emptyText = "Ближайших трансляций пока нет.", preserveOrder = false } = {}) {
   if (!target) {
     return;
   }
 
-  const upcomingStreams = sortUpcomingEvents(streams);
+  const upcomingStreams = preserveOrder ? streams.filter(isFutureEvent) : sortUpcomingEvents(streams);
   const visibleStreams = limit > 0 ? upcomingStreams.slice(0, limit) : upcomingStreams;
 
   if (visibleStreams.length === 0) {
@@ -8551,18 +8675,20 @@ async function loadStreams(courseKey = "") {
   }
 
   latestStudentCalls = studentCalls;
-  renderStreamCards(studyStreamList, sortUpcomingEvents([...streams, ...studentCalls]), {
+  renderStreamCards(studyStreamList, sortStudyUpcomingEvents([...streams, ...studentCalls]), {
     limit: 4,
     emptyText: "Ближайших трансляций и созвонов пока нет.",
+    preserveOrder: true,
   });
   return streams;
 }
 
 function refreshVisibleStreamCards() {
   renderStreamCards(homeStreamList, latestGlobalStreams, { limit: 3 });
-  renderStreamCards(studyStreamList, sortUpcomingEvents([...latestGlobalStreams, ...latestStudentCalls]), {
+  renderStreamCards(studyStreamList, sortStudyUpcomingEvents([...latestGlobalStreams, ...latestStudentCalls]), {
     limit: 4,
     emptyText: "Ближайших трансляций и созвонов пока нет.",
+    preserveOrder: true,
   });
   renderStreamCards(courseStreamList, latestCourseStreams);
 
@@ -9119,6 +9245,18 @@ function getCorrectionAttemptByNumber(lesson, attemptNumber) {
   return getCorrectionAttemptsForLesson(lesson).find((attempt) => Number(attempt.attemptNumber || 1) === Number(attemptNumber || 1)) || null;
 }
 
+function hasFailedMainHomework(lesson = {}) {
+  return getEffectiveHomeworkStatus(lesson) === "Checked" && !isPassingScore(lesson.homeworkScore ?? lesson.score);
+}
+
+function hasFailedCorrectionAttempt(lesson = {}, attemptNumber = 1) {
+  const attempt = getCorrectionAttemptByNumber(lesson, attemptNumber);
+  const isCurrentAttempt = Number(lesson?.correctionAttempt || 1) === Number(attemptNumber || 1);
+  const status = attempt?.status || (isCurrentAttempt ? lesson.correctionStatus : "");
+  const score = attempt?.score ?? (isCurrentAttempt ? lesson.correctionScore : null);
+  return status === "Checked" && !isPassingScore(score);
+}
+
 function getHomeworkHistoryMeta(entry) {
   if (entry.status === "passed") {
     return { label: "Зачтено", className: "is-green" };
@@ -9243,7 +9381,8 @@ function getCorrectionAttemptRow(lesson, attemptNumber) {
   const submittedUrl = attempt?.submittedUrl || (isCurrentAttempt ? lesson.correctionSubmittedUrl : "");
   const status = attempt?.status || (isCurrentAttempt ? lesson.correctionStatus : "");
   const isSent = Boolean(submittedUrl) || ["Submitted", "Checked"].includes(status);
-  const isAvailable = Boolean(attempt || isCurrentAttempt);
+  const isUnlockedByScore = attemptNumber === 1 ? hasFailedMainHomework(lesson) : hasFailedCorrectionAttempt(lesson, 1);
+  const isAvailable = Boolean(attempt || isCurrentAttempt || isUnlockedByScore);
   const canEdit = isAvailable && isCurrentAttempt && !isSent && !needsLessonHomeworkReview(lesson);
 
   return {
@@ -9307,6 +9446,7 @@ function getReviewHomeworkAttemptRow(lesson) {
     canEdit,
     readonly: submitted,
     disabled: !canEdit,
+    canOpenTask: Boolean(taskUrl && eligible),
     statusText: link
       ? checked
         ? "ДЗ V.2.0 проверено. Отправленную ссылку изменить нельзя."
@@ -9369,6 +9509,9 @@ function renderHomeworkSubmitPanel(lesson) {
   const reviewHomeworkTaskUrl = getReviewHomeworkTaskUrl(lesson);
   const reviewHomeworkRow = getReviewHomeworkAttemptRow(lesson);
   const showReviewHomework = Boolean(reviewUrl && (reviewHomeworkTaskUrl || lesson.reviewHomeworkId || lesson.reviewHomeworkStatus || lesson.reviewHomeworkSubmittedUrl));
+  const correctionRows = rows.slice(1);
+  const hasCorrectionAccess = correctionRows.some((row) => row.canEdit || row.readonly || row.link);
+  const hasReviewHomeworkAccess = Boolean(reviewHomeworkRow.canEdit || reviewHomeworkRow.readonly || reviewHomeworkRow.canOpenTask);
 
   return `
     <section class="homework-submit-panel" aria-label="Сдача домашнего задания">
@@ -9380,12 +9523,12 @@ function renderHomeworkSubmitPanel(lesson) {
       ${createActionLink(getLessonHomeworkTaskUrl(lesson), "button-blue", "#icon-file", "Открыть условие ДЗ")}
       <div class="homework-work-stack">
         ${renderHomeworkAttemptRow(rows[0], lessonKey)}
-        <section class="homework-problem-block">
+        <section class="homework-problem-block ${hasCorrectionAccess ? "is-unlocked" : "is-locked"}">
           <div class="homework-problem-heading">
             <span>На случай, если возникнут сложности с ДЗ</span>
             <p>Работы над ошибками откроются только тогда, когда они действительно понадобятся.</p>
           </div>
-          ${rows.slice(1).map((row) => renderHomeworkAttemptRow(row, lessonKey)).join("")}
+          ${correctionRows.map((row) => renderHomeworkAttemptRow(row, lessonKey)).join("")}
         </section>
       </div>
       <section class="homework-review-block ${reviewUrl ? "is-ready" : "is-muted"}">
@@ -9407,7 +9550,11 @@ function renderHomeworkSubmitPanel(lesson) {
                 <span>После разбора</span>
                 <p>ДЗ V.2.0 сдаётся только учениками, у которых две работы над ошибками были ниже 5. Остальные могут просто открыть задание для тренировки.</p>
               </div>
-              ${createActionLink(reviewHomeworkTaskUrl, "button-blue", "#icon-file", "Открыть ДЗ V.2.0")}
+              ${
+                hasReviewHomeworkAccess
+                  ? createActionLink(reviewHomeworkTaskUrl, "button-blue", "#icon-file", "Открыть ДЗ V.2.0")
+                  : `<button type="button" disabled><svg><use href="#icon-lock" /></svg>Открыть ДЗ V.2.0</button>`
+              }
               ${canSubmitReviewHomework(lesson) || isReviewHomeworkSubmitted(lesson) ? renderHomeworkAttemptRow(reviewHomeworkRow, lessonKey) : ""}
             </section>
           `
@@ -9670,13 +9817,6 @@ function renderLessonRow(lesson) {
       `);
     }
 
-    if (lesson.homeworkReviewUrl && hasReviewHomeworkTask(lesson)) {
-      reviewButtons.push(`
-        <button class="button-yellow lesson-review-button lesson-review-button--v2" type="button" data-homework-lesson-id="${escapeHtml(getLessonKey(lesson))}" title="Открыть ДЗ V.2.0">
-          <svg><use href="#icon-file" /></svg>ДЗ V.2.0
-        </button>
-      `);
-    }
   }
 
   const shortActionsClass = actionButtons.length <= 2 ? " lesson-actions--short" : "";
@@ -11795,6 +11935,7 @@ if (!streamsLoaded) {
 }
 
 startStreamStatusRefresh();
+startLibrarySpeechRotation();
 
 window.addEventListener("hashchange", () => {
   const staffPageFromHash = location.hash.match(/^#staff-(.+)$/)?.[1];
