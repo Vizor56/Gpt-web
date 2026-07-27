@@ -17317,6 +17317,188 @@ body[data-site-theme="theme-sunrise-notebook"] {
   --theme-warm-accent: rgba(217, 159, 54, 0.17);
 }
 
+html[data-site-theme="theme-quiet-geometry"],
+body[data-site-theme="theme-quiet-geometry"] {
+  --bg: #f6f6f1;
+  --surface: #fffdf7;
+  --surface-soft: #edf3ef;
+  --ink: #202a2d;
+  --text: #2c3939;
+  --muted: #667775;
+  --muted-light: #879895;
+  --line: #d1dfd9;
+  --line-soft: #e3ebe7;
+  --blue: #145c59;
+  --blue-dark: #0f4846;
+  --green: #3d836e;
+  --gold: #d8a944;
+  --mint: #58c9bf;
+  --focus-ring: 0 0 0 4px rgba(20, 92, 89, 0.14);
+  --theme-shell: rgba(255, 253, 247, 0.97);
+  --theme-panel: #fffdf7;
+  --theme-panel-soft: #eef5f1;
+  --theme-nav-active: rgba(20, 92, 89, 0.13);
+  --theme-button-soft: rgba(20, 92, 89, 0.09);
+  --theme-grid: rgba(20, 92, 89, 0.075);
+  --theme-warm-accent: rgba(216, 169, 68, 0.13);
+  --theme-motif:
+    radial-gradient(circle at 18px 18px, rgba(20, 92, 89, 0.18) 0 2px, transparent 2.4px),
+    linear-gradient(135deg, transparent 0 47%, rgba(20, 92, 89, 0.075) 48% 52%, transparent 53% 100%);
+  --theme-motif-size: 72px 72px;
+}
+
+html[data-site-theme="theme-physics-lab"],
+body[data-site-theme="theme-physics-lab"] {
+  --bg: #f1f6f5;
+  --surface: #fbfffd;
+  --surface-soft: #e7f0ef;
+  --ink: #202a2d;
+  --text: #2b3a40;
+  --muted: #62767b;
+  --muted-light: #84969b;
+  --line: #c6dadb;
+  --line-soft: #dae9e9;
+  --blue: #315f68;
+  --blue-dark: #244a52;
+  --green: #36816f;
+  --gold: #d0a343;
+  --mint: #65c4bc;
+  --focus-ring: 0 0 0 4px rgba(49, 95, 104, 0.14);
+  --theme-shell: rgba(251, 255, 253, 0.97);
+  --theme-panel: #fbfffd;
+  --theme-panel-soft: #e9f4f3;
+  --theme-nav-active: rgba(49, 95, 104, 0.13);
+  --theme-button-soft: rgba(49, 95, 104, 0.09);
+  --theme-grid: rgba(49, 95, 104, 0.08);
+  --theme-warm-accent: rgba(208, 163, 67, 0.13);
+  --theme-motif:
+    radial-gradient(circle at 14px 42px, rgba(49, 95, 104, 0.14) 0 3px, transparent 3.4px),
+    radial-gradient(circle at 52px 18px, rgba(208, 163, 67, 0.16) 0 2px, transparent 2.4px),
+    linear-gradient(115deg, transparent 0 42%, rgba(49, 95, 104, 0.07) 43% 46%, transparent 47% 100%);
+  --theme-motif-size: 88px 88px;
+}
+
+html[data-site-theme="theme-coffee-notes"],
+body[data-site-theme="theme-coffee-notes"] {
+  --bg: #f8f1e6;
+  --surface: #fffdf8;
+  --surface-soft: #f0e5d5;
+  --ink: #302820;
+  --text: #44372d;
+  --muted: #766a5f;
+  --muted-light: #978a7d;
+  --line: #dfcdb3;
+  --line-soft: #eadcc9;
+  --blue: #6c5238;
+  --blue-dark: #4f3b27;
+  --green: #5d8064;
+  --gold: #c8913b;
+  --mint: #77bbad;
+  --focus-ring: 0 0 0 4px rgba(108, 82, 56, 0.14);
+  --theme-shell: rgba(255, 253, 248, 0.97);
+  --theme-panel: #fffdf8;
+  --theme-panel-soft: #f4e9da;
+  --theme-nav-active: rgba(108, 82, 56, 0.13);
+  --theme-button-soft: rgba(108, 82, 56, 0.09);
+  --theme-grid: rgba(108, 82, 56, 0.07);
+  --theme-warm-accent: rgba(200, 145, 59, 0.17);
+  --theme-motif:
+    linear-gradient(90deg, transparent 0 68%, rgba(200, 145, 59, 0.18) 69% 74%, transparent 75% 100%),
+    radial-gradient(ellipse at 24px 24px, rgba(108, 82, 56, 0.14) 0 9px, transparent 9.5px);
+  --theme-motif-size: 96px 96px;
+}
+
+html[data-site-theme="theme-northern-lights"],
+body[data-site-theme="theme-northern-lights"] {
+  --bg: #eaf2f2;
+  --surface: #f8fdfa;
+  --surface-soft: #dfeceb;
+  --ink: #1f2b2f;
+  --text: #26383c;
+  --muted: #607276;
+  --muted-light: #839397;
+  --line: #bed6d7;
+  --line-soft: #d5e5e5;
+  --blue: #234f59;
+  --blue-dark: #163941;
+  --green: #2f806b;
+  --gold: #cfa956;
+  --mint: #7ad3c6;
+  --focus-ring: 0 0 0 4px rgba(35, 79, 89, 0.14);
+  --theme-shell: rgba(248, 253, 250, 0.97);
+  --theme-panel: #f8fdfa;
+  --theme-panel-soft: #e5f0ef;
+  --theme-nav-active: rgba(35, 79, 89, 0.13);
+  --theme-button-soft: rgba(35, 79, 89, 0.1);
+  --theme-grid: rgba(35, 79, 89, 0.075);
+  --theme-warm-accent: rgba(122, 211, 198, 0.14);
+  --theme-motif:
+    linear-gradient(118deg, transparent 0 35%, rgba(122, 211, 198, 0.16) 36% 40%, transparent 41% 100%),
+    linear-gradient(72deg, transparent 0 58%, rgba(207, 169, 86, 0.11) 59% 61%, transparent 62% 100%),
+    radial-gradient(circle at 18px 18px, rgba(35, 79, 89, 0.12) 0 1.5px, transparent 2px);
+  --theme-motif-size: 118px 118px;
+}
+
+html[data-site-theme="theme-solution-garden"],
+body[data-site-theme="theme-solution-garden"] {
+  --bg: #f2f7ee;
+  --surface: #fffdf8;
+  --surface-soft: #e7f2e6;
+  --ink: #22302b;
+  --text: #2e3f38;
+  --muted: #65786e;
+  --muted-light: #87998f;
+  --line: #cadaca;
+  --line-soft: #deeadc;
+  --blue: #2f6a58;
+  --blue-dark: #214d40;
+  --green: #4b8a5f;
+  --gold: #d4a746;
+  --mint: #75c7b8;
+  --focus-ring: 0 0 0 4px rgba(47, 106, 88, 0.14);
+  --theme-shell: rgba(255, 253, 248, 0.97);
+  --theme-panel: #fffdf8;
+  --theme-panel-soft: #edf5ea;
+  --theme-nav-active: rgba(47, 106, 88, 0.13);
+  --theme-button-soft: rgba(47, 106, 88, 0.09);
+  --theme-grid: rgba(47, 106, 88, 0.07);
+  --theme-warm-accent: rgba(212, 167, 70, 0.13);
+  --theme-motif:
+    radial-gradient(ellipse at 24px 18px, rgba(75, 138, 95, 0.16) 0 7px, transparent 7.5px),
+    linear-gradient(135deg, transparent 0 54%, rgba(47, 106, 88, 0.08) 55% 58%, transparent 59% 100%);
+  --theme-motif-size: 90px 90px;
+}
+
+html[data-site-theme="theme-pixel-academy"],
+body[data-site-theme="theme-pixel-academy"] {
+  --bg: #f5f6f0;
+  --surface: #fffdf8;
+  --surface-soft: #e9f1ed;
+  --ink: #202a2d;
+  --text: #2b393b;
+  --muted: #647679;
+  --muted-light: #87979a;
+  --line: #cbdcd8;
+  --line-soft: #deebe7;
+  --blue: #1f5e62;
+  --blue-dark: #16494d;
+  --green: #3f806a;
+  --gold: #d8a840;
+  --mint: #5fc9bf;
+  --focus-ring: 0 0 0 4px rgba(31, 94, 98, 0.14);
+  --theme-shell: rgba(255, 253, 248, 0.97);
+  --theme-panel: #fffdf8;
+  --theme-panel-soft: #edf5f0;
+  --theme-nav-active: rgba(31, 94, 98, 0.13);
+  --theme-button-soft: rgba(31, 94, 98, 0.09);
+  --theme-grid: rgba(31, 94, 98, 0.075);
+  --theme-warm-accent: rgba(216, 168, 64, 0.15);
+  --theme-motif:
+    linear-gradient(90deg, rgba(31, 94, 98, 0.14) 0 8px, transparent 8px 18px, rgba(216, 168, 64, 0.18) 18px 26px, transparent 26px),
+    linear-gradient(0deg, transparent 0 16px, rgba(95, 201, 191, 0.12) 16px 24px, transparent 24px);
+  --theme-motif-size: 96px 96px;
+}
+
 :is(body[data-site-theme], html[data-site-theme] body) {
   --academy-bg: var(--bg);
   --academy-paper: color-mix(in srgb, var(--theme-panel) 94%, #ffffff);
@@ -17354,6 +17536,47 @@ body[data-site-theme="theme-sunrise-notebook"] {
   background:
     radial-gradient(circle at 84% 6%, var(--theme-button-soft), transparent 24%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.28), transparent 36%);
+}
+
+:is(
+  body[data-site-theme="theme-quiet-geometry"],
+  body[data-site-theme="theme-physics-lab"],
+  body[data-site-theme="theme-coffee-notes"],
+  body[data-site-theme="theme-northern-lights"],
+  body[data-site-theme="theme-solution-garden"],
+  body[data-site-theme="theme-pixel-academy"],
+  html[data-site-theme="theme-quiet-geometry"] body,
+  html[data-site-theme="theme-physics-lab"] body,
+  html[data-site-theme="theme-coffee-notes"] body,
+  html[data-site-theme="theme-northern-lights"] body,
+  html[data-site-theme="theme-solution-garden"] body,
+  html[data-site-theme="theme-pixel-academy"] body
+) .app {
+  background:
+    var(--theme-motif) 0 0 / var(--theme-motif-size) repeat,
+    radial-gradient(circle at 90% 7%, var(--theme-button-soft), transparent 28%),
+    radial-gradient(circle at 10% 88%, var(--theme-warm-accent), transparent 26%),
+    linear-gradient(180deg, var(--theme-panel) 0%, var(--bg) 100%);
+  background-attachment: scroll;
+}
+
+:is(
+  body[data-site-theme="theme-quiet-geometry"],
+  body[data-site-theme="theme-physics-lab"],
+  body[data-site-theme="theme-coffee-notes"],
+  body[data-site-theme="theme-northern-lights"],
+  body[data-site-theme="theme-solution-garden"],
+  body[data-site-theme="theme-pixel-academy"],
+  html[data-site-theme="theme-quiet-geometry"] body,
+  html[data-site-theme="theme-physics-lab"] body,
+  html[data-site-theme="theme-coffee-notes"] body,
+  html[data-site-theme="theme-northern-lights"] body,
+  html[data-site-theme="theme-solution-garden"] body,
+  html[data-site-theme="theme-pixel-academy"] body
+) .workspace {
+  background:
+    radial-gradient(circle at 86% 7%, color-mix(in srgb, var(--mint) 12%, transparent), transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.34), transparent 38%);
 }
 
 :is(body[data-site-theme], html[data-site-theme] body) :is(.sidebar, .topbar, .staff-workspace-header) {
@@ -17534,9 +17757,82 @@ body[data-site-theme]::-webkit-scrollbar-thumb {
   --preview-mint: #7dc9b7;
 }
 
+.shop-theme-preview[data-site-theme-preview="theme-quiet-geometry"] {
+  --preview-accent: #145c59;
+  --preview-accent-dark: #0f4846;
+  --preview-soft: #f6f6f1;
+  --preview-line: #d1dfd9;
+  --preview-gold: #d8a944;
+  --preview-mint: #58c9bf;
+  --preview-pattern:
+    radial-gradient(circle at 12px 12px, rgba(20, 92, 89, 0.22) 0 2px, transparent 2.4px),
+    linear-gradient(135deg, transparent 0 47%, rgba(20, 92, 89, 0.12) 48% 52%, transparent 53% 100%);
+}
+
+.shop-theme-preview[data-site-theme-preview="theme-physics-lab"] {
+  --preview-accent: #315f68;
+  --preview-accent-dark: #244a52;
+  --preview-soft: #f1f6f5;
+  --preview-line: #c6dadb;
+  --preview-gold: #d0a343;
+  --preview-mint: #65c4bc;
+  --preview-pattern:
+    radial-gradient(circle at 12px 34px, rgba(49, 95, 104, 0.18) 0 3px, transparent 3.4px),
+    linear-gradient(115deg, transparent 0 42%, rgba(49, 95, 104, 0.11) 43% 46%, transparent 47% 100%);
+}
+
+.shop-theme-preview[data-site-theme-preview="theme-coffee-notes"] {
+  --preview-accent: #6c5238;
+  --preview-accent-dark: #4f3b27;
+  --preview-soft: #f8f1e6;
+  --preview-line: #dfcdb3;
+  --preview-gold: #c8913b;
+  --preview-mint: #77bbad;
+  --preview-pattern:
+    linear-gradient(90deg, transparent 0 68%, rgba(200, 145, 59, 0.22) 69% 74%, transparent 75% 100%),
+    radial-gradient(ellipse at 22px 22px, rgba(108, 82, 56, 0.16) 0 8px, transparent 8.5px);
+}
+
+.shop-theme-preview[data-site-theme-preview="theme-northern-lights"] {
+  --preview-accent: #234f59;
+  --preview-accent-dark: #163941;
+  --preview-soft: #eaf2f2;
+  --preview-line: #bed6d7;
+  --preview-gold: #cfa956;
+  --preview-mint: #7ad3c6;
+  --preview-pattern:
+    linear-gradient(118deg, transparent 0 35%, rgba(122, 211, 198, 0.24) 36% 40%, transparent 41% 100%),
+    linear-gradient(72deg, transparent 0 58%, rgba(207, 169, 86, 0.14) 59% 61%, transparent 62% 100%);
+}
+
+.shop-theme-preview[data-site-theme-preview="theme-solution-garden"] {
+  --preview-accent: #2f6a58;
+  --preview-accent-dark: #214d40;
+  --preview-soft: #f2f7ee;
+  --preview-line: #cadaca;
+  --preview-gold: #d4a746;
+  --preview-mint: #75c7b8;
+  --preview-pattern:
+    radial-gradient(ellipse at 24px 18px, rgba(75, 138, 95, 0.2) 0 7px, transparent 7.5px),
+    linear-gradient(135deg, transparent 0 54%, rgba(47, 106, 88, 0.12) 55% 58%, transparent 59% 100%);
+}
+
+.shop-theme-preview[data-site-theme-preview="theme-pixel-academy"] {
+  --preview-accent: #1f5e62;
+  --preview-accent-dark: #16494d;
+  --preview-soft: #f5f6f0;
+  --preview-line: #cbdcd8;
+  --preview-gold: #d8a840;
+  --preview-mint: #5fc9bf;
+  --preview-pattern:
+    linear-gradient(90deg, rgba(31, 94, 98, 0.18) 0 8px, transparent 8px 18px, rgba(216, 168, 64, 0.22) 18px 26px, transparent 26px),
+    linear-gradient(0deg, transparent 0 16px, rgba(95, 201, 191, 0.16) 16px 24px, transparent 24px);
+}
+
 .shop-theme-preview[data-site-theme-preview] {
   border-color: var(--preview-accent);
   background:
+    var(--preview-pattern, linear-gradient(transparent, transparent)) 0 0 / 64px 64px repeat,
     linear-gradient(90deg, color-mix(in srgb, var(--preview-accent) 8%, transparent) 1px, transparent 1px) 0 0 / 12px 12px,
     linear-gradient(0deg, color-mix(in srgb, var(--preview-accent) 6%, transparent) 1px, transparent 1px) 0 0 / 12px 12px,
     linear-gradient(180deg, #fffdf8, var(--preview-soft));
