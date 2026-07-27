@@ -2613,6 +2613,7 @@ body[data-site-theme] :is(.shop-section-tabs button.is-active, .account-tabs but
   overflow: hidden;
   border: 2px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 24%, #ffffff);
   border-radius: 12px;
+  isolation: isolate;
   background:
     linear-gradient(90deg, rgba(20, 92, 89, 0.06) 1px, transparent 1px),
     linear-gradient(0deg, rgba(20, 92, 89, 0.05) 1px, transparent 1px),
@@ -2635,7 +2636,10 @@ body[data-site-theme] :is(.shop-section-tabs button.is-active, .account-tabs but
 
 .library-reader::before {
   inset: 0;
-  background: linear-gradient(180deg, rgba(255, 253, 248, 0.18), rgba(255, 253, 248, 0.55));
+  z-index: 0;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(255, 253, 248, 0.58) 0 18px, transparent 19px),
+    linear-gradient(180deg, rgba(255, 253, 248, 0.18), rgba(255, 253, 248, 0.55));
 }
 
 .library-reader::after {
@@ -2694,6 +2698,55 @@ body[data-site-theme] :is(.shop-section-tabs button.is-active, .account-tabs but
     linear-gradient(180deg, #fff6e8 0 58%, #e7d2b8 59% 100%);
 }
 
+.library-reader[data-library-place="library-place-cafe"] {
+  background:
+    radial-gradient(circle at 82% 18%, rgba(241, 184, 75, 0.34) 0 20px, transparent 21px),
+    linear-gradient(#6c5238 0 0) 22px 28px / 66px 28px,
+    linear-gradient(180deg, #fff2dd 0 58%, #d7b98e 59% 100%);
+  background-repeat: no-repeat;
+}
+
+.library-reader[data-library-place="library-place-observatory"] {
+  background:
+    radial-gradient(circle at 75% 18%, #fff7c7 0 12px, transparent 13px),
+    radial-gradient(circle at 22% 24%, rgba(122, 211, 198, 0.55) 0 2px, transparent 3px),
+    radial-gradient(circle at 42% 14%, rgba(255, 255, 255, 0.8) 0 2px, transparent 3px),
+    linear-gradient(180deg, #26324a 0 62%, #697f8f 63% 100%);
+}
+
+.library-reader[data-library-place="library-place-train"] {
+  background:
+    linear-gradient(#fffdf8 0 0) 24px 32px / 72px 44px,
+    linear-gradient(#bfd8ff 0 0) 32px 40px / 56px 28px,
+    linear-gradient(180deg, #eef7f4 0 57%, #c7d9d3 58% 100%);
+  background-repeat: no-repeat;
+}
+
+.library-reader[data-library-place="library-place-math-room"] {
+  background:
+    linear-gradient(#145c59 0 0) 22px 26px / calc(100% - 44px) 58px,
+    linear-gradient(90deg, rgba(255, 253, 248, 0.12) 1px, transparent 1px) 22px 26px / 18px 18px,
+    linear-gradient(0deg, rgba(255, 253, 248, 0.12) 1px, transparent 1px) 22px 26px / 18px 18px,
+    linear-gradient(180deg, #f4f7f1 0 58%, #d8d4c5 59% 100%);
+  background-repeat: no-repeat, repeat, repeat, no-repeat;
+}
+
+.library-reader[data-library-place="library-place-rooftop"] {
+  background:
+    linear-gradient(#32465a 0 0) 0 58% / 100% 4px,
+    linear-gradient(90deg, transparent 0 12px, rgba(50, 70, 90, 0.28) 12px 14px, transparent 14px 28px) 0 61% / 28px 24px,
+    linear-gradient(180deg, #edf6fb 0 56%, #bccad1 57% 100%);
+  background-repeat: no-repeat, repeat-x, no-repeat;
+}
+
+.library-reader[data-library-place="library-place-archive"] {
+  background:
+    repeating-linear-gradient(90deg, #6c5238 0 13px, #c8913b 13px 20px, #fff2dd 20px 32px) 20px 24px / calc(100% - 40px) 72px,
+    linear-gradient(#8f6a2f 0 0) 18px 92px / calc(100% - 36px) 8px,
+    linear-gradient(180deg, #fff4e4 0 60%, #d7b98e 61% 100%);
+  background-repeat: repeat-x, no-repeat, no-repeat;
+}
+
 .library-reader__pet {
   position: relative;
   z-index: 2;
@@ -2726,8 +2779,36 @@ body[data-site-theme] :is(.shop-section-tabs button.is-active, .account-tabs but
   border-radius: 4px;
   background:
     linear-gradient(90deg, transparent 48%, rgba(32, 42, 45, 0.35) 49% 51%, transparent 52%),
+    linear-gradient(0deg, rgba(255, 253, 248, 0.55) 0 7px, transparent 8px 100%),
     linear-gradient(180deg, #eef8f4, #c8e4dc);
   box-shadow: 5px 5px 0 rgba(32, 42, 45, 0.12);
+}
+
+.library-reader__book::before,
+.library-reader__book::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.library-reader__book::before {
+  top: 9px;
+  left: 10px;
+  width: 18px;
+  height: 4px;
+  background: rgba(32, 42, 45, 0.4);
+  box-shadow:
+    0 9px 0 rgba(32, 42, 45, 0.28),
+    40px 3px 0 rgba(32, 42, 45, 0.2);
+}
+
+.library-reader__book::after {
+  right: 8px;
+  bottom: 7px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(32, 42, 45, 0.28);
+  border-radius: 50%;
 }
 
 .library-reader--compact .library-reader__book {
@@ -2740,19 +2821,65 @@ body[data-site-theme] :is(.shop-section-tabs button.is-active, .account-tabs but
 .library-reader[data-library-book="library-book-physics"] .library-reader__book {
   background:
     linear-gradient(90deg, transparent 48%, rgba(32, 42, 45, 0.35) 49% 51%, transparent 52%),
+    radial-gradient(circle at 74% 64%, rgba(47, 99, 123, 0.26) 0 10px, transparent 11px),
     linear-gradient(180deg, #edf7fa, #bddbe6);
 }
 
 .library-reader[data-library-book="library-book-comics"] .library-reader__book {
   background:
     linear-gradient(90deg, transparent 48%, rgba(32, 42, 45, 0.35) 49% 51%, transparent 52%),
+    radial-gradient(circle at 72% 34%, rgba(255, 253, 248, 0.7) 0 8px, transparent 9px),
     linear-gradient(180deg, #fff7df, #f1b84b);
 }
 
 .library-reader[data-library-book="library-book-notes"] .library-reader__book {
   background:
     linear-gradient(90deg, transparent 48%, rgba(32, 42, 45, 0.35) 49% 51%, transparent 52%),
+    linear-gradient(0deg, rgba(124, 79, 95, 0.18) 0 5px, transparent 6px 100%),
     linear-gradient(180deg, #fff2f5, #ead0d8);
+}
+
+.library-reader[data-library-book="library-book-geometry"] .library-reader__book {
+  background:
+    linear-gradient(90deg, transparent 48%, rgba(32, 42, 45, 0.35) 49% 51%, transparent 52%),
+    linear-gradient(135deg, transparent 0 42%, rgba(20, 92, 89, 0.35) 43% 48%, transparent 49% 100%),
+    linear-gradient(180deg, #f3f7f4, #cbded5);
+}
+
+.library-reader[data-library-book="library-book-exam"] .library-reader__book {
+  background:
+    linear-gradient(90deg, transparent 48%, rgba(32, 42, 45, 0.35) 49% 51%, transparent 52%),
+    linear-gradient(0deg, rgba(182, 132, 36, 0.28) 0 9px, transparent 10px 100%),
+    linear-gradient(180deg, #fff7df, #ead99d);
+}
+
+.library-reader[data-library-book="library-book-lab"] .library-reader__book {
+  background:
+    linear-gradient(90deg, transparent 48%, rgba(32, 42, 45, 0.35) 49% 51%, transparent 52%),
+    radial-gradient(circle at 68% 34%, rgba(51, 65, 85, 0.28) 0 7px, transparent 8px),
+    linear-gradient(180deg, #f1f5f9, #cbd5e1);
+}
+
+.library-reader[data-library-book="library-book-code"] .library-reader__book {
+  background:
+    linear-gradient(90deg, transparent 48%, rgba(255, 253, 248, 0.28) 49% 51%, transparent 52%),
+    linear-gradient(90deg, rgba(88, 201, 191, 0.5) 0 8px, transparent 9px 100%) 10px 12px / 48px 4px,
+    linear-gradient(180deg, #27364f, #1f2a40);
+}
+
+.library-reader[data-library-book="library-book-mistakes"] .library-reader__book {
+  background:
+    linear-gradient(90deg, transparent 48%, rgba(32, 42, 45, 0.35) 49% 51%, transparent 52%),
+    linear-gradient(45deg, transparent 0 45%, rgba(179, 91, 82, 0.36) 46% 52%, transparent 53% 100%),
+    linear-gradient(180deg, #fff0ed, #efc4bd);
+}
+
+.library-reader[data-library-book="library-book-stars"] .library-reader__book {
+  background:
+    linear-gradient(90deg, transparent 48%, rgba(255, 253, 248, 0.24) 49% 51%, transparent 52%),
+    radial-gradient(circle at 72% 28%, rgba(241, 184, 75, 0.88) 0 3px, transparent 4px),
+    radial-gradient(circle at 28% 66%, rgba(255, 253, 248, 0.8) 0 2px, transparent 3px),
+    linear-gradient(180deg, #315f61, #203f41);
 }
 
 .library-reader__table {
@@ -8099,10 +8226,23 @@ button.stream-chat-avatar {
 }
 
 .shop-library-preview-section {
+  position: sticky;
+  top: 78px;
+  z-index: 4;
+  display: grid;
+  gap: 10px;
   border-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 30%, #ffffff);
   background:
-    linear-gradient(135deg, rgba(238, 248, 246, 0.72), rgba(255, 253, 248, 0.94)),
+    linear-gradient(135deg, rgba(255, 253, 248, 0.96), color-mix(in srgb, var(--academy-mint, var(--mint)) 10%, #ffffff)),
     var(--academy-paper, #fff);
+}
+
+.shop-library-preview-section__hint {
+  margin: -4px 0 2px;
+  color: var(--academy-muted, var(--muted));
+  font-size: 13px;
+  font-weight: 780;
+  line-height: 1.4;
 }
 
 .shop-library-preview-section .library-reader {
@@ -20973,6 +21113,15 @@ body:has(.admin-add-details[open]) .admin-directory::after {
 @media (max-width: 720px) {
   :is(.side-link[data-open-points], .side-link[data-staff-page="points"]).is-active {
     box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--blue) 72%, var(--mint));
+  }
+
+  .shop-library-preview-section {
+    position: relative;
+    top: auto;
+  }
+
+  .shop-library-preview-section .library-reader {
+    min-height: 220px;
   }
 }
 

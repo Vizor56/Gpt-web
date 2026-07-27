@@ -1972,6 +1972,12 @@ const shopItemTones = {
   library_book_physics: ["#2f637b", "#edf7fa", "#bddbe6"],
   library_book_comics: ["#b7791f", "#fff7df", "#ecd99b"],
   library_book_notes: ["#7c4f5f", "#fff2f5", "#ead0d8"],
+  library_book_geometry: ["#145c59", "#f3f7f4", "#cbded5"],
+  library_book_exam: ["#b68424", "#fff7df", "#ead99d"],
+  library_book_lab: ["#334155", "#f1f5f9", "#cbd5e1"],
+  library_book_code: ["#27364f", "#eef2fb", "#c7d3e8"],
+  library_book_mistakes: ["#b35b52", "#fff0ed", "#efc4bd"],
+  library_book_stars: ["#315f61", "#edf8f7", "#bfe3df"],
   library_place_park: ["#2f855a", "#edf8f0", "#bfe4cd"],
   library_place_science: ["#334155", "#f1f5f9", "#cbd5e1"],
   library_place_garden: ["#5f8f56", "#f0faec", "#cce7c3"],
@@ -1979,6 +1985,12 @@ const shopItemTones = {
   library_place_laptop: ["#27364f", "#f1f5f9", "#cbd5e1"],
   library_place_school: ["#8f6a2f", "#fff4e4", "#e9d1a4"],
   library_place_home: ["#9a6340", "#fff3e8", "#e8c6a6"],
+  library_place_cafe: ["#8f6a2f", "#fff4e4", "#e9d1a4"],
+  library_place_observatory: ["#24324a", "#eef3fb", "#c2ccde"],
+  library_place_train: ["#315f61", "#eef8f4", "#c8e4dc"],
+  library_place_math_room: ["#145c59", "#eef8f4", "#c6e3dc"],
+  library_place_rooftop: ["#3f5f7a", "#eef6fb", "#c7d9e8"],
+  library_place_archive: ["#6c5238", "#f8f1e6", "#dfcdb3"],
   teacher_pet_owl: ["#8b6f47", "#fff4dd", "#e5cca0"],
   teacher_pet_lion: ["#c78337", "#fff0dd", "#efc79b"],
   teacher_fur_graphite: ["#526070", "#f1f5f8", "#cad3dc"],
@@ -2429,6 +2441,7 @@ function renderShop(shop) {
       ? `
         <section class="shop-section shop-library-preview-section">
           <h3>Предпросмотр библиотеки</h3>
+          <p class="shop-library-preview-section__hint">Выберите книгу и место чтения — этот образ появится в библиотеке конспектов.</p>
           ${renderLibraryReaderMarkup(equippedItems)}
         </section>
       `

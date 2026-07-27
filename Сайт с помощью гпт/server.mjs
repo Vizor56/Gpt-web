@@ -881,6 +881,18 @@ async function seedDatabase() {
       [64, "library_place_laptop", "В ноутбуке", "library_place", 450, "library-place-laptop", "Питомец читает прямо внутри учебного интерфейса."],
       [65, "library_place_school", "За партой в школе", "library_place", 390, "library-place-school", "Классика: парта, тетрадь и понятная тема."],
       [66, "library_place_home", "Дома за столом", "library_place", 320, "library-place-home", "Уютное место для стабильной учебы."],
+      [73, "library_book_geometry", "Книга: Геометрия без тумана", "library_book", 360, "library-book-geometry", "Светлый сборник со схемами, углами и спокойными доказательствами."],
+      [74, "library_book_exam", "Книга: ЕГЭ без паники", "library_book", 420, "library-book-exam", "Рабочая книга для вариантов, повторения и уверенного финиша."],
+      [75, "library_book_lab", "Книга: Лабораторный журнал", "library_book", 390, "library-book-lab", "Стальной физический журнал с наблюдениями, графиками и выводами."],
+      [76, "library_book_code", "Книга: Алгоритмы на полях", "library_book", 440, "library-book-code", "Темная тетрадь для кода, логики и задач на аккуратное мышление."],
+      [77, "library_book_mistakes", "Книга: Ошибки приручены", "library_book", 380, "library-book-mistakes", "Мягкий задачник про работу над ошибками без лишней тревоги."],
+      [78, "library_book_stars", "Книга: Звездный конспект", "library_book", 460, "library-book-stars", "Ночная книга для сложных тем, которые наконец складываются в систему."],
+      [79, "library_place_cafe", "Учебное кафе", "library_place", 470, "library-place-cafe", "Тихий столик, теплый свет и конспект без суеты."],
+      [80, "library_place_observatory", "Обсерватория", "library_place", 520, "library-place-observatory", "Ночное небо, аккуратные линии и ощущение большой физики."],
+      [81, "library_place_train", "Поезд к дедлайну", "library_place", 430, "library-place-train", "Окно, дорога и спокойное повторение в пути."],
+      [82, "library_place_math_room", "Комната доказательств", "library_place", 500, "library-place-math-room", "Доска, схемы и место, где мысль становится строгой."],
+      [83, "library_place_rooftop", "Крыша после уроков", "library_place", 480, "library-place-rooftop", "Город внизу, тишина сверху и последний понятный пример."],
+      [84, "library_place_archive", "Архив конспектов", "library_place", 540, "library-place-archive", "Полки, папки и атмосфера большой личной библиотеки."],
     ];
 
     const staffShopItems = [
