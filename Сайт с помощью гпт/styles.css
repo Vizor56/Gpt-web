@@ -21079,3 +21079,54 @@ body:has(.admin-add-details[open]) .admin-directory::after {
     max-height: calc(100dvh - 360px);
   }
 }
+
+@supports (content-visibility: auto) {
+  .course-card,
+  .lesson-row,
+  .resource-card,
+  .stream-card,
+  .staff-card,
+  .conversation-button,
+  .shop-item,
+  .account-course-row,
+  .homework-history-card,
+  .homework-work-row,
+  .admin-directory-card,
+  .staff-mini-row {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 132px;
+  }
+}
+
+.messages-panel,
+.resource-list,
+.shop-items-list,
+.staff-group,
+.admin-directory,
+.lesson-list,
+.staff-grid {
+  contain: layout style;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .panel,
+  .staff-panel,
+  .staff-card,
+  .shop-item,
+  .course-card,
+  .lesson-row,
+  .messages-panel {
+    box-shadow: none;
+  }
+}

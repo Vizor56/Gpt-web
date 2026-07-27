@@ -536,6 +536,10 @@ let streamsLoaded = false;
 let latestGlobalStreams = [];
 let latestCourseStreams = [];
 let latestStudentCalls = [];
+const streamLoadPromises = new Map();
+const renderCache = new WeakMap();
+let streamRefreshStarted = false;
+let librarySpeechStarted = false;
 let currentStaffPage = "messages";
 let staffFilters = {};
 let staffDrilldownState = {};
@@ -546,6 +550,24 @@ let currentAccountMode = "profile";
 let currentShopSection = "all";
 let currentStaffShopSection = "all";
 const SITE_THEME_CACHE_KEY = "tutor-site-theme";
+
+function isPageVisible(pageName) {
+  const page = document.querySelector(`[data-page="${pageName}"]`);
+  return Boolean(page && !page.classList.contains("is-hidden"));
+}
+
+function setStableHtml(target, html) {
+  if (!target) {
+    return;
+  }
+
+  if (renderCache.get(target) === html) {
+    return;
+  }
+
+  target.innerHTML = html;
+  renderCache.set(target, html);
+}
 
 function setMessageEmojiPickerOpen(open = false) {
   if (!messageEmojiPanel || !messageEmojiToggle) {
@@ -2125,7 +2147,11 @@ function updateLibraryReader(items = latestShop?.items || currentAccount?.profil
     return;
   }
 
-  libraryPetScene.innerHTML = renderLibraryReaderMarkup(items);
+  if (!isPageVisible("library") && !document.querySelector(".shop-library-preview-section")) {
+    return;
+  }
+
+  setStableHtml(libraryPetScene, renderLibraryReaderMarkup(items));
   const speech = libraryPetScene.querySelector("[data-library-speech]");
   if (speech) {
     speech.textContent = librarySpeechPhrases[librarySpeechIndex % librarySpeechPhrases.length];
@@ -2133,9 +2159,13 @@ function updateLibraryReader(items = latestShop?.items || currentAccount?.profil
 }
 
 function startLibrarySpeechRotation() {
+  if (librarySpeechStarted) {
+    return;
+  }
+
+  librarySpeechStarted = true;
   window.setInterval(() => {
-    const libraryPage = document.querySelector('[data-page="library"]');
-    if (!libraryPage || libraryPage.classList.contains("is-hidden")) {
+    if (!isPageVisible("library")) {
       return;
     }
 
@@ -8403,11 +8433,11 @@ function renderStreamCards(target, streams, { limit = 0, emptyText = "Ближа
   const visibleStreams = limit > 0 ? upcomingStreams.slice(0, limit) : upcomingStreams;
 
   if (visibleStreams.length === 0) {
-    target.innerHTML = `<div class="resource-empty">${escapeHtml(emptyText)}</div>`;
+    setStableHtml(target, `<div class="resource-empty">${escapeHtml(emptyText)}</div>`);
     return;
   }
 
-  target.innerHTML = visibleStreams
+  const html = visibleStreams
     .map((eventItem) => {
       const isCall = eventItem.eventType === "call";
       const lessonText = isCall ? "Созвон" : eventItem.lessonNumber ? `Урок ${escapeHtml(eventItem.lessonNumber)}` : "Общий эфир";
@@ -8451,6 +8481,8 @@ function renderStreamCards(target, streams, { limit = 0, emptyText = "Ближа
       `;
     })
     .join("");
+
+  setStableHtml(target, html);
 }
 
 function ensureStreamChatModal() {
@@ -8638,7 +8670,7 @@ async function submitStreamChatMessage(event) {
   }
 }
 
-async function loadStreams(courseKey = "") {
+async function loadStreamsUncached(courseKey = "") {
   let streams = [];
 
   try {
@@ -8683,6 +8715,21 @@ async function loadStreams(courseKey = "") {
   return streams;
 }
 
+async function loadStreams(courseKey = "") {
+  const cacheKey = String(courseKey || "global");
+
+  if (streamLoadPromises.has(cacheKey)) {
+    return streamLoadPromises.get(cacheKey);
+  }
+
+  const promise = loadStreamsUncached(courseKey).finally(() => {
+    streamLoadPromises.delete(cacheKey);
+  });
+
+  streamLoadPromises.set(cacheKey, promise);
+  return promise;
+}
+
 function refreshVisibleStreamCards() {
   renderStreamCards(homeStreamList, latestGlobalStreams, { limit: 3 });
   renderStreamCards(studyStreamList, sortStudyUpcomingEvents([...latestGlobalStreams, ...latestStudentCalls]), {
@@ -8699,15 +8746,23 @@ function refreshVisibleStreamCards() {
 }
 
 function startStreamStatusRefresh() {
+  if (streamRefreshStarted) {
+    return;
+  }
+
+  streamRefreshStarted = true;
   window.setInterval(() => {
     if (document.hidden) {
       return;
     }
 
     refreshVisibleStreamCards();
-    loadStreams();
 
-    if (!document.querySelector('[data-page="course"]')?.classList.contains("is-hidden")) {
+    if (isPageVisible("home") || isPageVisible("study")) {
+      loadStreams();
+    }
+
+    if (isPageVisible("course")) {
       loadStreams(currentCourseKey);
     }
   }, 60 * 1000);
