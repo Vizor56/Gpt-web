@@ -9,7 +9,7 @@
       content="Yaroslav Tutor Academy: личный кабинет для курсов, уроков, домашних заданий, конспектов и трансляций."
     />
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
-    <link rel="stylesheet" href="styles.css?v=pet-library-pose-20260727" />
+    <link rel="stylesheet" href="styles.css?v=academy-polish-20260729" />
   </head>
   <body>
     <svg class="icon-sprite" aria-hidden="true" focusable="false">
@@ -221,10 +221,27 @@
                     сдаёт работы, получает проверку и постепенно учится объяснять решение своими словами.
                   </p>
                 </div>
-                <button class="home-summary__button" type="button" data-open-study>
-                  <svg><use href="#icon-book" /></svg>
-                  Перейти к учёбе
-                </button>
+                <div class="home-hero-side">
+                  <div class="home-concept-map" aria-hidden="true">
+                    <span class="map-node map-node--start"></span>
+                    <span class="map-node map-node--middle"></span>
+                    <span class="map-node map-node--finish"></span>
+                    <span class="map-line map-line--one"></span>
+                    <span class="map-line map-line--two"></span>
+                    <span class="map-card map-card--idea">идея</span>
+                    <span class="map-card map-card--model">модель</span>
+                    <span class="map-card map-card--practice">практика</span>
+                  </div>
+                  <div class="home-hero-actions">
+                    <button class="home-summary__button" type="button" data-open-study>
+                      <svg><use href="#icon-book" /></svg>
+                      Перейти к учёбе
+                    </button>
+                    <button class="home-summary__ghost" type="button" data-open-study data-study-tab="all">
+                      Посмотреть пробные уроки
+                    </button>
+                  </div>
+                </div>
               </section>
 
               <div class="home-stats">
@@ -244,6 +261,30 @@
                   <span>видно урок, конспект и формат домашки</span>
                 </article>
               </div>
+
+              <section class="panel home-proof-panel">
+                <div class="home-section-title">
+                  <h2>Сначала разбираемся, потом ускоряемся</h2>
+                  <button type="button" data-open-study data-study-tab="all">Открыть пробные уроки</button>
+                </div>
+                <div class="home-proof-grid">
+                  <article>
+                    <span>Диагностика</span>
+                    <strong>Находим конкретное место, где тема «сломалась»</strong>
+                    <p>Не начинаем с набора задач вслепую: сначала выясняем, чего именно не хватает для понимания.</p>
+                  </article>
+                  <article>
+                    <span>Объяснение</span>
+                    <strong>Делаем тему связной, а не набором формул</strong>
+                    <p>Ученик видит логику: определение, идею, модель, типовые шаги и границы метода.</p>
+                  </article>
+                  <article>
+                    <span>Проверка</span>
+                    <strong>Домашка возвращается с оценкой и комментарием</strong>
+                    <p>Если балл ниже 5, появляется работа над ошибками и понятный следующий шаг.</p>
+                  </article>
+                </div>
+              </section>
 
               <section class="panel home-method-panel">
                 <div class="home-section-title">
@@ -267,6 +308,16 @@
                   </article>
                   <article>
                     <span>04</span>
+                    <strong>Решаем от простого к сложному</strong>
+                    <p>Сначала закрепляем базу, потом переходим к задачам, где нужно рассуждать.</p>
+                  </article>
+                  <article>
+                    <span>05</span>
+                    <strong>Объясняем своими словами</strong>
+                    <p>Ученик не просто получает ответ, а учится проговаривать ход решения.</p>
+                  </article>
+                  <article>
+                    <span>06</span>
                     <strong>Закрепляем</strong>
                     <p>Ученик решает, сдаёт ДЗ и получает проверку с комментарием.</p>
                   </article>
@@ -293,6 +344,35 @@
                     <i></i>
                     <i></i>
                     <em>Типичная ошибка</em>
+                  </article>
+                </div>
+              </section>
+
+              <section class="panel home-audience-panel">
+                <div class="home-section-title">
+                  <h2>Понятно ученику и спокойно родителю</h2>
+                </div>
+                <div class="home-audience-grid">
+                  <article>
+                    <svg><use href="#icon-user" /></svg>
+                    <div>
+                      <strong>Для ученика</strong>
+                      <p>Один кабинет: уроки, записи, конспекты, ДЗ, оценки, разборы и сообщения с командой.</p>
+                    </div>
+                  </article>
+                  <article>
+                    <svg><use href="#icon-clipboard" /></svg>
+                    <div>
+                      <strong>Для родителя</strong>
+                      <p>Видно, какие курсы открыты, сколько уроков пройдено и где ребёнку нужна помощь.</p>
+                    </div>
+                  </article>
+                  <article>
+                    <svg><use href="#icon-message" /></svg>
+                    <div>
+                      <strong>Для команды</strong>
+                      <p>Преподаватель проверяет работы, куратор видит прогресс, администратор управляет связями.</p>
+                    </div>
                   </article>
                 </div>
               </section>
@@ -411,8 +491,35 @@
                 </button>
               </div>
 
+              <section class="study-filterbar panel" aria-label="Фильтры курсов">
+                <div>
+                  <span>Каталог</span>
+                  <strong>Подберите курс по цели</strong>
+                </div>
+                <label>
+                  Предмет
+                  <select id="study-subject-filter">
+                    <option value="all">Все предметы</option>
+                    <option value="math">Математика</option>
+                    <option value="russian">Русский язык</option>
+                    <option value="informatics">Информатика</option>
+                    <option value="physics">Физика</option>
+                    <option value="english">Английский язык</option>
+                  </select>
+                </label>
+                <label>
+                  Цель
+                  <select id="study-goal-filter">
+                    <option value="all">Любая цель</option>
+                    <option value="ege">ЕГЭ</option>
+                    <option value="oge">ОГЭ</option>
+                    <option value="base">Школьная база</option>
+                  </select>
+                </label>
+              </section>
+
               <div class="course-grid" id="course-grid" aria-live="polite">
-                <article class="course-card" tabindex="0" role="button" data-course="math" data-owned="false" aria-label="Открыть курс ЕГЭ Математика">
+                <article class="course-card" tabindex="0" role="button" data-course="math" data-subject="math" data-goal="ege" data-owned="false" aria-label="Открыть курс ЕГЭ Математика">
                   <span class="course-badge course-badge--preview">1 урок открыт</span>
                   <button class="card-chevron" type="button" aria-label="Открыть ЕГЭ Математика">
                     <svg><use href="#icon-chevron" /></svg>
@@ -438,7 +545,7 @@
                   </div>
                 </article>
 
-                <article class="course-card" tabindex="0" role="button" data-course="russian" data-owned="false" aria-label="Открыть курс ЕГЭ Русский язык">
+                <article class="course-card" tabindex="0" role="button" data-course="russian" data-subject="russian" data-goal="ege" data-owned="false" aria-label="Открыть курс ЕГЭ Русский язык">
                   <span class="course-badge course-badge--preview">1 урок открыт</span>
                   <button class="card-chevron" type="button" aria-label="Открыть ЕГЭ Русский язык">
                     <svg><use href="#icon-chevron" /></svg>
@@ -464,7 +571,7 @@
                   </div>
                 </article>
 
-                <article class="course-card" tabindex="0" role="button" data-course="informatics" data-owned="false" aria-label="Открыть курс ЕГЭ Информатика">
+                <article class="course-card" tabindex="0" role="button" data-course="informatics" data-subject="informatics" data-goal="ege" data-owned="false" aria-label="Открыть курс ЕГЭ Информатика">
                   <span class="course-badge course-badge--preview">1 урок открыт</span>
                   <button class="card-chevron" type="button" aria-label="Открыть ЕГЭ Информатика">
                     <svg><use href="#icon-chevron" /></svg>
@@ -490,7 +597,7 @@
                   </div>
                 </article>
 
-                <article class="course-card" tabindex="0" role="button" data-course="physics" data-owned="false" aria-label="Открыть курс ЕГЭ Физика">
+                <article class="course-card" tabindex="0" role="button" data-course="physics" data-subject="physics" data-goal="ege" data-owned="false" aria-label="Открыть курс ЕГЭ Физика">
                   <span class="course-badge course-badge--preview">1 урок открыт</span>
                   <button class="card-chevron" type="button" aria-label="Открыть ЕГЭ Физика">
                     <svg><use href="#icon-chevron" /></svg>
@@ -516,7 +623,7 @@
                   </div>
                 </article>
 
-                <article class="course-card is-hidden" tabindex="0" role="button" data-course="english" data-catalog="true" aria-hidden="true" aria-label="Открыть курс ЕГЭ Английский язык">
+                <article class="course-card is-hidden" tabindex="0" role="button" data-course="english" data-subject="english" data-goal="ege" data-catalog="true" aria-hidden="true" aria-label="Открыть курс ЕГЭ Английский язык">
                   <button class="card-chevron" type="button" aria-label="Открыть ЕГЭ Английский язык">
                     <svg><use href="#icon-chevron" /></svg>
                   </button>
@@ -541,7 +648,7 @@
                   </div>
                 </article>
 
-                <article class="course-card is-hidden" tabindex="0" role="button" data-course="ogeMath" data-catalog="true" aria-hidden="true" aria-label="Открыть курс ОГЭ Математика">
+                <article class="course-card is-hidden" tabindex="0" role="button" data-course="ogeMath" data-subject="math" data-goal="oge" data-catalog="true" aria-hidden="true" aria-label="Открыть курс ОГЭ Математика">
                   <button class="card-chevron" type="button" aria-label="Открыть ОГЭ Математика">
                     <svg><use href="#icon-chevron" /></svg>
                   </button>

@@ -446,6 +446,8 @@ const detailCuratorButton = document.querySelector("#detail-curator-message");
 const libraryNotesList = document.querySelector("#library-notes-list");
 const libraryCount = document.querySelector("#library-count");
 const libraryCourseFilter = document.querySelector("#library-course-filter");
+const studySubjectFilter = document.querySelector("#study-subject-filter");
+const studyGoalFilter = document.querySelector("#study-goal-filter");
 const applicationForm = document.querySelector("#application-form");
 const applicationStatus = document.querySelector("#application-status");
 const supportForm = document.querySelector("#support-form");
@@ -1048,6 +1050,27 @@ function setSupportStatus(message, type = "") {
   supportStatus.className = `application-status${type ? ` is-${type}` : ""}`;
 }
 
+function renderLoadingCards(message = "Загружаем данные...", count = 3) {
+  return `
+    <div class="loading-state" role="status" aria-live="polite">
+      <span>${escapeHtml(message)}</span>
+      ${Array.from({ length: count })
+        .map(
+          () => `
+            <article class="loading-card" aria-hidden="true">
+              <i></i>
+              <div>
+                <b></b>
+                <em></em>
+              </div>
+            </article>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+}
+
 function openHome() {
   showPage("home");
   setActiveNav("home");
@@ -1132,6 +1155,39 @@ function getStudyCourseEmptyState() {
   return empty;
 }
 
+function getStudyCourseFilters() {
+  return {
+    subject: studySubjectFilter?.value || "all",
+    goal: studyGoalFilter?.value || "all",
+  };
+}
+
+function getStudyCourseFilterLabel(filters = getStudyCourseFilters()) {
+  const labels = [];
+  const subjectLabels = {
+    math: "математике",
+    russian: "русскому языку",
+    informatics: "информатике",
+    physics: "физике",
+    english: "английскому языку",
+  };
+  const goalLabels = {
+    ege: "ЕГЭ",
+    oge: "ОГЭ",
+    base: "школьной базе",
+  };
+
+  if (filters.subject !== "all") {
+    labels.push(subjectLabels[filters.subject] || filters.subject);
+  }
+
+  if (filters.goal !== "all") {
+    labels.push(goalLabels[filters.goal] || filters.goal);
+  }
+
+  return labels.join(" · ");
+}
+
 function updateStudyCourseEmptyState(tabName, hasSession) {
   const empty = getStudyCourseEmptyState();
 
@@ -1139,6 +1195,9 @@ function updateStudyCourseEmptyState(tabName, hasSession) {
     return;
   }
 
+  const filters = getStudyCourseFilters();
+  const hasFilters = filters.subject !== "all" || filters.goal !== "all";
+  const filterLabel = getStudyCourseFilterLabel(filters);
   const visibleCourses = Array.from(studyCourseCards).filter((card) => !card.classList.contains("is-hidden")).length;
   const shouldShow = tabName !== "all" && visibleCourses === 0;
 
@@ -1146,6 +1205,13 @@ function updateStudyCourseEmptyState(tabName, hasSession) {
   empty.setAttribute("aria-hidden", String(!shouldShow));
 
   if (!shouldShow) {
+    return;
+  }
+
+  if (hasFilters) {
+    empty.textContent = hasSession
+      ? `Купленных курсов по фильтру «${filterLabel}» пока нет. Проверьте «Все курсы» или измените фильтр.`
+      : `Пробный доступ по фильтру «${filterLabel}» находится во вкладке «Все курсы».`;
     return;
   }
 
@@ -1157,6 +1223,7 @@ function updateStudyCourseEmptyState(tabName, hasSession) {
 function setStudyTab(tabName = "owned") {
   const hasSession = hasAuthenticatedAccount();
   const ownedTab = document.querySelector('[data-tab="owned"]');
+  const filters = getStudyCourseFilters();
 
   if (ownedTab) {
     ownedTab.textContent = hasSession ? "Купленные курсы" : "Доступные уроки";
@@ -1174,7 +1241,10 @@ function setStudyTab(tabName = "owned") {
     const isCatalogOnly = card.dataset.catalog === "true";
     const isNotOwned = card.dataset.owned === "false";
     const isGuestOwnedTab = !hasSession && tabName !== "all";
-    const isHidden = tabName !== "all" && (isGuestOwnedTab || isCatalogOnly || (hasSession && isNotOwned));
+    const subjectMatches = filters.subject === "all" || card.dataset.subject === filters.subject;
+    const goalMatches = filters.goal === "all" || card.dataset.goal === filters.goal;
+    const hiddenByTab = tabName !== "all" && (isGuestOwnedTab || isCatalogOnly || (hasSession && isNotOwned));
+    const isHidden = hiddenByTab || !subjectMatches || !goalMatches;
     card.classList.toggle("is-hidden", isHidden);
     card.setAttribute("aria-hidden", String(isHidden));
   });
@@ -7793,6 +7863,12 @@ async function loadMessages(conversationId = currentConversationId, options = {}
   }
 
   setMessageStatus("Загружаю сообщения...", "pending");
+  if (conversationList) {
+    conversationList.innerHTML = renderLoadingCards("Загружаю чаты...", 3);
+  }
+  if (messageList) {
+    messageList.innerHTML = renderLoadingCards("Загружаю переписку...", 2);
+  }
 
   try {
     const query = new URLSearchParams();
@@ -7848,7 +7924,7 @@ async function loadAccountFriends() {
     return null;
   }
 
-  accountFriendsList.innerHTML = `<div class="resource-empty">Загружаю друзей из базы...</div>`;
+  accountFriendsList.innerHTML = renderLoadingCards("Загружаю друзей и заявки...", 3);
 
   try {
     const response = await apiFetch("/api/friends", { cache: "no-store" });
@@ -10660,7 +10736,7 @@ async function loadNotesLibrary() {
   if (libraryCount) {
     libraryCount.textContent = "Загружаем материалы...";
   }
-  libraryNotesList.innerHTML = `<div class="resource-empty">Загружаем материалы...</div>`;
+  libraryNotesList.innerHTML = renderLoadingCards("Загружаем материалы из базы...", 4);
 
   let notes = [];
 
@@ -10884,6 +10960,14 @@ tabs.forEach((tab) => {
   tab.addEventListener("click", () => {
     setStudyTab(tab.dataset.tab || "owned");
   });
+});
+
+studySubjectFilter?.addEventListener("change", () => {
+  setStudyTab(courseGrid?.dataset.activeTab || "owned");
+});
+
+studyGoalFilter?.addEventListener("change", () => {
+  setStudyTab(courseGrid?.dataset.activeTab || "owned");
 });
 
 setAccountTab(currentAccountTab);
