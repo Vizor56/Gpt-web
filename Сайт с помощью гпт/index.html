@@ -9,7 +9,7 @@
       content="Yaroslav Tutor Academy: личный кабинет для курсов, уроков, домашних заданий, конспектов и трансляций."
     />
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
-    <link rel="stylesheet" href="styles.css?v=academy-polish-20260729" />
+    <link rel="stylesheet" href="styles.css?v=academy-polish-20260729-2" />
   </head>
   <body>
     <svg class="icon-sprite" aria-hidden="true" focusable="false">
@@ -495,6 +495,7 @@
                 <div>
                   <span>Каталог</span>
                   <strong>Подберите курс по цели</strong>
+                  <small id="study-filter-summary">Показаны все доступные направления</small>
                 </div>
                 <label>
                   Предмет
@@ -516,6 +517,9 @@
                     <option value="base">Школьная база</option>
                   </select>
                 </label>
+                <button class="study-filterbar__reset" type="button" id="study-filter-reset" hidden>
+                  Сбросить
+                </button>
               </section>
 
               <div class="course-grid" id="course-grid" aria-live="polite">

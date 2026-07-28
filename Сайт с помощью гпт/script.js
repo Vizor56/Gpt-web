@@ -448,6 +448,8 @@ const libraryCount = document.querySelector("#library-count");
 const libraryCourseFilter = document.querySelector("#library-course-filter");
 const studySubjectFilter = document.querySelector("#study-subject-filter");
 const studyGoalFilter = document.querySelector("#study-goal-filter");
+const studyFilterSummary = document.querySelector("#study-filter-summary");
+const studyFilterReset = document.querySelector("#study-filter-reset");
 const applicationForm = document.querySelector("#application-form");
 const applicationStatus = document.querySelector("#application-status");
 const supportForm = document.querySelector("#support-form");
@@ -1162,19 +1164,34 @@ function getStudyCourseFilters() {
   };
 }
 
+function pluralizeRu(value, forms) {
+  const number = Math.abs(Number(value)) % 100;
+  const lastDigit = number % 10;
+
+  if (number > 10 && number < 20) {
+    return forms[2];
+  }
+
+  if (lastDigit > 1 && lastDigit < 5) {
+    return forms[1];
+  }
+
+  return lastDigit === 1 ? forms[0] : forms[2];
+}
+
 function getStudyCourseFilterLabel(filters = getStudyCourseFilters()) {
   const labels = [];
   const subjectLabels = {
-    math: "математике",
-    russian: "русскому языку",
-    informatics: "информатике",
-    physics: "физике",
-    english: "английскому языку",
+    math: "Математика",
+    russian: "Русский язык",
+    informatics: "Информатика",
+    physics: "Физика",
+    english: "Английский язык",
   };
   const goalLabels = {
     ege: "ЕГЭ",
     oge: "ОГЭ",
-    base: "школьной базе",
+    base: "Школьная база",
   };
 
   if (filters.subject !== "all") {
@@ -1186,6 +1203,37 @@ function getStudyCourseFilterLabel(filters = getStudyCourseFilters()) {
   }
 
   return labels.join(" · ");
+}
+
+function updateStudyFilterSummary(tabName, hasSession, visibleCourses) {
+  if (!studyFilterSummary) {
+    return;
+  }
+
+  const filters = getStudyCourseFilters();
+  const hasFilters = filters.subject !== "all" || filters.goal !== "all";
+  const filterLabel = getStudyCourseFilterLabel(filters);
+  const courseWord = pluralizeRu(visibleCourses, ["курс", "курса", "курсов"]);
+  let message = "";
+
+  if (hasFilters) {
+    message = visibleCourses
+      ? `Найдено ${formatNumber(visibleCourses)} ${courseWord} по фильтру «${filterLabel}».`
+      : `По фильтру «${filterLabel}» курсов не найдено.`;
+  } else if (!hasSession && tabName !== "all") {
+    message = "Войдите в аккаунт или откройте вкладку «Все курсы», чтобы посмотреть пробные уроки.";
+  } else if (tabName === "all") {
+    message = `Показано ${formatNumber(visibleCourses)} ${courseWord}. Первые уроки можно открыть бесплатно.`;
+  } else {
+    message = visibleCourses
+      ? `Показано ${formatNumber(visibleCourses)} ${courseWord} из ваших покупок.`
+      : "Купленные курсы появятся здесь после открытия доступа.";
+  }
+
+  studyFilterSummary.textContent = message;
+  if (studyFilterReset) {
+    studyFilterReset.hidden = !hasFilters;
+  }
 }
 
 function updateStudyCourseEmptyState(tabName, hasSession) {
@@ -1200,6 +1248,8 @@ function updateStudyCourseEmptyState(tabName, hasSession) {
   const filterLabel = getStudyCourseFilterLabel(filters);
   const visibleCourses = Array.from(studyCourseCards).filter((card) => !card.classList.contains("is-hidden")).length;
   const shouldShow = tabName !== "all" && visibleCourses === 0;
+
+  updateStudyFilterSummary(tabName, hasSession, visibleCourses);
 
   empty.classList.toggle("is-hidden", !shouldShow);
   empty.setAttribute("aria-hidden", String(!shouldShow));
@@ -10967,6 +11017,16 @@ studySubjectFilter?.addEventListener("change", () => {
 });
 
 studyGoalFilter?.addEventListener("change", () => {
+  setStudyTab(courseGrid?.dataset.activeTab || "owned");
+});
+
+studyFilterReset?.addEventListener("click", () => {
+  if (studySubjectFilter) {
+    studySubjectFilter.value = "all";
+  }
+  if (studyGoalFilter) {
+    studyGoalFilter.value = "all";
+  }
   setStudyTab(courseGrid?.dataset.activeTab || "owned");
 });
 

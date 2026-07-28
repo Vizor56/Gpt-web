@@ -22268,7 +22268,7 @@ body:has(.admin-add-details[open]) .admin-directory::after {
 
 /* Academy product pass: clearer landing, usable filters, calmer loading and mobile rhythm. */
 .home-summary {
-  grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+  grid-template-columns: minmax(0, 1.05fr) minmax(260px, 0.82fr);
   align-items: stretch;
 }
 
@@ -22289,6 +22289,7 @@ body:has(.admin-add-details[open]) .admin-directory::after {
 
 .home-concept-map {
   position: relative;
+  min-width: 0;
   min-height: 150px;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--academy-accent) 20%, var(--academy-line));
@@ -22315,21 +22316,22 @@ body:has(.admin-add-details[open]) .admin-directory::after {
   border-radius: 50%;
   background: var(--academy-paper-solid);
   box-shadow: 0 0 0 7px color-mix(in srgb, var(--academy-accent) 9%, transparent);
+  transform: translate(-50%, -50%);
 }
 
 .map-node--start {
-  left: 26px;
-  top: 96px;
+  left: 14%;
+  top: 68%;
 }
 
 .map-node--middle {
-  left: 94px;
-  top: 48px;
+  left: 41%;
+  top: 38%;
 }
 
 .map-node--finish {
-  right: 30px;
-  top: 78px;
+  left: 87%;
+  top: 58%;
 }
 
 .map-line {
@@ -22340,16 +22342,16 @@ body:has(.admin-add-details[open]) .admin-directory::after {
 }
 
 .map-line--one {
-  left: 41px;
-  top: 97px;
-  width: 78px;
-  transform: rotate(-34deg);
+  left: 14%;
+  top: 68%;
+  width: 34%;
+  transform: rotate(-31deg);
 }
 
 .map-line--two {
-  left: 111px;
-  top: 58px;
-  width: 154px;
+  left: 41%;
+  top: 38%;
+  width: 46%;
   transform: rotate(22deg);
 }
 
@@ -22367,17 +22369,17 @@ body:has(.admin-add-details[open]) .admin-directory::after {
 }
 
 .map-card--idea {
-  left: 18px;
-  top: 22px;
+  left: 7%;
+  top: 20px;
 }
 
 .map-card--model {
-  right: 42px;
+  right: 10%;
   top: 20px;
 }
 
 .map-card--practice {
-  right: 18px;
+  right: 6%;
   bottom: 18px;
 }
 
@@ -22435,6 +22437,12 @@ body:has(.admin-add-details[open]) .admin-directory::after {
   box-shadow: none;
 }
 
+.home-proof-grid article:hover,
+.home-audience-grid article:hover {
+  border-color: color-mix(in srgb, var(--academy-accent) 28%, var(--academy-line));
+  background: rgba(255, 253, 248, 0.92);
+}
+
 .home-proof-grid article {
   display: grid;
   align-content: start;
@@ -22490,7 +22498,7 @@ body:has(.admin-add-details[open]) .admin-directory::after {
 
 .study-filterbar {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(180px, 230px) minmax(180px, 230px);
+  grid-template-columns: minmax(240px, 1fr) minmax(180px, 230px) minmax(180px, 230px) auto;
   gap: 12px;
   align-items: end;
   margin: 16px 0 18px;
@@ -22511,6 +22519,14 @@ body:has(.admin-add-details[open]) .admin-directory::after {
 .study-filterbar > div strong {
   color: var(--academy-ink);
   font-size: 18px;
+}
+
+.study-filterbar > div small {
+  max-width: 560px;
+  color: var(--academy-muted);
+  font-size: 13px;
+  font-weight: 760;
+  line-height: 1.35;
 }
 
 .study-filterbar label,
@@ -22542,6 +22558,30 @@ body:has(.admin-add-details[open]) .admin-directory::after {
     var(--academy-paper-solid);
   color: var(--academy-ink);
   font-weight: 760;
+  width: 100%;
+}
+
+.study-filterbar__reset {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  border: 1px solid color-mix(in srgb, var(--academy-accent) 26%, var(--academy-line));
+  border-radius: 8px;
+  background: rgba(255, 253, 248, 0.72);
+  color: var(--academy-accent);
+  cursor: pointer;
+  font-weight: 880;
+}
+
+.study-filterbar__reset[hidden] {
+  display: none;
+}
+
+.study-filterbar__reset:hover {
+  border-color: var(--academy-accent);
+  background: color-mix(in srgb, var(--academy-accent) 8%, #ffffff);
 }
 
 .study-filterbar select:focus,
@@ -22659,7 +22699,7 @@ body:has(.admin-add-details[open]) .admin-directory::after {
   }
 
   .study-filterbar {
-    grid-template-columns: minmax(0, 1fr) minmax(180px, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(180px, 1fr) auto;
   }
 
   .study-filterbar > div {
@@ -22689,7 +22729,13 @@ body:has(.admin-add-details[open]) .admin-directory::after {
 
   .home-summary h2 {
     max-width: 100%;
+    font-size: clamp(27px, 7vw, 34px);
     overflow-wrap: anywhere;
+  }
+
+  .home-heading h1 {
+    font-size: clamp(25px, 6.6vw, 32px);
+    line-height: 1.08;
   }
 
   .home-hero-side,
@@ -22708,7 +22754,7 @@ body:has(.admin-add-details[open]) .admin-directory::after {
   }
 
   .map-line--two {
-    width: 42%;
+    width: 43%;
   }
 
   .home-proof-grid,
@@ -22726,6 +22772,10 @@ body:has(.admin-add-details[open]) .admin-directory::after {
   .study-filterbar {
     margin: 12px 0 14px;
     padding: 13px;
+  }
+
+  .study-filterbar__reset {
+    width: 100%;
   }
 
   .course-grid__empty {
