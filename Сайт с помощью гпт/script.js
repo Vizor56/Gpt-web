@@ -2877,6 +2877,22 @@ function getStaffProfile(staff = currentStaff) {
   return staff?.staff || staff || {};
 }
 
+function applyStaffRoleClass(staff = currentStaff) {
+  const app = document.querySelector(".app");
+
+  if (!app) {
+    return;
+  }
+
+  app.classList.remove("is-staff-admin", "is-staff-teacher", "is-staff-curator");
+
+  const role = String(getStaffProfile(staff).role || "").toLowerCase();
+
+  if (["admin", "teacher", "curator"].includes(role)) {
+    app.classList.add(`is-staff-${role}`);
+  }
+}
+
 function isStaffMode() {
   return Boolean(document.querySelector(".app")?.classList.contains("is-staff-mode") && hasAuthenticatedStaff(currentStaff));
 }
@@ -3106,6 +3122,7 @@ function enterStaffMode(staff = currentStaff, pageName = "") {
   currentStaff = staff;
   ensureStaffShell();
   document.querySelector(".app")?.classList.add("is-staff-mode");
+  applyStaffRoleClass(staff);
   renderStaffNav();
 
   const staffProfile = getStaffProfile(staff);
@@ -3124,7 +3141,7 @@ function enterStaffMode(staff = currentStaff, pageName = "") {
 }
 
 function exitStaffMode() {
-  document.querySelector(".app")?.classList.remove("is-staff-mode");
+  document.querySelector(".app")?.classList.remove("is-staff-mode", "is-staff-admin", "is-staff-teacher", "is-staff-curator");
   latestStaffWorkspace = null;
   currentStaffPage = "messages";
 
