@@ -3718,6 +3718,26 @@ function renderHomeworkTeacherResult(item) {
   `;
 }
 
+function renderTeacherReviewDetails(formAttr, reviewScoreValue, submitText, feedbackText = "") {
+  return `
+    <details class="staff-details team-edit-details team-review-details">
+      <summary><span>${escapeHtml(submitText)}</span><small>оценка 1-10 и комментарий ученику</small></summary>
+      <form class="staff-review-form" ${formAttr}>
+        <label>
+          Оценка
+          <input name="score" type="number" min="1" max="10" value="${escapeHtml(reviewScoreValue)}" placeholder="1-10" required />
+        </label>
+        <label>
+          Комментарий
+          <textarea name="feedbackText" rows="3" placeholder="Комментарий ученику">${escapeHtml(feedbackText || "")}</textarea>
+        </label>
+        <button type="submit"><svg><use href="#icon-clipboard" /></svg>${escapeHtml(submitText)}</button>
+        <p class="staff-form-status" aria-live="polite"></p>
+      </form>
+    </details>
+  `;
+}
+
 function createStaffLink(url, label, icon = "#icon-file") {
   if (!url) {
     return `<button type="button" disabled><svg><use href="${icon}" /></svg>${escapeHtml(label)}</button>`;
@@ -3853,11 +3873,14 @@ function renderStaffAccount() {
 
 function renderStudentCommentForm(student) {
   return `
-    <form class="staff-inline-form" data-staff-student-comment-form data-student-id="${escapeHtml(student.studentId)}">
-      <textarea name="commentText" rows="2" placeholder="Комментарий к ученику для команды" required></textarea>
-      <button type="submit"><svg><use href="#icon-message" /></svg>Сохранить</button>
-      <p class="staff-form-status" aria-live="polite"></p>
-    </form>
+    <details class="staff-details team-edit-details team-comment-details">
+      <summary><span>Комментарий к ученику</span><small>виден команде</small></summary>
+      <form class="staff-inline-form" data-staff-student-comment-form data-student-id="${escapeHtml(student.studentId)}">
+        <textarea name="commentText" rows="2" placeholder="Комментарий к ученику для команды" required></textarea>
+        <button type="submit"><svg><use href="#icon-message" /></svg>Сохранить</button>
+        <p class="staff-form-status" aria-live="polite"></p>
+      </form>
+    </details>
   `;
 }
 
@@ -4189,20 +4212,7 @@ function renderTeacherHomeworkLegacy() {
                     </div>
                     ${
                       isStaffHomeworkSubmitted(item)
-                        ? `
-                          <form class="staff-review-form" data-staff-homework-review-form data-homework-assignment-id="${escapeHtml(item.homeworkAssignmentId)}">
-                            <label>
-                              Оценка
-                              <input name="score" type="number" min="1" max="10" value="${escapeHtml(reviewScoreValue)}" placeholder="1-10" required />
-                            </label>
-                            <label>
-                              Комментарий
-                              <textarea name="feedbackText" rows="3" placeholder="Комментарий ученику">${escapeHtml(item.feedbackText || "")}</textarea>
-                            </label>
-                            <button type="submit"><svg><use href="#icon-clipboard" /></svg>Проверить</button>
-                            <p class="staff-form-status" aria-live="polite"></p>
-                          </form>
-                        `
+                        ? renderTeacherReviewDetails(`data-staff-homework-review-form data-homework-assignment-id="${escapeHtml(item.homeworkAssignmentId)}"`, reviewScoreValue, "Проверить", item.feedbackText)
                         : `
                           <div class="staff-reviewed-note is-muted">
                             <strong>Ждём ссылку от ученика</strong>
@@ -4257,20 +4267,7 @@ function renderTeacherHomeworkCard(item) {
         isChecked
           ? renderTeacherCheckedHomeworkNote(item)
           : canReview
-            ? `
-              <form class="staff-review-form" ${formAttr}>
-                <label>
-                  Оценка
-                  <input name="score" type="number" min="1" max="10" value="${escapeHtml(reviewScoreValue)}" placeholder="1-10" required />
-                </label>
-                <label>
-                  Комментарий
-                  <textarea name="feedbackText" rows="3" placeholder="Комментарий ученику">${escapeHtml(item.feedbackText || "")}</textarea>
-                </label>
-                <button type="submit"><svg><use href="#icon-clipboard" /></svg>${escapeHtml(submitText)}</button>
-                <p class="staff-form-status" aria-live="polite"></p>
-              </form>
-            `
+            ? renderTeacherReviewDetails(formAttr, reviewScoreValue, submitText, item.feedbackText)
             : `
               <div class="staff-reviewed-note is-muted">
                 <strong>Ждём ссылку от ученика</strong>
@@ -4338,20 +4335,7 @@ function renderTeacherCorrectionCard(item) {
         isChecked
           ? renderTeacherCheckedHomeworkNote(item)
           : canReview
-            ? `
-              <form class="staff-review-form" data-staff-correction-review-form data-correction-id="${escapeHtml(item.correctionId)}">
-                <label>
-                  Оценка
-                  <input name="score" type="number" min="1" max="10" value="${escapeHtml(reviewScoreValue)}" placeholder="1-10" required />
-                </label>
-                <label>
-                  Комментарий
-                  <textarea name="feedbackText" rows="3" placeholder="Комментарий ученику">${escapeHtml(item.feedbackText || "")}</textarea>
-                </label>
-                <button type="submit"><svg><use href="#icon-clipboard" /></svg>Проверить исправление</button>
-                <p class="staff-form-status" aria-live="polite"></p>
-              </form>
-            `
+            ? renderTeacherReviewDetails(`data-staff-correction-review-form data-correction-id="${escapeHtml(item.correctionId)}"`, reviewScoreValue, "Проверить исправление", item.feedbackText)
             : `
               <div class="staff-reviewed-note is-muted">
                 <strong>Ждём работу над ошибками</strong>
@@ -4840,15 +4824,23 @@ function renderTeacherCourses() {
         </div>
       </section>
       <div class="staff-course-tools staff-course-tools--wide">
-        <section class="staff-panel" id="teacher-course-create-${escapeHtml(selectedCourse.courseId)}"${getCourseThemeAttr(selectedCourse)}>
-          <h3>Создать урок, конспект и ДЗ</h3>
-          <p>Если заполнить ссылки на конспект и домашнее задание, сайт автоматически создаст связанные записи в базе и выдаст ДЗ ученикам курса.</p>
-          ${renderLessonForm(selectedCourse)}
+        <section class="staff-panel staff-create-panel" id="teacher-course-create-${escapeHtml(selectedCourse.courseId)}"${getCourseThemeAttr(selectedCourse)}>
+          <details class="staff-details team-create-details">
+            <summary>
+              <span>Создать урок, конспект и ДЗ</span>
+              <small>Ссылки автоматически создадут связанные материалы в базе</small>
+            </summary>
+            ${renderLessonForm(selectedCourse)}
+          </details>
         </section>
-        <section class="staff-panel" id="teacher-course-stream-${escapeHtml(selectedCourse.courseId)}"${getCourseThemeAttr(selectedCourse)}>
-          <h3>Создать трансляцию</h3>
-          <p>Трансляция появится у учеников курса и в уведомлениях.</p>
-          ${renderStreamForm(selectedCourse)}
+        <section class="staff-panel staff-create-panel" id="teacher-course-stream-${escapeHtml(selectedCourse.courseId)}"${getCourseThemeAttr(selectedCourse)}>
+          <details class="staff-details team-create-details">
+            <summary>
+              <span>Создать трансляцию</span>
+              <small>Ученики курса увидят эфир и получат уведомление</small>
+            </summary>
+            ${renderStreamForm(selectedCourse)}
+          </details>
         </section>
       </div>
       <section class="staff-panel"${getCourseThemeAttr(selectedCourse)}>
@@ -5062,9 +5054,14 @@ function renderCuratorCalls() {
   const calls = getStaffItems("calls");
 
   return `
-    <section class="staff-panel">
-      <h2>Новый созвон</h2>
-      ${renderCuratorCallForm()}
+    <section class="staff-panel staff-create-panel">
+      <details class="staff-details team-create-details">
+        <summary>
+          <span>Новый созвон</span>
+          <small>Выберите учеников, время и ссылку</small>
+        </summary>
+        ${renderCuratorCallForm()}
+      </details>
     </section>
     <section class="staff-group">
       <header class="staff-group-heading">
@@ -5210,15 +5207,24 @@ function renderResourceReviewForm(config, item) {
   }
 
   return `
-    <form class="staff-inline-form" data-staff-resource-review-form data-resource-type="${escapeHtml(config.resourceType)}" data-resource-id="${escapeHtml(resourceId)}">
-      <select name="rating" aria-label="Оценка">
-        <option value="">Оценка</option>
-        ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => `<option value="${value}" ${String(value) === String(currentRating) ? "selected" : ""}>${value}</option>`).join("")}
-      </select>
-      <input name="commentText" type="text" value="${escapeHtml(item.curatorComment || "")}" placeholder="Комментарий к материалу" />
-      <button type="submit"><svg><use href="#icon-star" /></svg>Сохранить</button>
-      <p class="staff-form-status" aria-live="polite"></p>
-    </form>
+    <details class="staff-details team-edit-details team-review-details">
+      <summary><span>Оценить материал</span><small>шкала 1-10 и комментарий</small></summary>
+      <form class="staff-inline-form" data-staff-resource-review-form data-resource-type="${escapeHtml(config.resourceType)}" data-resource-id="${escapeHtml(resourceId)}">
+        <label>
+          Оценка
+          <select name="rating" aria-label="Оценка">
+            <option value="">Оценка</option>
+            ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => `<option value="${value}" ${String(value) === String(currentRating) ? "selected" : ""}>${value}</option>`).join("")}
+          </select>
+        </label>
+        <label>
+          Комментарий
+          <input name="commentText" type="text" value="${escapeHtml(item.curatorComment || "")}" placeholder="Комментарий к материалу" />
+        </label>
+        <button type="submit"><svg><use href="#icon-star" /></svg>Сохранить</button>
+        <p class="staff-form-status" aria-live="polite"></p>
+      </form>
+    </details>
   `;
 }
 
@@ -5897,7 +5903,10 @@ function renderAdminApplications() {
                       </div>
                       <h3>${escapeHtml(application.studentName)}</h3>
                       <p>${escapeHtml([application.phone, application.email, application.preferredSubject].filter(Boolean).join(" · "))}</p>
-                      ${renderAdminApplicationForm(application)}
+                      <details class="staff-details team-edit-details">
+                        <summary><span>Редактировать заявку</span><small>данные, статус, заметка</small></summary>
+                        ${renderAdminApplicationForm(application)}
+                      </details>
                     </article>
                   `,
                 )
@@ -5927,7 +5936,10 @@ function renderAdminApplications() {
                       </div>
                       <h3>${escapeHtml(application.studentName)}</h3>
                       <p>${escapeHtml([application.phone, application.email, application.preferredSubject].filter(Boolean).join(" · "))}</p>
-                      ${renderAdminApplicationForm(application)}
+                      <details class="staff-details team-edit-details">
+                        <summary><span>Редактировать заявку</span><small>данные, статус, заметка</small></summary>
+                        ${renderAdminApplicationForm(application)}
+                      </details>
                     </article>
                   `,
                 )
@@ -5967,7 +5979,10 @@ function renderAdminSupportCard(request, archived = false) {
       <h3>${escapeHtml(request.topic || "Обращение")}</h3>
       <p>${escapeHtml(request.messageText || "")}</p>
       <p>${escapeHtml([request.studentName || "Гость", request.phone, request.email].filter(Boolean).join(" · "))}</p>
-      ${renderAdminSupportForm(request)}
+      <details class="staff-details team-edit-details">
+        <summary><span>Редактировать обращение</span><small>статус и заметка администратора</small></summary>
+        ${renderAdminSupportForm(request)}
+      </details>
     </article>
   `;
 }
@@ -6940,7 +6955,7 @@ function renderStaffPage(pageName = currentStaffPage) {
   }
 
   if (!latestStaffWorkspace) {
-    content.innerHTML = renderStaffEmpty("Загружаю данные из базы...");
+    content.innerHTML = renderLoadingCards("Загружаю рабочие данные команды из базы...", 4);
     return;
   }
 

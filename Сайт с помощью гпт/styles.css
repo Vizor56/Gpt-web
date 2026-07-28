@@ -22801,3 +22801,620 @@ body:has(.admin-add-details[open]) .admin-directory::after {
     animation: none;
   }
 }
+
+/* Team calm pass: quieter staff workspace, clearer forms and stable overlays. */
+.app.is-staff-mode .staff-workspace-page {
+  padding-top: 30px;
+}
+
+.staff-workspace-content {
+  gap: 18px;
+}
+
+.staff-workspace-header {
+  padding-bottom: 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 10%, transparent);
+}
+
+.staff-workspace-header h1 {
+  font-size: clamp(34px, 4vw, 46px);
+  letter-spacing: 0;
+}
+
+.staff-metrics {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.staff-metrics article {
+  min-height: 76px;
+  padding: 13px 14px;
+  border-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 9%, var(--academy-line, var(--line)));
+  background: rgba(255, 253, 248, 0.78);
+  box-shadow: none;
+}
+
+.staff-metrics strong {
+  font-size: 22px;
+}
+
+.staff-card-grid,
+.staff-step-grid,
+.staff-homework-overview {
+  gap: 14px;
+}
+
+.staff-card,
+.staff-panel,
+.staff-step-card,
+.staff-lesson-summary,
+.admin-compact-card {
+  border-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 10%, var(--academy-line, var(--line)));
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.96), rgba(250, 250, 246, 0.86)),
+    var(--academy-paper-solid, var(--surface));
+  box-shadow: 0 8px 24px rgba(32, 42, 45, 0.045);
+}
+
+.staff-card:hover,
+.staff-panel:focus-within,
+.staff-step-card:hover,
+.staff-lesson-summary:hover,
+.admin-compact-card:hover {
+  border-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 22%, var(--academy-line, var(--line)));
+  box-shadow: 0 12px 30px rgba(32, 42, 45, 0.065);
+  transform: none;
+}
+
+.staff-card__meta,
+.staff-step-card__meta,
+.staff-lesson-summary__chips {
+  gap: 5px;
+}
+
+.staff-card p,
+.staff-panel p {
+  color: color-mix(in srgb, var(--academy-muted, var(--muted)) 88%, var(--academy-ink, var(--ink)));
+  line-height: 1.45;
+}
+
+.resource-chip {
+  border-radius: 6px;
+}
+
+.team-edit-details,
+.team-create-details,
+.staff-details:not(.admin-person-details):not(.admin-add-details) {
+  border-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 11%, var(--academy-line, var(--line)));
+  background: rgba(255, 253, 248, 0.7);
+  box-shadow: none;
+}
+
+.team-edit-details > summary,
+.team-create-details > summary,
+.staff-details:not(.admin-person-details):not(.admin-add-details) > summary {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 13px;
+  color: var(--academy-ink, var(--ink));
+  list-style: none;
+}
+
+.team-edit-details > summary::-webkit-details-marker,
+.team-create-details > summary::-webkit-details-marker,
+.staff-details:not(.admin-person-details):not(.admin-add-details) > summary::-webkit-details-marker {
+  display: none;
+}
+
+.team-edit-details > summary span,
+.team-create-details > summary span,
+.staff-details:not(.admin-person-details):not(.admin-add-details) > summary span {
+  min-width: 0;
+  color: var(--academy-accent, var(--blue));
+  font-weight: 920;
+}
+
+.team-edit-details > summary small,
+.team-create-details > summary small,
+.staff-details:not(.admin-person-details):not(.admin-add-details) > summary small {
+  min-width: 0;
+  color: var(--academy-muted, var(--muted));
+  font-size: 12px;
+  font-weight: 760;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.team-edit-details > summary::after,
+.team-create-details > summary::after,
+.staff-details:not(.admin-person-details):not(.admin-add-details) > summary::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.team-edit-details[open] > summary,
+.team-create-details[open] > summary,
+.staff-details:not(.admin-person-details):not(.admin-add-details)[open] > summary {
+  border-bottom: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 10%, var(--academy-line, var(--line)));
+  background: color-mix(in srgb, var(--academy-mint, var(--mint)) 9%, rgba(255, 253, 248, 0.94));
+}
+
+.team-edit-details[open] > summary::after,
+.team-create-details[open] > summary::after,
+.staff-details:not(.admin-person-details):not(.admin-add-details)[open] > summary::after {
+  transform: translateY(3px) rotate(225deg);
+}
+
+.staff-create-panel {
+  padding: 0;
+  overflow: hidden;
+}
+
+.staff-create-panel > .team-create-details {
+  margin: 0;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+}
+
+.staff-create-panel .staff-form-status {
+  margin-bottom: 0;
+}
+
+.staff-inline-form,
+.staff-review-form,
+.staff-lesson-form,
+.staff-stream-form,
+.staff-call-form,
+.admin-edit-form {
+  gap: 12px;
+}
+
+.staff-review-form,
+.staff-lesson-form,
+.staff-stream-form,
+.staff-call-form,
+.admin-edit-form {
+  grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr));
+}
+
+.staff-inline-form {
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+}
+
+.staff-review-form label,
+.staff-lesson-form label,
+.staff-stream-form label,
+.staff-call-form label,
+.admin-edit-form label,
+.staff-field {
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 8%, transparent);
+  border-radius: 8px;
+  background: rgba(255, 253, 248, 0.64);
+}
+
+.staff-review-form label:nth-of-type(n),
+.staff-lesson-form label:nth-of-type(n),
+.staff-stream-form label:nth-of-type(n),
+.staff-call-form label:nth-of-type(n),
+.admin-edit-form label:nth-of-type(n) {
+  grid-column: auto;
+}
+
+.staff-review-form label:has(textarea),
+.staff-lesson-form label:has(textarea),
+.staff-stream-form label:has(textarea),
+.staff-call-form label:has(textarea),
+.admin-edit-form label:has(textarea),
+.staff-lesson-form label:has(select[multiple]),
+.staff-call-form label:has(select[multiple]),
+.admin-edit-form label:has(select[multiple]),
+.student-picker-field {
+  grid-column: 1 / -1;
+}
+
+.staff-inline-form input,
+.staff-inline-form select,
+.staff-inline-form textarea,
+.staff-review-form input,
+.staff-review-form select,
+.staff-review-form textarea,
+.staff-lesson-form input,
+.staff-lesson-form select,
+.staff-lesson-form textarea,
+.staff-stream-form input,
+.staff-stream-form select,
+.staff-stream-form textarea,
+.staff-call-form input,
+.staff-call-form select,
+.staff-call-form textarea,
+.admin-edit-form input,
+.admin-edit-form select,
+.admin-edit-form textarea,
+.staff-filterbar select {
+  min-height: 42px;
+  border-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 15%, var(--academy-line, var(--line)));
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.94);
+  box-shadow: none;
+}
+
+.staff-inline-form textarea,
+.staff-review-form textarea,
+.staff-lesson-form textarea,
+.staff-stream-form textarea,
+.staff-call-form textarea,
+.admin-edit-form textarea {
+  min-height: 86px;
+  line-height: 1.45;
+}
+
+.staff-inline-form button[type="submit"],
+.staff-review-form button[type="submit"],
+.staff-lesson-form button[type="submit"],
+.staff-stream-form button[type="submit"],
+.staff-call-form button[type="submit"],
+.admin-edit-form button[type="submit"] {
+  min-height: 44px;
+  grid-column: 1 / -1;
+}
+
+.staff-form-status {
+  grid-column: 1 / -1;
+  padding: 0 2px;
+}
+
+.staff-filterbar {
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 10%, var(--academy-line, var(--line)));
+  border-radius: 10px;
+  background: rgba(255, 253, 248, 0.72);
+}
+
+.admin-directory {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-directory-header {
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 9%, var(--academy-line, var(--line)));
+  border-radius: 10px;
+  background: rgba(255, 253, 248, 0.76);
+}
+
+.admin-directory-tools {
+  align-items: end;
+}
+
+.admin-directory-search input {
+  min-height: 42px;
+  border-radius: 8px;
+}
+
+.admin-person-details[open],
+.admin-add-details[open],
+.message-start-modal,
+.stream-chat-modal__dialog,
+.homework-modal,
+.notification-popover {
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(247, 246, 242, 0.96)),
+    var(--academy-paper-solid, var(--surface));
+  box-shadow: 0 24px 70px rgba(15, 31, 36, 0.22);
+}
+
+.admin-person-details[open] > summary,
+.admin-add-details[open] > summary,
+.message-start-modal__header,
+.stream-chat-modal__dialog header,
+.notification-popover header {
+  background: rgba(255, 253, 248, 0.96);
+  box-shadow: none;
+}
+
+.admin-profile-tabbar--runtime {
+  top: 72px;
+  padding: 12px 18px 10px;
+  background: rgba(255, 253, 248, 0.96);
+  box-shadow: none;
+}
+
+.admin-profile-tabbar--runtime .admin-profile-tab {
+  min-height: 48px;
+  border-radius: 8px;
+  background: rgba(255, 253, 248, 0.72);
+}
+
+.admin-profile-tabbar--runtime .admin-profile-tab.is-active {
+  border-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 34%, var(--academy-line, var(--line)));
+  background: color-mix(in srgb, var(--academy-mint, var(--mint)) 12%, rgba(255, 253, 248, 0.96));
+}
+
+.admin-drawer-close,
+.message-start-modal__close,
+.stream-chat-modal__dialog header button,
+.modal-close {
+  box-shadow: none;
+}
+
+.message-start-modal {
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto auto;
+}
+
+.message-recipient-cards {
+  min-height: 180px;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 36%, transparent) transparent;
+}
+
+.message-recipient-card {
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.stream-chat-modal__dialog {
+  overflow: hidden;
+}
+
+.stream-chat-messages,
+.notification-popover__list,
+.homework-modal,
+:is(.admin-person-details, .admin-add-details)[open] {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 36%, transparent) transparent;
+}
+
+@media (max-width: 900px) {
+  .staff-workspace-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .staff-workspace-actions,
+  .admin-directory-tools {
+    width: 100%;
+  }
+
+  .staff-refresh-button,
+  .admin-directory-search,
+  .admin-directory-search input {
+    width: 100%;
+  }
+
+  .admin-profile-tabbar--runtime {
+    position: static;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .app.is-staff-mode .staff-workspace-page {
+    padding-right: var(--mobile-page-x, 12px) !important;
+    padding-left: var(--mobile-page-x, 12px) !important;
+  }
+
+  .staff-workspace-header h1 {
+    font-size: clamp(28px, 9vw, 34px);
+  }
+
+  .staff-metrics,
+  .staff-card-grid,
+  .staff-step-grid,
+  .staff-homework-overview,
+  .staff-filterbar,
+  .staff-inline-form,
+  .staff-review-form,
+  .staff-lesson-form,
+  .staff-stream-form,
+  .staff-call-form,
+  .admin-edit-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .team-edit-details > summary,
+  .team-create-details > summary,
+  .staff-details:not(.admin-person-details):not(.admin-add-details) > summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .team-edit-details > summary small,
+  .team-create-details > summary small,
+  .staff-details:not(.admin-person-details):not(.admin-add-details) > summary small {
+    text-align: left;
+  }
+
+  .admin-person-details[open],
+  .admin-add-details[open] {
+    inset: 8px;
+    width: auto;
+  }
+
+  .message-start-modal {
+    width: 100%;
+    max-height: calc(100dvh - 24px);
+  }
+}
+
+/* Team interaction polish: compact reviews, reliable overlays and calmer pickers. */
+.team-edit-details,
+.team-create-details,
+.team-review-details,
+.team-comment-details {
+  margin-top: 12px;
+  overflow: hidden;
+}
+
+.team-create-details,
+.staff-create-panel .team-create-details {
+  margin-top: 0;
+}
+
+.team-edit-details > :is(.staff-inline-form, .staff-review-form, .admin-edit-form),
+.team-create-details > :is(.staff-lesson-form, .staff-stream-form, .staff-call-form) {
+  margin: 0;
+  padding: 14px;
+  border-top: 1px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 11%, var(--academy-line, var(--line)));
+  background: rgba(255, 253, 248, 0.72);
+}
+
+.team-review-details > summary span::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 7px;
+  border-radius: 999px;
+  background: var(--academy-gold, var(--gold));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--academy-gold, var(--gold)) 18%, transparent);
+  vertical-align: 1px;
+}
+
+.team-comment-details > summary span::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 7px;
+  border-radius: 999px;
+  background: var(--academy-accent, var(--blue));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--academy-accent, var(--blue)) 14%, transparent);
+  vertical-align: 1px;
+}
+
+.app.is-staff-mode :is(.staff-inline-form, .staff-review-form, .staff-lesson-form, .staff-stream-form, .staff-call-form, .admin-edit-form) label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: var(--academy-muted, var(--muted));
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.app.is-staff-mode :is(.staff-inline-form, .staff-review-form, .staff-lesson-form, .staff-stream-form, .staff-call-form, .admin-edit-form) :is(input, select, textarea):focus {
+  border-color: var(--academy-accent, var(--blue));
+  outline: 3px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 16%, transparent);
+  box-shadow: none;
+}
+
+.app.is-staff-mode :is(.staff-inline-form, .staff-review-form, .staff-lesson-form, .staff-stream-form, .staff-call-form, .admin-edit-form) select[multiple] {
+  min-height: 132px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.app.is-staff-mode :is(.staff-inline-form, .staff-review-form, .staff-lesson-form, .staff-stream-form, .staff-call-form, .admin-edit-form) select[multiple] option {
+  padding: 8px 9px;
+  border-radius: 7px;
+}
+
+.student-picker {
+  box-shadow: none;
+}
+
+.student-picker[open] {
+  border-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 28%, var(--academy-line, var(--line)));
+  background: rgba(255, 253, 248, 0.96);
+}
+
+.student-picker summary {
+  color: var(--academy-ink, var(--ink));
+}
+
+.student-picker summary strong {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--academy-mint, var(--mint)) 16%, #ffffff);
+  color: var(--academy-accent-dark, var(--blue-dark));
+}
+
+.student-picker__menu {
+  border-top-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 11%, var(--academy-line, var(--line)));
+  background: rgba(255, 253, 248, 0.92);
+}
+
+.student-picker__options {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 34%, transparent) transparent;
+}
+
+.student-picker__option {
+  border-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 10%, var(--academy-line, var(--line)));
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.student-picker__option:hover,
+.student-picker__option:has(input:checked) {
+  border-color: color-mix(in srgb, var(--academy-accent, var(--blue)) 30%, var(--academy-line, var(--line)));
+  background: color-mix(in srgb, var(--academy-mint, var(--mint)) 12%, #ffffff);
+}
+
+.modal-backdrop {
+  z-index: 100410;
+}
+
+.stream-chat-modal {
+  z-index: 100430;
+}
+
+.message-start-backdrop {
+  z-index: 100520;
+}
+
+.notification-popover {
+  z-index: 100620;
+  overscroll-behavior: contain;
+}
+
+.message-start-modal,
+.stream-chat-modal__dialog,
+.homework-modal,
+:is(.admin-person-details, .admin-add-details)[open] {
+  overscroll-behavior: contain;
+}
+
+:is(.admin-person-details, .admin-add-details)[open] {
+  scrollbar-gutter: stable;
+}
+
+.admin-drawer-close:focus-visible,
+.message-start-modal__close:focus-visible,
+.modal-close:focus-visible,
+.message-new-chat-button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--academy-accent, var(--blue)) 22%, transparent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  .team-edit-details > :is(.staff-inline-form, .staff-review-form, .admin-edit-form),
+  .team-create-details > :is(.staff-lesson-form, .staff-stream-form, .staff-call-form) {
+    padding: 12px;
+  }
+
+  .message-start-modal__header,
+  .message-start-modal__filters,
+  .message-start-modal__roles,
+  .message-recipient-cards {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .message-start-modal > .message-start-button {
+    margin-right: 14px;
+    margin-left: 14px;
+  }
+}
